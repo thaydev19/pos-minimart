@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Deep forest green & rich coffee gradients -->
+    <linearGradient id="daoGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064E3B"/>
+      <stop offset="40%" stop-color="#065F46"/>
+      <stop offset="70%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#022C22"/>
+    </linearGradient>
+    <linearGradient id="daoGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="50%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <filter id="daoShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#022C22" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Ground shadow -->
+  <ellipse cx="100" cy="180" rx="44" ry="9" fill="#022C22" opacity="0.2"/>
+
+  <g filter="url(#daoShadow)">
+    <!-- Stand-up Pouch Bag Contour -->
+    <path d="M 60 42 
+             C 62 40, 138 40, 140 42 
+             C 144 80, 148 135, 142 168 
+             C 138 174, 62 174, 58 168 
+             C 52 135, 56 80, 60 42 Z" 
+          fill="url(#daoGreen)"/>
+
+    <!-- Bag Top Seal & Easy Tear Notches -->
+    <line x1="58" y1="46" x2="142" y2="46" stroke="#047857" stroke-width="2"/>
+    <polygon points="56,50 62,50 58,47" fill="#022C22"/>
+    <polygon points="144,50 138,50 142,47" fill="#022C22"/>
+
+    <!-- Gold Header Band -->
+    <rect x="62" y="52" width="76" height="4" rx="1" fill="url(#daoGold)"/>
+
+    <!-- Dao Coffee Iconic Logo Shield -->
+    <ellipse cx="100" cy="72" rx="22" ry="14" fill="#022C22" stroke="url(#daoGold)" stroke-width="1.5"/>
+    <!-- Dao Star / Mountain Silhouette -->
+    <path d="M 100 63 L 103 69 L 109 69 L 104 73 L 106 79 L 100 75 L 94 79 L 96 73 L 91 69 L 97 69 Z" fill="#FDE047"/>
+    <text x="100" y="81" font-family="'Brush Script MT', cursive, sans-serif" font-weight="bold" font-size="7" fill="#FFFFFF" text-anchor="middle">Dao Coffee</text>
+
+    <!-- Subtitle: Original 3in1 -->
+    <text x="100" y="93" font-family="'Noto Sans Lao', Arial, sans-serif" font-weight="bold" font-size="6.5" fill="#FEF08A" text-anchor="middle">ກາເຟ ດາວ 3-in-1</text>
+    <rect x="80" y="96" width="40" height="7" rx="2" fill="#DC2626"/>
+    <text x="100" y="101.5" font-family="Arial, sans-serif" font-weight="bold" font-size="5" fill="#FFFFFF" text-anchor="middle">ORIGINAL</text>
+
+    <!-- Steaming Coffee Cup Illustration -->
+    <!-- Ceramic Red Cup -->
+    <ellipse cx="100" cy="142" rx="26" ry="7" fill="#022C22" opacity="0.4"/>
+    <ellipse cx="100" cy="138" rx="24" ry="5" fill="#E2E8F0"/>
+    <path d="M 80 120 L 120 120 C 120 138, 114 142, 100 142 C 86 142, 80 138, 80 120 Z" fill="#DC2626"/>
+    <!-- Coffee Foam / Crema -->
+    <ellipse cx="100" cy="120" rx="19" ry="6" fill="#78350F"/>
+    <ellipse cx="100" cy="119" rx="16" ry="4" fill="#B45309"/>
+    <!-- Cup handle -->
+    <path d="M 119 122 C 128 122, 128 134, 118 135" stroke="#DC2626" stroke-width="3" fill="none"/>
+
+    <!-- Roasted Coffee Beans flanking cup -->
+    <ellipse cx="74" cy="144" rx="5" ry="3.5" transform="rotate(-25 74 144)" fill="#451A03"/>
+    <line x1="72" y1="144" x2="76" y2="144" stroke="#78350F" stroke-width="1"/>
+
+    <ellipse cx="126" cy="144" rx="5" ry="3.5" transform="rotate(25 126 144)" fill="#451A03"/>
+    <line x1="124" y1="144" x2="128" y2="144" stroke="#78350F" stroke-width="1"/>
+
+    <!-- Steam Trails -->
+    <path d="M 96 112 Q 94 106 98 102" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+    <path d="M 104 110 Q 106 104 102 100" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+
+    <!-- Bottom volume banner -->
+    <text x="100" y="162" font-family="Arial, sans-serif" font-weight="bold" font-size="5.5" fill="#FFFFFF" text-anchor="middle">30 Sticks x 20g</text>
+
+    <!-- Metallic packaging sheen -->
+    <path d="M 66 50 Q 72 100 66 160" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+  </g>
+</svg>
+

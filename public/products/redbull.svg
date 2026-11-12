@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Amber glass bottle gradient -->
+    <linearGradient id="amberGlass" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#451A03"/>
+      <stop offset="25%" stop-color="#92400E"/>
+      <stop offset="50%" stop-color="#B45309"/>
+      <stop offset="75%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#78350F"/>
+    </linearGradient>
+    <linearGradient id="goldCap" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#CA8A04"/>
+      <stop offset="50%" stop-color="#FEF08A"/>
+      <stop offset="100%" stop-color="#A16207"/>
+    </linearGradient>
+    <linearGradient id="yellowLabel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FACC15"/>
+      <stop offset="100%" stop-color="#EAB308"/>
+    </linearGradient>
+    <filter id="bottleGlow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#78350F" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Ground shadow -->
+  <ellipse cx="100" cy="180" rx="38" ry="8" fill="#451A03" opacity="0.2"/>
+
+  <g filter="url(#bottleGlow)">
+    <!-- Gold Fluted Crown Cap -->
+    <rect x="88" y="25" width="24" height="10" rx="2" fill="url(#goldCap)"/>
+    <line x1="88" y1="28" x2="112" y2="28" stroke="#854D0E" stroke-width="1"/>
+    <!-- Bottle Neck -->
+    <path d="M 91 35 L 109 35 L 118 70 L 82 70 Z" fill="url(#amberGlass)"/>
+
+    <!-- Bottle Body (Squat 150ml energy drink shape) -->
+    <path d="M 82 70 
+             C 74 76, 73 88, 73 100 
+             L 73 162 
+             C 73 172, 78 174, 86 174 
+             L 114 174 
+             C 122 174, 127 172, 127 162 
+             L 127 100 
+             C 127 88, 126 76, 118 70 Z" 
+          fill="url(#amberGlass)"/>
+
+    <!-- Famous Yellow Red Bull / Krating Daeng Label -->
+    <rect x="74" y="90" width="52" height="65" rx="3" fill="url(#yellowLabel)"/>
+
+    <!-- Red Sun Background in Center -->
+    <circle cx="100" cy="116" r="14" fill="#DC2626"/>
+
+    <!-- Two Charging Red Bulls Silhouette -->
+    <!-- Left Bull -->
+    <path d="M 97 114 C 95 110, 88 111, 84 114 C 86 116, 89 117, 91 119 C 94 118, 96 116, 97 114 Z" fill="#FDE047"/>
+    <polygon points="96,112 90,111 94,115" fill="#DC2626"/>
+    <!-- Right Bull -->
+    <path d="M 103 114 C 105 110, 112 111, 116 114 C 114 116, 111 117, 109 119 C 106 118, 104 116, 103 114 Z" fill="#FDE047"/>
+    <polygon points="104,112 110,111 106,115" fill="#DC2626"/>
+
+    <!-- Red Bull Extra Text -->
+    <text x="100" y="102" font-family="Arial, sans-serif" font-weight="900" font-size="7" fill="#1E3A8A" text-anchor="middle" letter-spacing="0.4">RED BULL</text>
+    <rect x="85" y="134" width="30" height="8" rx="2" fill="#DC2626"/>
+    <text x="100" y="140" font-family="Arial, sans-serif" font-weight="bold" font-size="5.5" fill="#FFFFFF" text-anchor="middle">EXTRA</text>
+    <text x="100" y="150" font-family="'Noto Sans Lao', Arial, sans-serif" font-weight="bold" font-size="5.5" fill="#78350F" text-anchor="middle">ກະທິງແດງ</text>
+
+    <!-- Glass Reflection Streak -->
+    <path d="M 78 78 L 78 165" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+  </g>
+</svg>
+

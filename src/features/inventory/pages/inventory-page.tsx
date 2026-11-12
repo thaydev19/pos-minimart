@@ -1,0 +1,190 @@
+"use client";
+
+// ============================================================================
+// InventoryPage: Enterprise Warehouse & FEFO Batch Expiry Management
+// 100% Real Supabase + Dexie Offline DB, Strict Lao Localization
+// ============================================================================
+
+import React, { Suspense, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  Boxes,
+  Plus,
+  RefreshCw,
+  Search,
+  Filter,
+  PackagePlus,
+  AlertTriangle,
+  Clock,
+  ShieldAlert,
+} from "lucide-react";
+import { useInventory } from "../hooks/useInventory";
+import { useInventoryStore } from "../stores/inventory.store";
+import { useCategories } from "@/features/categories";
+import { InventorySummaryCards } from "../components/InventorySummaryCards";
+import { StockOverviewTable } from "../components/StockOverviewTable";
+import { StockInSheet } from "../components/StockInSheet";
+import { BatchDetailDrawer } from "../components/BatchDetailDrawer";
+import { StockAdjustmentDialog } from "../components/StockAdjustmentDialog";
+
+function QuickStockInListener() {
+  const searchParams = useSearchParams();
+  const quickStockInId = searchParams.get("quickStockIn");
+  const openStockIn = useInventoryStore((s) => s.openStockIn);
+
+  useEffect(() => {
+    if (quickStockInId) {
+      openStockIn(quickStockInId);
+    }
+  }, [quickStockInId, openStockIn]);
+
+  return null;
+}
+
+export function InventoryPage() {
+  const { items, totalCount, kpis, isLoading, refresh } = useInventory();
+  const searchTerm = useInventoryStore((s) => s.searchTerm);
+  const setSearchTerm = useInventoryStore((s) => s.setSearchTerm);
+  const filterStatus = useInventoryStore((s) => s.filterStatus);
+  const setFilterStatus = useInventoryStore((s) => s.setFilterStatus);
+  const selectedCategory = useInventoryStore((s) => s.selectedCategory);
+  const setSelectedCategory = useInventoryStore((s) => s.setSelectedCategory);
+  const openStockIn = useInventoryStore((s) => s.openStockIn);
+
+  const { categories } = useCategories();
+
+  return (
+    <div className="space-y-4">
+      <Suspense fallback={null}>
+        <QuickStockInListener />
+      </Suspense>
+
+      {/* 1. Header Bar & Quick Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
+        <div>
+          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+            ຄຸ້ມຄອງສາງສິນຄ້າ & ລັອດ FEFO (Inventory & Expiry)
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            ຫຼັກການ FEFO (First-Expired, First-Out) ຈັດການວັນໝົດອາຍຸ ແລະ ປັບຍອດສະຕັອກ
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => refresh()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+            title="ດຶງຂໍ້ມູນລ່າສຸດຈາກ Supabase"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-emerald-600" : ""}`}
+            />
+            <span>ໂຫຼດຂໍ້ມູນໃໝ່</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openStockIn()}
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>ນຳເຂົ້າສິນຄ້າ (Stock In)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Top Summary KPI Cards */}
+      <InventorySummaryCards kpis={kpis} />
+
+      {/* 3. Search & Filter Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-zinc-200/80 shadow-2xs">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ຄົ້ນຫາຊື່ສິນຄ້າ, ບາໂຄດ, ເລກລັອດ..."
+            className="h-9 w-full rounded-xl border border-slate-200 pl-9 pr-3 text-xs outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 transition-colors"
+          />
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Category Dropdown */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600"
+          >
+            <option value="all">ທຸກໝວດໝູ່ ({categories.length})</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name_lo}
+              </option>
+            ))}
+          </select>
+
+          {/* Quick Filter Buttons */}
+          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setFilterStatus("all")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                filterStatus === "all"
+                  ? "bg-white text-slate-900 shadow-2xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              ທັງໝົດ
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterStatus("low_stock")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                filterStatus === "low_stock"
+                  ? "bg-white text-amber-700 shadow-2xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              ໃກ້ໝົດ ({kpis.lowStockCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterStatus("near_expiry")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                filterStatus === "near_expiry"
+                  ? "bg-white text-amber-800 shadow-2xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              ໃກ້ໝົດອາຍຸ ({kpis.nearExpiryBatchCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterStatus("expired")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                filterStatus === "expired"
+                  ? "bg-white text-rose-600 shadow-2xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              ໝົດອາຍຸ ({kpis.expiredBatchCount})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Stock Overview Table */}
+      <StockOverviewTable items={items} isLoading={isLoading} />
+
+      {/* 5. Modals & Drawers */}
+      <StockInSheet />
+      <BatchDetailDrawer />
+      <StockAdjustmentDialog />
+    </div>
+  );
+}

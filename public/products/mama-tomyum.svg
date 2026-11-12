@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Foil noodle pack gradient -->
+    <linearGradient id="mamaPack" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#DC2626"/>
+      <stop offset="35%" stop-color="#EA580C"/>
+      <stop offset="70%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+    <filter id="packShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#7C2D12" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Ground Shadow -->
+  <ellipse cx="100" cy="178" rx="46" ry="10" fill="#000000" opacity="0.18"/>
+
+  <g filter="url(#packShadow)">
+    <!-- Pillowed Noodle Pillow Sachet -->
+    <path d="M 52 46 
+             C 54 44, 146 44, 148 46 
+             C 152 75, 153 125, 148 158 
+             C 146 160, 54 160, 52 158 
+             C 47 125, 48 75, 52 46 Z" 
+          fill="url(#mamaPack)"/>
+
+    <!-- Crimped Foil Edges Top and Bottom -->
+    <path d="M 50 45 L 150 45 L 148 40 L 52 40 Z" fill="#B91C1C"/>
+    <path d="M 50 159 L 150 159 L 148 164 L 52 164 Z" fill="#991B1B"/>
+
+    <!-- Crimp zig-zag texture -->
+    <line x1="52" y1="42" x2="148" y2="42" stroke="#FEF08A" stroke-width="1.5" stroke-dasharray="2,2"/>
+    <line x1="52" y1="162" x2="148" y2="162" stroke="#FEF08A" stroke-width="1.5" stroke-dasharray="2,2"/>
+
+    <!-- Famous Yellow MAMA Oval Badge -->
+    <ellipse cx="78" cy="65" rx="18" ry="11" fill="#FACC15" stroke="#FFFFFF" stroke-width="1.5"/>
+    <text x="78" y="70" font-family="Arial, sans-serif" font-weight="900" font-size="11" fill="#DC2626" text-anchor="middle" letter-spacing="-0.5">MAMA</text>
+
+    <!-- Tom Yum Kung Text -->
+    <text x="114" y="62" font-family="'Noto Sans Lao', Arial, sans-serif" font-weight="bold" font-size="7" fill="#FEF08A">ຕົ້ມຍຳກຸ້ງ</text>
+    <text x="114" y="71" font-family="Arial, sans-serif" font-weight="bold" font-size="5.5" fill="#FFFFFF">TOM YUM KUNG</text>
+
+    <!-- Steaming Soup Bowl Illustration -->
+    <!-- Bowl Base -->
+    <ellipse cx="100" cy="115" rx="36" ry="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <ellipse cx="100" cy="113" rx="32" ry="14" fill="#C2410C"/>
+
+    <!-- Curly Yellow Ramen Noodles -->
+    <path d="M 78 112 Q 83 105 88 113 T 98 112 T 108 114 T 118 111" stroke="#FDE047" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 82 116 Q 88 109 94 116 T 104 115 T 114 117" stroke="#FDE047" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+    <!-- Succulent Red Shrimp / Prawn -->
+    <path d="M 108 104 C 114 99, 122 102, 123 108 C 122 112, 116 114, 110 110 Z" fill="#EF4444"/>
+    <circle cx="120" cy="104" r="1.5" fill="#FFFFFF"/>
+    <!-- Fresh Green Lime Wedge & Cilantro -->
+    <path d="M 76 106 A 6 6 0 0 1 84 102 Z" fill="#84CC16"/>
+    <circle cx="94" cy="108" r="2" fill="#15803D"/>
+    <circle cx="102" cy="106" r="1.5" fill="#15803D"/>
+
+    <!-- Steam swirls -->
+    <path d="M 94 96 Q 96 90 92 86" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+    <path d="M 104 94 Q 106 88 102 84" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+
+    <!-- Bottom subtitle banner -->
+    <rect x="64" y="140" width="72" height="11" rx="2" fill="#7C2D12"/>
+    <text x="100" y="148" font-family="'Noto Sans Lao', Arial, sans-serif" font-weight="bold" font-size="6" fill="#FFFFFF" text-anchor="middle">ໝີ່ເຄິ່ງສຳເລັດຮູບ • 55g</text>
+
+    <!-- Plastic Foil Sheen -->
+    <path d="M 58 56 Q 64 100 58 150" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+  </g>
+</svg>
+

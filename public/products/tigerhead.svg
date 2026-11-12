@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Bottle transparent blue plastic gradient -->
+    <linearGradient id="waterPlastic" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#BAE6FD"/>
+      <stop offset="25%" stop-color="#E0F2FE"/>
+      <stop offset="50%" stop-color="#F0F9FF"/>
+      <stop offset="75%" stop-color="#BAE6FD"/>
+      <stop offset="100%" stop-color="#7DD3FC"/>
+    </linearGradient>
+    <linearGradient id="blueCap" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="labelBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0369A1"/>
+      <stop offset="50%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#075985"/>
+    </linearGradient>
+    <filter id="bottleShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0284C7" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Ground shadow -->
+  <ellipse cx="100" cy="182" rx="36" ry="8" fill="#0369A1" opacity="0.16"/>
+
+  <g filter="url(#bottleShadow)">
+    <!-- Blue Cap & Neck Ring -->
+    <rect x="91" y="24" width="18" height="12" rx="2" fill="url(#blueCap)"/>
+    <line x1="91" y1="28" x2="109" y2="28" stroke="#075985" stroke-width="1"/>
+    <line x1="91" y1="32" x2="109" y2="32" stroke="#075985" stroke-width="1"/>
+    <!-- Safety ring -->
+    <rect x="90" y="36" width="20" height="3" rx="1" fill="#0284C7"/>
+
+    <!-- Bottle Neck -->
+    <path d="M 93 39 L 107 39 L 114 62 L 86 62 Z" fill="url(#waterPlastic)"/>
+
+    <!-- Bottle Body with ergonomic curves -->
+    <path d="M 86 62 
+             C 74 72, 72 82, 74 100 
+             C 75 110, 72 120, 72 135 
+             C 72 155, 75 168, 77 172 
+             L 123 172 
+             C 125 168, 128 155, 128 135 
+             C 128 120, 125 110, 126 100 
+             C 128 82, 126 72, 114 62 Z" 
+          fill="url(#waterPlastic)" stroke="#7DD3FC" stroke-width="1.5"/>
+
+    <!-- Ribbed grip rings on plastic -->
+    <path d="M 74 78 Q 100 82 126 78" stroke="#38BDF8" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M 73 88 Q 100 92 127 88" stroke="#38BDF8" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M 73 148 Q 100 152 127 148" stroke="#38BDF8" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M 74 158 Q 100 162 126 158" stroke="#38BDF8" stroke-width="1.5" fill="none" opacity="0.7"/>
+
+    <!-- Water Label (Tigerhead Blue Band) -->
+    <rect x="73" y="100" width="54" height="42" rx="3" fill="url(#labelBlue)"/>
+    
+    <!-- White Wave on Label -->
+    <path d="M 73 124 Q 86 116 100 124 T 127 124 L 127 142 L 73 142 Z" fill="#FFFFFF" opacity="0.9"/>
+
+    <!-- Tiger Crest Graphic / Mountain Silhouette -->
+    <polygon points="100,103 108,114 92,114" fill="#FBBF24"/>
+    <polygon points="100,105 106,113 94,113" fill="#D97706"/>
+    <circle cx="100" cy="110" r="2.5" fill="#FFFFFF"/>
+
+    <!-- Tigerhead Text -->
+    <text x="100" y="122" font-family="Arial, sans-serif" font-weight="900" font-size="7" fill="#FFFFFF" text-anchor="middle" letter-spacing="0.3">TIGERHEAD</text>
+    <text x="100" y="132" font-family="'Noto Sans Lao', Arial, sans-serif" font-weight="bold" font-size="5.5" fill="#0369A1" text-anchor="middle">ນ້ຳດື່ມຫົວເສືອ</text>
+    <text x="100" y="139" font-family="Arial, sans-serif" font-weight="bold" font-size="4.5" fill="#64748B" text-anchor="middle">600 ml</text>
+
+    <!-- Glossy reflection highlights -->
+    <path d="M 78 68 Q 76 100 76 166" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  </g>
+</svg>
+

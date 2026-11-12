@@ -1,0 +1,251 @@
+"use client";
+
+// ============================================================================
+// StockAdjustmentDialog: Audit Count Variance & Expiry Write-Off Modal
+// Logs audit trail with reasons (Damage, Breakage, Shrinkage, Physical Count)
+// ============================================================================
+
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  ClipboardList,
+  AlertTriangle,
+  ArrowRight,
+  Save,
+  Loader2,
+  HelpCircle,
+} from "lucide-react";
+import { useInventoryStore } from "../stores/inventory.store";
+import { useStockMutations } from "../hooks/useStockMutations";
+import { ADJUSTMENT_REASONS } from "../constants/inventory.constants";
+import { StockAdjustmentFormData } from "../types/inventory.types";
+
+export function StockAdjustmentDialog() {
+  const selectedBatchForAdjustment = useInventoryStore(
+    (s) => s.selectedBatchForAdjustment
+  );
+  const closeAdjustment = useInventoryStore((s) => s.closeAdjustment);
+
+  const { adjustStock, isSubmitting, errorMessage, clearError } =
+    useStockMutations();
+
+  const [adjustedQty, setAdjustedQty] = useState<number>(0);
+  const [selectedReason, setSelectedReason] = useState<string>(
+    ADJUSTMENT_REASONS[0].label_lo
+  );
+  const [notes, setNotes] = useState<string>("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedBatchForAdjustment) {
+      setAdjustedQty(selectedBatchForAdjustment.batch.quantity_on_hand);
+      setSelectedReason(ADJUSTMENT_REASONS[0].label_lo);
+      setNotes("");
+      setFormError(null);
+      clearError();
+    }
+  }, [selectedBatchForAdjustment, clearError]);
+
+  if (!selectedBatchForAdjustment) return null;
+
+  const { product, batch } = selectedBatchForAdjustment;
+  const difference = adjustedQty - batch.quantity_on_hand;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    if (adjustedQty < 0) {
+      setFormError("ຈຳນວນສະຕັອກຕົວຈິງບໍ່ສາມາດຕິດລົບໄດ້");
+      return;
+    }
+
+    if (difference === 0) {
+      setFormError("ຈຳນວນຕົວຈິງເທົ່າກັບຈຳນວນປັດຈຸບັນ (ບໍ່ມີການປ່ຽນແປງ)");
+      return;
+    }
+
+    const payload: StockAdjustmentFormData = {
+      batch_id: batch.id,
+      product_id: product.id,
+      product_name: product.name_lo,
+      batch_number: batch.batch_number,
+      current_quantity: batch.quantity_on_hand,
+      adjusted_quantity: adjustedQty,
+      difference,
+      reason: selectedReason,
+      notes: notes.trim() || undefined,
+    };
+
+    await adjustStock(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+        onClick={() => !isSubmitting && closeAdjustment()}
+      />
+
+      {/* Modal Dialog */}
+      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-5">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <ClipboardList className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 leading-tight">
+                ກວດນັບ / ປັບຍອດສະຕັອກສິນຄ້າ
+              </h3>
+              <p className="text-[10px] text-slate-500 font-mono">
+                {product.name_lo} (ລັອດ: {batch.batch_number})
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={closeAdjustment}
+            disabled={isSubmitting}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {(formError || errorMessage) && (
+            <div className="flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700 font-semibold">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+              <div className="flex-1 leading-snug">{formError || errorMessage}</div>
+            </div>
+          )}
+
+          {/* Variance Comparison Box */}
+          <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-center">
+            {/* Current */}
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 block mb-0.5">
+                ຍອດໃນລະບົບ
+              </span>
+              <span className="text-sm font-extrabold text-slate-800 tabular-nums">
+                {batch.quantity_on_hand} {product.base_unit}
+              </span>
+            </div>
+
+            {/* Target adjusted */}
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 block mb-0.5">
+                ຍອດຕົວຈິງຫຼັງປັບ
+              </span>
+              <span className="text-sm font-extrabold text-emerald-800 tabular-nums">
+                {adjustedQty} {product.base_unit}
+              </span>
+            </div>
+
+            {/* Variance Difference */}
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 block mb-0.5">
+                ສ່ວນຕ່າງ (Variance)
+              </span>
+              <span
+                className={`text-sm font-extrabold tabular-nums ${
+                  difference > 0
+                    ? "text-emerald-700"
+                    : difference < 0
+                    ? "text-rose-600"
+                    : "text-slate-400"
+                }`}
+              >
+                {difference > 0 ? `+${difference}` : difference} {product.base_unit}
+              </span>
+            </div>
+          </div>
+
+          {/* Adjusted Quantity Input */}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+              <span>ຈຳນວນຕົວຈິງທີ່ກວດນັບໄດ້ ({product.base_unit})</span>
+              <span className="text-[10px] text-slate-400">
+                ວັນໝົດອາຍຸ: {batch.expiry_date}
+              </span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              required
+              value={adjustedQty}
+              onChange={(e) => setAdjustedQty(Math.max(0, Number(e.target.value)))}
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm font-extrabold text-slate-900 text-center outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
+            />
+          </div>
+
+          {/* Adjustment Reason Selection */}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700">
+              ສາເຫດການປັບຍອດ (Audit Reason)
+            </label>
+            <select
+              value={selectedReason}
+              onChange={(e) => setSelectedReason(e.target.value)}
+              className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-600"
+            >
+              {ADJUSTMENT_REASONS.map((r) => (
+                <option key={r.code} value={r.label_lo}>
+                  {r.label_lo} - {r.description_lo}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Notes Input */}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700">
+              ໝາຍເຫດເພີ່ມເຕີມ (Audit Notes)
+            </label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="ລະບຸລາຍລະອຽດ ຫຼື ຫຼັກຖານການກວດສອບ..."
+              className="w-full rounded-xl border border-slate-200 p-2 text-xs outline-none focus:border-emerald-600"
+            />
+            <p className="text-[10px] text-slate-400">
+              * ການປັບຍອດສະຕັອກຈະຖືກບັນທຶກລົງຕາຕະລາງ Audit Logs ອັດຕະໂນມັດເພື່ອຄວາມໂປ່ງໃສ
+            </p>
+          </div>
+
+          {/* Footer Buttons */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100">
+            <button
+              type="button"
+              onClick={closeAdjustment}
+              disabled={isSubmitting}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              ຍົກເລີກ
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{isSubmitting ? "ກຳລັງບັນທຶກ..." : "ຢືນຢັນປັບຍອດສະຕັອກ"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+

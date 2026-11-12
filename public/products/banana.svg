@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Ripe yellow banana gradient -->
+    <linearGradient id="bananaYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="40%" stop-color="#FACC15"/>
+      <stop offset="80%" stop-color="#EAB308"/>
+      <stop offset="100%" stop-color="#CA8A04"/>
+    </linearGradient>
+    <linearGradient id="stemGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#65A30D"/>
+      <stop offset="50%" stop-color="#4D7C0F"/>
+      <stop offset="100%" stop-color="#365314"/>
+    </linearGradient>
+    <filter id="bananaShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#854D0E" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Ground Shadow -->
+  <ellipse cx="102" cy="174" rx="48" ry="10" fill="#713F12" opacity="0.18"/>
+
+  <g filter="url(#bananaShadow)">
+    <!-- Banana 1 (Back Banana) -->
+    <path d="M 68 56 
+             C 88 50, 142 66, 154 135 
+             C 150 138, 142 136, 138 126 
+             C 126 78, 86 66, 68 62 Z" 
+          fill="#EAB308" stroke="#CA8A04" stroke-width="1.5"/>
+
+    <!-- Banana 2 (Center Banana) -->
+    <path d="M 66 52 
+             C 90 48, 150 72, 150 148 
+             C 144 154, 136 150, 134 140 
+             C 134 84, 88 64, 66 60 Z" 
+          fill="url(#bananaYellow)" stroke="#CA8A04" stroke-width="1.5"/>
+
+    <!-- Ridge Highlight on Center Banana -->
+    <path d="M 66 56 C 88 56, 138 78, 138 142" stroke="#FEF08A" stroke-width="3" fill="none" opacity="0.8" stroke-linecap="round"/>
+
+    <!-- Banana 3 (Front Banana) -->
+    <path d="M 62 58 
+             C 82 58, 136 90, 126 160 
+             C 120 166, 114 162, 112 152 
+             C 118 100, 80 74, 62 66 Z" 
+          fill="url(#bananaYellow)" stroke="#CA8A04" stroke-width="1.5"/>
+
+    <!-- Ridge Highlight on Front Banana -->
+    <path d="M 64 62 C 82 66, 120 98, 116 154" stroke="#FEF08A" stroke-width="2.5" fill="none" opacity="0.8" stroke-linecap="round"/>
+
+    <!-- Common Crown Stem at Top (Green/Brown) -->
+    <path d="M 54 48 L 74 46 L 70 66 L 56 68 Z" fill="url(#stemGreen)"/>
+    <ellipse cx="64" cy="47" rx="10" ry="4" fill="#3F6212"/>
+    <circle cx="64" cy="47" r="2" fill="#1E293B"/>
+
+    <!-- Banana Tip Ends (Dark Brown/Black) -->
+    <ellipse cx="147" cy="150" rx="3.5" ry="3" fill="#451A03"/>
+    <ellipse cx="122" cy="162" rx="3.5" ry="3" fill="#451A03"/>
+
+    <!-- Natural Sugar Freckles (Sweet ripeness indicator) -->
+    <circle cx="106" cy="74" r="1.5" fill="#78350F" opacity="0.7"/>
+    <circle cx="114" cy="86" r="1.5" fill="#78350F" opacity="0.7"/>
+    <circle cx="126" cy="108" r="1.5" fill="#78350F" opacity="0.7"/>
+    <circle cx="98" cy="116" r="1.5" fill="#78350F" opacity="0.7"/>
+    <circle cx="104" cy="132" r="1.5" fill="#78350F" opacity="0.7"/>
+
+    <!-- Fresh Scale Badge Overlay -->
+    <rect x="36" y="112" width="46" height="15" rx="4" fill="#2563EB" opacity="0.95"/>
+    <text x="59" y="122.5" font-family="'Noto Sans Lao', Arial, sans-serif" font-weight="bold" font-size="7" fill="#FFFFFF" text-anchor="middle">ກ້ວຍຫອມ</text>
+  </g>
+</svg>
+

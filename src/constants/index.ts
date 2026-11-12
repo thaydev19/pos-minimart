@@ -1,0 +1,2 @@
+export * from "./locales/lo";
+

@@ -75,7 +75,8 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
               <th className="py-3 px-3">ບາໂຄດ / SKU</th>
               <th className="py-3 px-3">ໝວດໝູ່</th>
               <th className="py-3 px-3">ຫົວໜ່ວຍຂາຍ (Packaging)</th>
-              <th className="py-3 px-3 text-right">ລາຄາຂາຍ / ຕົ້ນທຶນ</th>
+              <th className="py-3 px-3 text-right">ລາຄາຂາຍ</th>
+              <th className="py-3 px-3 text-right">ລາຄາຕົ້ນທຶນ & ກຳໄລ</th>
               <th className="py-3 px-3 text-center">ສະຕັອກຄົງເຫຼືອ</th>
               <th className="py-3 px-3 text-center">ສະຖານະ</th>
               <th className="py-3 px-4 text-center">ຈັດການ</th>
@@ -85,11 +86,37 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
           <tbody className="divide-y divide-zinc-100">
             {products.map((prod) => {
               const secondaryUnits = prod.units?.filter((u) => !u.is_base_unit) || [];
+              const packUnit = secondaryUnits.find((u) => u.conversion_rate > 1);
               const margin = prod.selling_price - prod.cost_price;
               const marginPct =
                 prod.selling_price > 0
                   ? Math.round((margin / prod.selling_price) * 100)
                   : 0;
+
+              // Compute actual batch expiry warning for this product
+              let actualExpiryStatus: "expired" | "near_expiry" | null = null;
+              let minDaysRemaining = Infinity;
+
+              if (prod.is_perishable && prod.batches && prod.batches.length > 0) {
+                const activeBatches = prod.batches.filter((b) => b.quantity_on_hand > 0 && b.expiry_date);
+                for (const b of activeBatches) {
+                  const targetTime = new Date(b.expiry_date).getTime();
+                  const nowTime = new Date().setHours(0, 0, 0, 0);
+                  const diffDays = Math.ceil((targetTime - nowTime) / (1000 * 60 * 60 * 24));
+                  if (diffDays < minDaysRemaining) {
+                    minDaysRemaining = diffDays;
+                  }
+                }
+
+                if (minDaysRemaining <= 0 && minDaysRemaining !== Infinity) {
+                  actualExpiryStatus = "expired";
+                } else if (
+                  minDaysRemaining <= (prod.warning_days_before_expiry || 15) &&
+                  minDaysRemaining !== Infinity
+                ) {
+                  actualExpiryStatus = "near_expiry";
+                }
+              }
 
               return (
                 <tr
@@ -118,10 +145,17 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                               <span>ຊັ່ງກິໂລ</span>
                             </span>
                           )}
-                          {prod.is_perishable && (
-                            <span className="inline-flex items-center gap-0.5 rounded bg-rose-100 px-1 py-0.2 text-[8px] font-bold text-rose-800">
-                              <Clock className="h-2 w-2" />
-                              <span>FEFO</span>
+                          {/* Only show expiry badge if a batch is ACTUALLY near expiry or expired */}
+                          {actualExpiryStatus === "expired" && (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-rose-100 border border-rose-300 px-1.5 py-0.2 text-[8.5px] font-extrabold text-rose-800">
+                              <Clock className="h-2 w-2 text-rose-700" />
+                              <span>ໝົດອາຍຸແລ້ວ</span>
+                            </span>
+                          )}
+                          {actualExpiryStatus === "near_expiry" && (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 border border-amber-300 px-1.5 py-0.2 text-[8.5px] font-extrabold text-amber-800 animate-pulse">
+                              <AlertTriangle className="h-2 w-2 text-amber-700" />
+                              <span>ໃກ້ໝົດອາຍຸ (ອີກ {minDaysRemaining} ວັນ)</span>
                             </span>
                           )}
                         </div>
@@ -175,17 +209,28 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     </div>
                   </td>
 
-                  {/* 5. Price & Margin */}
+                  {/* 5. Selling Price */}
                   <td className="py-2.5 px-3 text-right">
                     <div className="font-extrabold text-slate-900 tabular-nums">
                       {formatLak(prod.selling_price)}
                     </div>
-                    <div className="text-[10px] text-slate-400 tabular-nums mt-0.5">
-                      ທຶນ: {formatLak(prod.cost_price, false)} (
+                    {packUnit ? (
+                      <div className="text-[11px] font-medium text-zinc-500 tabular-nums mt-0.5">
+                        {packUnit.unit_name} (x{packUnit.conversion_rate}): {formatLak(packUnit.selling_price)}
+                      </div>
+                    ) : null}
+                  </td>
+
+                  {/* 6. Cost Price & Margin */}
+                  <td className="py-2.5 px-3 text-right">
+                    <div className="font-bold text-slate-700 tabular-nums">
+                      {formatLak(prod.cost_price)}
+                    </div>
+                    <div className="text-[11px] tabular-nums mt-0.5 font-semibold">
                       <span
                         className={
                           marginPct > 15
-                            ? "text-emerald-600 font-bold"
+                            ? "text-emerald-600"
                             : marginPct > 0
                             ? "text-amber-600"
                             : "text-rose-500"
@@ -193,7 +238,6 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                       >
                         +{marginPct}%
                       </span>
-                      )
                     </div>
                   </td>
 
@@ -202,16 +246,16 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     <button
                       type="button"
                       onClick={() => useInventoryStore.getState().openStockIn(prod.id)}
-                      className={`group inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold tabular-nums transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs border ${
-                        prod.total_stock <= 5
+                      className={`group inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs border ${
+                        prod.total_stock <= 0
                           ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300"
-                          : prod.total_stock <= 15
+                          : prod.total_stock <= 10
                           ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300"
-                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                          : "bg-zinc-100 text-zinc-800 border-zinc-200/90 hover:bg-zinc-200/80 hover:text-zinc-900"
                       }`}
                       title="ນຳເຂົ້າສະຕັອກດ່ວນ (Quick Stock In)"
                     >
-                      <Boxes className="h-3 w-3 shrink-0" />
+                      <Boxes className="h-3.5 w-3.5 shrink-0 text-zinc-500 group-hover:text-zinc-700" />
                       <span>
                         {prod.total_stock} {prod.base_unit}
                       </span>

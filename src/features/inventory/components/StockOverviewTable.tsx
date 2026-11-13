@@ -72,7 +72,7 @@ export function StockOverviewTable({ items, isLoading }: StockOverviewTableProps
               <th className="py-3 px-4">ສິນຄ້າ</th>
               <th className="py-3 px-3">ບາໂຄດ / ໝວດໝູ່</th>
               <th className="py-3 px-3 text-right">ສະຕັອກຄົງເຫຼືອ</th>
-              <th className="py-3 px-3">ລັອດກຳລັງຂາຍ (FEFO Next)</th>
+              <th className="py-3 px-3">ວັນໝົດອາຍຸໃກ້ສຸດ (Expiry & Status)</th>
               <th className="py-3 px-3 text-right">ຕົ້ນທຶນ / ມູນຄ່າລວມ</th>
               <th className="py-3 px-4 text-center">ຈັດການສາງ</th>
             </tr>
@@ -134,33 +134,41 @@ export function StockOverviewTable({ items, isLoading }: StockOverviewTableProps
                     </div>
                   </td>
 
-                  {/* 3. Total Stock (Smart Breakdown) */}
+                  {/* 3. Total Stock (Unified Base Unit Only) */}
                   <td className="py-2.5 px-3 text-right">
                     <div
-                      className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-extrabold tabular-nums ${
+                      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold tabular-nums ${
                         prod.total_stock <= 5
                           ? "bg-rose-50 text-rose-700 border border-rose-200"
                           : prod.total_stock <= 10
                           ? "bg-amber-50 text-amber-800 border border-amber-200"
-                          : "bg-slate-100 text-slate-900"
+                          : "bg-slate-100 text-slate-900 border border-slate-200/60"
                       }`}
                     >
-                      <Boxes className="h-3 w-3 shrink-0" />
-                      <span>{formattedStock}</span>
+                      {/* <Boxes className="h-3.5 w-3.5 shrink-0" /> */}
+                      <span>
+                        {prod.total_stock} {prod.base_unit}
+                      </span>
                     </div>
 
-                    <div className="text-[10px] text-slate-400 mt-0.5">
-                      ມີ <strong>{activeBatches.length}</strong> ລັອດໃນສາງ
+                    <div className="text-[10.5px] text-slate-400 mt-0.5">
+                      ມີ {activeBatches.length} ລັອດໃນສາງ
                     </div>
                   </td>
 
-                  {/* 4. Next FEFO Batch */}
+                  {/* 4. Nearest FEFO Expiry (Date DD/MM/YYYY + Status Badge, No LOT-... text) */}
                   <td className="py-2.5 px-3">
-                    {nextBatch ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
-                            {nextBatch.batch_number}
+                    {nextBatch && nextBatch.expiry_date ? (
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-zinc-900 text-xs tabular-nums">
+                            {(() => {
+                              const parts = nextBatch.expiry_date.split("-");
+                              if (parts.length === 3) {
+                                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                              }
+                              return nextBatch.expiry_date;
+                            })()}
                           </span>
                           <ExpiryBadge
                             expiryDate={nextBatch.expiry_date}
@@ -168,13 +176,13 @@ export function StockOverviewTable({ items, isLoading }: StockOverviewTableProps
                             status={nextBatch.status}
                           />
                         </div>
-                        <div className="text-[10px] text-slate-400">
-                          ເຫຼືອ {nextBatch.quantity_on_hand} {prod.base_unit} (ວັນໝົດ: {nextBatch.expiry_date})
+                        <div className="text-xs text-zinc-500 font-medium">
+                          ລັອດນີ້ເຫຼືອ: {nextBatch.quantity_on_hand} {prod.base_unit}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-[11px] text-slate-400 italic">
-                        ບໍ່ມີລັອດທີ່ພ້ອມຂາຍ
+                      <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-500">
+                        ບໍ່ມີວັນໝົດອາຍຸ
                       </span>
                     )}
                   </td>

@@ -72,8 +72,8 @@ export function CartPanel() {
         )}
       </div>
 
-      {/* 2. Cart Items Scroll Area (space-y-1.5 for 7-8 visible items) */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+      {/* 2. Cart Items Scroll Area (space-y-1 for compact multi-item view) */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {cart.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-4 text-slate-400 select-none">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300 mb-2 border border-slate-100">

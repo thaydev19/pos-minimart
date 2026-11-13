@@ -73,9 +73,9 @@ export function PosHeader() {
           <HoldOrdersTabs />
         </div>
 
-        {/* 3. Right: Clock + Network Badge + Cashier Profile (All py-1 px-2.5 text-xs) */}
+        {/* 3. Right: Clock + Network Badge + Active Shift + Logout */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Real-time Clock on the left of Avatar */}
+          {/* Real-time Clock */}
           <div className="hidden sm:flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 border border-slate-200 text-xs font-semibold text-slate-700">
             <Clock className="h-3 w-3 text-slate-400" />
             <span className="tabular-nums font-mono">{currentTime || "00:00:00"}</span>
@@ -86,27 +86,7 @@ export function PosHeader() {
           {/* Active Shift Status & Quick Close Action */}
           <ActiveShiftBadge />
 
-          {/* Cashier User Info Card & Logout */}
-          <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 border border-slate-200">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-100 text-emerald-800">
-              <User className="h-3.5 w-3.5" />
-            </div>
-            <div className="text-left">
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-slate-800 leading-none truncate max-w-[110px]">
-                  {user?.full_name_lo || cashier.name}
-                </span>
-                <span className="rounded bg-emerald-100 px-1 py-0.2 text-[9px] font-bold text-emerald-800 leading-none">
-                  {formatRoleLabel(user?.role)}
-                </span>
-              </div>
-              <span className="text-[9px] text-slate-400 font-mono leading-none block mt-0.5 truncate max-w-[110px]">
-                {user?.email || user?.username || cashier.shiftNumber}
-              </span>
-            </div>
-          </div>
-
-          {/* Sign Out Button */}
+          {/* Quick Logout Button Only */}
           <UserProfileMenu compact={true} />
         </div>
       </header>

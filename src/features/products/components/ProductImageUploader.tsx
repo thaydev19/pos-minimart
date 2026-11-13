@@ -15,7 +15,7 @@ interface ProductImageUploaderProps {
 }
 
 export function ProductImageUploader({
-  value,
+  value = "",
   onChange,
   disabled = false,
 }: ProductImageUploaderProps) {
@@ -23,6 +23,10 @@ export function ProductImageUploader({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUrlMode, setIsUrlMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Guaranteed strictly controlled string value (never undefined or null)
+  const safeValue = typeof value === "string" ? value : "";
+  const hasImage = safeValue.trim().length > 0;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,12 +77,12 @@ export function ProductImageUploader({
         </button>
       </div>
 
-      {value ? (
+      {hasImage ? (
         // Preview Box
         <div className="relative flex items-center gap-3 rounded-xl border border-zinc-200/90 bg-slate-50/60 p-2.5">
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-white">
             <img
-              src={value}
+              src={safeValue}
               alt="Preview"
               className="h-full w-full object-cover object-center"
               onError={(e) => {
@@ -90,7 +94,7 @@ export function ProductImageUploader({
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-800 truncate">{value}</p>
+            <p className="text-xs font-semibold text-slate-800 truncate">{safeValue}</p>
             <p className="text-[10px] text-emerald-600 font-medium mt-0.5">
               ຮູບພາບພ້ອມໃຊ້ງານແລ້ວ
             </p>
@@ -110,7 +114,7 @@ export function ProductImageUploader({
         <div className="space-y-1">
           <input
             type="url"
-            value={value || ""}
+            value={safeValue}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
             placeholder="https://example.com/image.jpg..."

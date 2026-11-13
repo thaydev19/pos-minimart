@@ -56,28 +56,25 @@ export function UserProfileMenu({ compact = false }: UserProfileMenuProps) {
   return (
     <div className="flex items-center gap-2">
       {/* User Info Badge */}
-      <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-1.5 border border-slate-200">
+      {/* <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-1.5 border border-slate-200">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs">
           <User className="h-4 w-4" />
         </div>
-        <div className="text-left min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-900 leading-none truncate max-w-[120px]">
-              {user.full_name_lo}
-            </span>
+        <div className="text-left min-w-0 flex flex-col justify-center">
+          <span className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px]">
+            {user.full_name_lo}
+          </span>
+          <div className="mt-0.5">
             <span
-              className={`rounded px-1.5 py-0.5 text-[9px] font-bold border leading-none ${getRoleBadgeClass(
+              className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold border leading-none ${getRoleBadgeClass(
                 user.role
               )}`}
             >
               {formatRoleLabel(user.role)}
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 truncate block mt-0.5">
-            {user.store_name_lo || "ມິນິມາດ ລາວຈະເລີນ"}
-          </span>
         </div>
-      </div>
+      </div> */}
 
       {/* Logout Trigger */}
       <button

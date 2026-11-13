@@ -294,12 +294,12 @@ export function AppSidebar({
         {!collapsedState && (
           <>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-slate-800 truncate">
-                  {user?.full_name_lo || "ພະນັກງານ"}
-                </span>
+              <span className="text-xs font-bold text-slate-800 truncate block">
+                {user?.full_name_lo || "ພະນັກງານ"}
+              </span>
+              <div className="mt-0.5">
                 <span
-                  className={`flex items-center gap-0.5 rounded px-1 py-0.2 text-[8px] font-bold border ${getRoleBadgeClass(
+                  className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8.5px] font-bold border leading-none ${getRoleBadgeClass(
                     user?.role
                   )}`}
                 >
@@ -307,9 +307,6 @@ export function AppSidebar({
                   <span>{formatRoleLabel(user?.role)}</span>
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-mono leading-none mt-0.5 truncate">
-                {user?.email || user?.username || "offline"}
-              </p>
             </div>
 
             {/* Logout Action Button */}

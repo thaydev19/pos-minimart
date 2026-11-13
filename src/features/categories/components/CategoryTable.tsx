@@ -5,7 +5,7 @@
 // ============================================================================
 
 import React, { useState } from "react";
-import { Edit2, Trash2, Package, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Edit2, Trash2, Package, AlertTriangle, ArrowUpDown, Info } from "lucide-react";
 import { CategoryItem } from "../types/category.types";
 import { useCategoryStore } from "../stores/category.store";
 import { useCategoryMutations } from "../hooks/useCategories";

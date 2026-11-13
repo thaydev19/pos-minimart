@@ -19,6 +19,13 @@ import { DEFAULT_CASHIER } from "../constants/pos.constants";
 import { posApi } from "../api/pos.api";
 import { syncEngine } from "@/apis/sync-engine";
 
+export interface PosBillTab {
+  id: string;
+  tabTitle: string;
+  items: CartItem[];
+  heldAt?: string;
+}
+
 interface PosState {
   // Catalog & Database State
   products: ProductWithDetails[];
@@ -31,6 +38,8 @@ interface PosState {
   // Cart & Transaction State
   cart: CartItem[];
   totals: PosTotals;
+  bills: PosBillTab[];
+  activeBillId: string;
   holdOrders: HoldOrder[];
   activeHoldId: string | null;
   orderDiscountFixed: number;
@@ -54,9 +63,11 @@ interface PosState {
   removeItem: (itemId: string) => void;
   clearCart: () => void;
   setOrderDiscount: (amount: number) => void;
-  holdCurrentOrder: (customTitle?: string) => void;
+  holdCurrentOrder: (customTitle?: string) => boolean;
   restoreHoldOrder: (holdId: string) => void;
   deleteHoldOrder: (holdId: string) => void;
+  switchBill: (billId: string) => void;
+  deleteBill: (billId: string) => void;
   deductCartInventory: (cartItems: CartItem[]) => void;
   getTotals: () => PosTotals;
 }
@@ -85,6 +96,14 @@ export const usePosStore = create<PosState>()(
       // Cart State
       cart: [],
       totals: INITIAL_TOTALS,
+      bills: [
+        {
+          id: "bill-1",
+          tabTitle: "ບິນ #1",
+          items: [],
+        },
+      ],
+      activeBillId: "bill-1",
       holdOrders: [],
       activeHoldId: null,
       orderDiscountFixed: 0,
@@ -217,7 +236,15 @@ export const usePosStore = create<PosState>()(
           state.vatRatePercent
         );
 
-        set({ cart: nextCart, totals: nextTotals });
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+        const nextBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: nextCart } : b
+        );
+
+        set({ cart: nextCart, totals: nextTotals, bills: nextBills });
       },
 
       updateQuantity: (itemId, qty) => {
@@ -247,7 +274,15 @@ export const usePosStore = create<PosState>()(
           state.vatRatePercent
         );
 
-        set({ cart: nextCart, totals: nextTotals });
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+        const nextBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: nextCart } : b
+        );
+
+        set({ cart: nextCart, totals: nextTotals, bills: nextBills });
       },
 
       changeUnit: (itemId: string, newUnitName: string) => {
@@ -281,7 +316,15 @@ export const usePosStore = create<PosState>()(
           state.vatRatePercent
         );
 
-        set({ cart: nextCart, totals: nextTotals });
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+        const nextBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: nextCart } : b
+        );
+
+        set({ cart: nextCart, totals: nextTotals, bills: nextBills });
       },
 
       removeItem: (itemId) => {
@@ -292,14 +335,33 @@ export const usePosStore = create<PosState>()(
           state.orderDiscountFixed,
           state.vatRatePercent
         );
-        set({ cart: nextCart, totals: nextTotals });
+
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+        const nextBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: nextCart } : b
+        );
+
+        set({ cart: nextCart, totals: nextTotals, bills: nextBills });
       },
 
       clearCart: () => {
+        const state = get();
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+        const nextBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: [] } : b
+        );
+
         set({
           cart: [],
           totals: INITIAL_TOTALS,
           orderDiscountFixed: 0,
+          bills: nextBills,
         });
       },
 
@@ -315,57 +377,156 @@ export const usePosStore = create<PosState>()(
 
       holdCurrentOrder: (customTitle) => {
         const state = get();
-        if (state.cart.length === 0) return;
+        if (state.cart.length === 0) return false;
 
-        const holdCount = state.holdOrders.length + 1;
-        const newHold: HoldOrder = {
-          id: `hold-${Date.now()}`,
-          tabTitle: customTitle || `ບິນພັກ #${holdCount}`,
-          items: [...state.cart],
-          heldAt: new Date().toISOString(),
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+
+        // 1. Update current bill with current cart items
+        const updatedCurrentBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: [...state.cart], heldAt: new Date().toISOString() } : b
+        );
+
+        // 2. Find next available index (#1, #2, #3...)
+        let index = 1;
+        while (updatedCurrentBills.some((b) => b.tabTitle === `ບິນ #${index}`)) {
+          index++;
+        }
+        const billTitle = customTitle || `ບິນ #${index}`;
+        const newBillId = `bill-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+        const newBill: PosBillTab = {
+          id: newBillId,
+          tabTitle: billTitle,
+          items: [],
         };
 
+        const nextBills = [...updatedCurrentBills, newBill];
+
         set({
-          holdOrders: [...state.holdOrders, newHold],
+          bills: nextBills,
+          activeBillId: newBillId,
           cart: [],
           totals: INITIAL_TOTALS,
           orderDiscountFixed: 0,
-          activeHoldId: null,
+          holdOrders: nextBills
+            .filter((b) => b.id !== newBillId)
+            .map((b) => ({
+              id: b.id,
+              tabTitle: b.tabTitle,
+              items: b.items,
+              heldAt: b.heldAt || new Date().toISOString(),
+            })),
         });
+        return true;
       },
 
-      restoreHoldOrder: (holdId) => {
+      switchBill: (billId) => {
         const state = get();
-        const targetHold = state.holdOrders.find((h) => h.id === holdId);
-        if (!targetHold) return;
+        if (billId === state.activeBillId) return;
 
-        let nextHolds = state.holdOrders.filter((h) => h.id !== holdId);
-        if (state.cart.length > 0) {
-          nextHolds.push({
-            id: `hold-${Date.now()}`,
-            tabTitle: `ບິນ #${nextHolds.length + 1}`,
-            items: state.cart,
-            heldAt: new Date().toISOString(),
-          });
-        }
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+
+        // 1. Save current cart into current active bill
+        const updatedBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, items: [...state.cart] } : b
+        );
+
+        const targetBill = updatedBills.find((b) => b.id === billId);
+        if (!targetBill) return;
 
         const nextTotals = computePosTotals(
-          targetHold.items,
-          state.orderDiscountFixed,
+          targetBill.items,
+          0,
           state.vatRatePercent
         );
 
         set({
-          cart: targetHold.items,
+          bills: updatedBills,
+          activeBillId: billId,
+          cart: [...targetBill.items],
           totals: nextTotals,
-          holdOrders: nextHolds,
-          activeHoldId: null,
+          orderDiscountFixed: 0,
+          holdOrders: updatedBills
+            .filter((b) => b.id !== billId)
+            .map((b) => ({
+              id: b.id,
+              tabTitle: b.tabTitle,
+              items: b.items,
+              heldAt: b.heldAt || new Date().toISOString(),
+            })),
         });
       },
 
-      deleteHoldOrder: (holdId) => {
+      deleteBill: (billId) => {
         const state = get();
-        set({ holdOrders: state.holdOrders.filter((h) => h.id !== holdId) });
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: "bill-1", tabTitle: "ບິນ #1", items: [] }];
+
+        if (currentBills.length <= 1) {
+          const defaultBill: PosBillTab = { id: "bill-1", tabTitle: "ບິນ #1", items: [] };
+          set({
+            bills: [defaultBill],
+            activeBillId: "bill-1",
+            cart: [],
+            totals: INITIAL_TOTALS,
+            orderDiscountFixed: 0,
+            holdOrders: [],
+          });
+          return;
+        }
+
+        const nextBills = currentBills.filter((b) => b.id !== billId);
+
+        if (billId === state.activeBillId) {
+          const newActive = nextBills[nextBills.length - 1];
+          const nextTotals = computePosTotals(
+            newActive.items,
+            0,
+            state.vatRatePercent
+          );
+          set({
+            bills: nextBills,
+            activeBillId: newActive.id,
+            cart: [...newActive.items],
+            totals: nextTotals,
+            orderDiscountFixed: 0,
+            holdOrders: nextBills
+              .filter((b) => b.id !== newActive.id)
+              .map((b) => ({
+                id: b.id,
+                tabTitle: b.tabTitle,
+                items: b.items,
+                heldAt: b.heldAt || new Date().toISOString(),
+              })),
+          });
+        } else {
+          set({
+            bills: nextBills,
+            holdOrders: nextBills
+              .filter((b) => b.id !== state.activeBillId)
+              .map((b) => ({
+                id: b.id,
+                tabTitle: b.tabTitle,
+                items: b.items,
+                heldAt: b.heldAt || new Date().toISOString(),
+              })),
+          });
+        }
+      },
+
+      restoreHoldOrder: (holdId) => {
+        get().switchBill(holdId);
+      },
+
+      deleteHoldOrder: (holdId) => {
+        get().deleteBill(holdId);
       },
 
       deductCartInventory: (cartItems: CartItem[]) => {
@@ -409,6 +570,8 @@ export const usePosStore = create<PosState>()(
       partialize: (state) => ({
         cart: state.cart,
         totals: state.totals,
+        bills: state.bills,
+        activeBillId: state.activeBillId,
         holdOrders: state.holdOrders,
         cashier: state.cashier,
         viewMode: state.viewMode,

@@ -6,6 +6,7 @@ export type DashboardTimeRange = "today" | "week" | "month";
 
 export interface DashboardKPIs {
   totalRevenue: number;
+  totalCost: number;
   estimatedGrossProfit: number;
   grossProfitMarginPct: number;
   totalOrdersCount: number;
@@ -44,5 +45,15 @@ export interface DashboardStockAlert {
   batchNumber?: string;
   detail: string;
   daysRemaining?: number;
+}
+
+export interface DashboardRecentOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  itemsCount: number;
+  total: number;
+  paymentMethod: string;
+  status: string;
 }
 

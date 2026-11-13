@@ -10,6 +10,7 @@ import {
   PaymentMethodBreakdown,
   TopSellingProduct,
   DashboardStockAlert,
+  DashboardRecentOrder,
 } from "../types/dashboard.types";
 import { dashboardApi } from "../api/dashboard.api";
 
@@ -20,6 +21,7 @@ interface DashboardState {
   paymentBreakdown: PaymentMethodBreakdown | null;
   topProducts: TopSellingProduct[];
   stockAlerts: DashboardStockAlert[];
+  recentOrders: DashboardRecentOrder[];
   isLoading: boolean;
 
   // Actions
@@ -34,6 +36,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   paymentBreakdown: null,
   topProducts: [],
   stockAlerts: [],
+  recentOrders: [],
   isLoading: false,
 
   loadDashboardStats: async () => {
@@ -46,6 +49,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         paymentBreakdown: data.paymentBreakdown,
         topProducts: data.topProducts,
         stockAlerts: data.stockAlerts,
+        recentOrders: data.recentOrders,
         isLoading: false,
       });
     } catch (err) {

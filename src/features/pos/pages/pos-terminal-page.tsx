@@ -8,6 +8,7 @@
 
 import React, { useEffect, useState } from "react";
 import { ShoppingBag, ChevronUp, X } from "lucide-react";
+import { toast } from "sonner";
 import { PosHeader } from "../components/PosHeader";
 import { CatalogControlBar } from "../components/CatalogControlBar";
 import { ProductCatalogGrid } from "../components/ProductCatalogGrid";
@@ -74,7 +75,12 @@ export function PosTerminalPage() {
         focusScanner();
       } else if (e.key === "F2") {
         e.preventDefault();
-        if (cart.length > 0) holdCurrentOrder();
+        if (cart.length > 0) {
+          const success = holdCurrentOrder();
+          if (success) toast.success("ໄດ້ພັກບິນສຳເລັດແລ້ວ");
+        } else {
+          toast.info("ບໍ່ມີສິນຄ້າໃນກະຕ່າເພື່ອພັກບິນ");
+        }
       } else if (e.key === "F4") {
         e.preventDefault();
         if (cart.length > 0) clearCart();
@@ -97,8 +103,8 @@ export function PosTerminalPage() {
       <PosHeader />
 
       <main className="flex flex-1 overflow-hidden p-2.5 sm:p-3 gap-2.5 sm:gap-3">
-        {/* Left Area (60%): Unified Control Bar + Product Catalog Grid */}
-        <section className="flex flex-[3] flex-col overflow-hidden gap-2.5 min-w-0">
+        {/* Left Area: Unified Control Bar + Product Catalog Grid */}
+        <section className="flex flex-1 flex-col overflow-hidden gap-2.5 min-w-0">
           <div className="relative">
             <CatalogControlBar
               searchValue={searchInput}
@@ -124,8 +130,8 @@ export function PosTerminalPage() {
           </div>
         </section>
 
-        {/* Right Area (40%): Cart & Payment (Desktop & Tablet) */}
-        <aside className="hidden md:flex flex-[2] flex-col overflow-hidden min-w-[340px] max-w-[440px]">
+        {/* Right Area: Cart & Payment Sidebar (Desktop & Tablet) */}
+        <aside className="hidden md:flex w-[440px] xl:w-[480px] shrink-0 flex-col overflow-hidden">
           <CartPanel />
         </aside>
       </main>

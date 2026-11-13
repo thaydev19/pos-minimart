@@ -68,6 +68,7 @@ export default function BackofficeLayout({
               </Link>
 
               <NetworkSyncBadge />
+              
 
               {/* Real Staff Profile Card & Signout */}
               <UserProfileMenu />

@@ -11,6 +11,7 @@ import {
   PaymentMethodBreakdown,
   TopSellingProduct,
   DashboardStockAlert,
+  DashboardRecentOrder,
 } from "../types/dashboard.types";
 import { getStartDateForRange } from "../utils/dashboard.util";
 import { calculateDaysUntilExpiry } from "@/features/inventory/utils/inventory.util";
@@ -22,6 +23,7 @@ export const dashboardApi = {
     paymentBreakdown: PaymentMethodBreakdown;
     topProducts: TopSellingProduct[];
     stockAlerts: DashboardStockAlert[];
+    recentOrders: DashboardRecentOrder[];
   }> {
     const startDate = getStartDateForRange(range);
     const startDateIso = startDate.toISOString();
@@ -226,9 +228,46 @@ export const dashboardApi = {
         if (stockAlerts.length >= 6) break;
       }
 
+      // 7. Recent Orders from Database
+      let recentOrders: DashboardRecentOrder[] = orders
+        .slice()
+        .sort((a, b) => new Date(b.offline_created_at).getTime() - new Date(a.offline_created_at).getTime())
+        .slice(0, 6)
+        .map((o) => ({
+          id: o.id,
+          orderNumber: o.order_number || o.id.slice(0, 8),
+          createdAt: o.offline_created_at,
+          itemsCount: (o.order_items || []).length,
+          total: Number(o.final_total) || 0,
+          paymentMethod: o.payment_method === "cash" ? "ເງິນສົດ (Cash)" : "BCEL One QR",
+          status: o.status === "completed" ? "ສຳເລັດ" : o.status,
+        }));
+
+      // Fallback: If 0 orders today, get latest completed orders from DB for preview
+      if (recentOrders.length === 0) {
+        const { data: latestDbOrders } = await supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .order("offline_created_at", { ascending: false })
+          .limit(6);
+
+        if (latestDbOrders && latestDbOrders.length > 0) {
+          recentOrders = latestDbOrders.map((o) => ({
+            id: o.id,
+            orderNumber: o.order_number || o.id.slice(0, 8),
+            createdAt: o.offline_created_at,
+            itemsCount: (o.order_items || []).length,
+            total: Number(o.final_total) || 0,
+            paymentMethod: o.payment_method === "cash" ? "ເງິນສົດ (Cash)" : "BCEL One QR",
+            status: o.status === "completed" ? "ສຳເລັດ" : o.status,
+          }));
+        }
+      }
+
       return {
         kpis: {
           totalRevenue,
+          totalCost,
           estimatedGrossProfit,
           grossProfitMarginPct,
           totalOrdersCount,
@@ -238,6 +277,7 @@ export const dashboardApi = {
         paymentBreakdown,
         topProducts,
         stockAlerts,
+        recentOrders,
       };
     } catch (err) {
       console.error("[DashboardApi] fetchDashboardStats failed:", err);
@@ -245,6 +285,7 @@ export const dashboardApi = {
       return {
         kpis: {
           totalRevenue: 0,
+          totalCost: 0,
           estimatedGrossProfit: 0,
           grossProfitMarginPct: 0,
           totalOrdersCount: 0,
@@ -261,6 +302,7 @@ export const dashboardApi = {
         },
         topProducts: [],
         stockAlerts: [],
+        recentOrders: [],
       };
     }
   },

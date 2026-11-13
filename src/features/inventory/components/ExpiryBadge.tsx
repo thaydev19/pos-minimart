@@ -47,7 +47,7 @@ export function ExpiryBadge({
         }`}
       >
         <AlertCircle className={isSm ? "h-3 w-3 text-rose-600" : "h-3.5 w-3.5 text-rose-600"} />
-        <span>ເຫຼືອອີກ {daysUntilExpiry} ວັນ (FEFO)</span>
+        <span>ໃກ້ໝົດອາຍຸ (ອີກ {daysUntilExpiry} ວັນ)</span>
       </span>
     );
   }
@@ -61,7 +61,7 @@ export function ExpiryBadge({
         }`}
       >
         <Clock className={isSm ? "h-3 w-3 text-amber-600" : "h-3.5 w-3.5 text-amber-600"} />
-        <span>ເຫຼືອອີກ {daysUntilExpiry} ວັນ</span>
+        <span>ໃກ້ໝົດອາຍຸ (ອີກ {daysUntilExpiry} ວັນ)</span>
       </span>
     );
   }

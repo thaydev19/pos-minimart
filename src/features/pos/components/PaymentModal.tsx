@@ -499,7 +499,7 @@ export function PaymentModal({
                           : "border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
                       }`}
                     >
-                      ✨ ພໍດີ ({formatLak(roundedPayableTotal)})
+                      ພໍດີ ({formatLak(roundedPayableTotal)})
                     </button>
 
                     {/* Standard Lao Banknotes */}

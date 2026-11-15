@@ -12,18 +12,21 @@ import {
   CashierInfo,
   PosTotals,
 } from "../types/pos.types";
-import { LocalProductUnit, LocalCategory } from "@/apis/offline-db";
+import { LocalProductUnit, LocalCategory, offlineDb, LocalAuditLog } from "@/apis/offline-db";
 import { calculateLineTotal } from "@/utils/math.util";
 import { computePosTotals, allocateFefoBatch } from "../utils/pos.util";
-import { DEFAULT_CASHIER } from "../constants/pos.constants";
+import { DEFAULT_CASHIER, DEFAULT_STORE } from "../constants/pos.constants";
 import { posApi } from "../api/pos.api";
 import { syncEngine } from "@/apis/sync-engine";
+import { broadcastCartState } from "../utils/customerDisplaySync";
+import { useAuthStore } from "@/features/auth/stores/auth.store";
 
 export interface PosBillTab {
   id: string;
   tabTitle: string;
   items: CartItem[];
   heldAt?: string;
+  hasAttemptedCheckout?: boolean;
 }
 
 interface PosState {
@@ -40,14 +43,17 @@ interface PosState {
   totals: PosTotals;
   bills: PosBillTab[];
   activeBillId: string;
+  hasAttemptedCheckout: boolean;
   holdOrders: HoldOrder[];
   activeHoldId: string | null;
   orderDiscountFixed: number;
   vatRatePercent: number;
   cashier: CashierInfo;
   activeCategory: string;
+  isCustomerDisplayFloatingOpen: boolean;
 
   // Actions
+  setCustomerDisplayFloatingOpen: (open: boolean) => void;
   setViewMode: (mode: "grid" | "compact") => void;
   loadCatalog: (forceRefresh?: boolean) => Promise<void>;
   syncWithDatabase: () => Promise<void>;
@@ -62,6 +68,13 @@ interface PosState {
   changeUnit: (itemId: string, newUnitName: string) => void;
   removeItem: (itemId: string) => void;
   clearCart: () => void;
+  setAttemptedCheckout: (attempted: boolean) => void;
+  recordVoidLog: (
+    reason: string,
+    items?: CartItem[],
+    totalAmount?: number,
+    approvedBy?: string
+  ) => Promise<void>;
   setOrderDiscount: (amount: number) => void;
   holdCurrentOrder: (customTitle?: string) => boolean;
   restoreHoldOrder: (holdId: string) => void;
@@ -96,11 +109,13 @@ export const usePosStore = create<PosState>()(
       // Cart State
       cart: [],
       totals: INITIAL_TOTALS,
+      hasAttemptedCheckout: false,
       bills: [
         {
           id: "bill-1",
           tabTitle: "ບິນ #1",
           items: [],
+          hasAttemptedCheckout: false,
         },
       ],
       activeBillId: "bill-1",
@@ -110,6 +125,10 @@ export const usePosStore = create<PosState>()(
       vatRatePercent: 0,
       activeCategory: "cat-all",
       cashier: DEFAULT_CASHIER,
+      isCustomerDisplayFloatingOpen: false,
+
+      setCustomerDisplayFloatingOpen: (open) =>
+        set({ isCustomerDisplayFloatingOpen: open }),
 
       setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -245,6 +264,7 @@ export const usePosStore = create<PosState>()(
         );
 
         set({ cart: nextCart, totals: nextTotals, bills: nextBills });
+        broadcastCartState(nextCart, nextTotals);
       },
 
       updateQuantity: (itemId, qty) => {
@@ -283,6 +303,7 @@ export const usePosStore = create<PosState>()(
         );
 
         set({ cart: nextCart, totals: nextTotals, bills: nextBills });
+        broadcastCartState(nextCart, nextTotals);
       },
 
       changeUnit: (itemId: string, newUnitName: string) => {
@@ -325,6 +346,7 @@ export const usePosStore = create<PosState>()(
         );
 
         set({ cart: nextCart, totals: nextTotals, bills: nextBills });
+        broadcastCartState(nextCart, nextTotals);
       },
 
       removeItem: (itemId) => {
@@ -345,6 +367,7 @@ export const usePosStore = create<PosState>()(
         );
 
         set({ cart: nextCart, totals: nextTotals, bills: nextBills });
+        broadcastCartState(nextCart, nextTotals);
       },
 
       clearCart: () => {
@@ -352,9 +375,9 @@ export const usePosStore = create<PosState>()(
         const currentActiveId = state.activeBillId || "bill-1";
         const currentBills = state.bills && state.bills.length > 0
           ? state.bills
-          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [], hasAttemptedCheckout: false }];
         const nextBills = currentBills.map((b) =>
-          b.id === currentActiveId ? { ...b, items: [] } : b
+          b.id === currentActiveId ? { ...b, items: [], hasAttemptedCheckout: false } : b
         );
 
         set({
@@ -362,7 +385,92 @@ export const usePosStore = create<PosState>()(
           totals: INITIAL_TOTALS,
           orderDiscountFixed: 0,
           bills: nextBills,
+          hasAttemptedCheckout: false,
         });
+        broadcastCartState([], INITIAL_TOTALS);
+      },
+
+      setAttemptedCheckout: (attempted: boolean) => {
+        const state = get();
+        const currentActiveId = state.activeBillId || "bill-1";
+        const currentBills = state.bills && state.bills.length > 0
+          ? state.bills
+          : [{ id: currentActiveId, tabTitle: "ບິນ #1", items: [] }];
+        const nextBills = currentBills.map((b) =>
+          b.id === currentActiveId ? { ...b, hasAttemptedCheckout: attempted } : b
+        );
+        set({ hasAttemptedCheckout: attempted, bills: nextBills });
+      },
+
+      recordVoidLog: async (
+        reason: string,
+        itemsToVoid?: CartItem[],
+        totalAmount?: number,
+        approvedBy?: string
+      ) => {
+        try {
+          const state = get();
+          const items = itemsToVoid || state.cart;
+          if (items.length === 0) return;
+
+          const finalAmount = totalAmount !== undefined ? totalAmount : state.totals.finalTotal;
+          const voidId = crypto.randomUUID();
+          const now = new Date().toISOString();
+
+          let activeUserId = state.cashier.id || "cashier";
+          let activeRole = "cashier";
+          let activeStoreId = DEFAULT_STORE.id;
+
+          try {
+            const authUser = useAuthStore.getState().user;
+            if (authUser) {
+              activeUserId = authUser.id;
+              activeRole = authUser.role;
+              if (authUser.store_id) activeStoreId = authUser.store_id;
+            }
+          } catch {}
+
+          const auditEntry: LocalAuditLog = {
+            id: voidId,
+            store_id: activeStoreId,
+            user_id: activeUserId,
+            role: activeRole,
+            action_type: "VOID_CART",
+            entity_type: "cart",
+            entity_id: state.activeBillId || "bill-1",
+            before_data: {
+              itemCount: items.length,
+              totalQuantity: items.reduce((s, it) => s + it.quantity, 0),
+              finalTotal: finalAmount,
+              hasAttemptedCheckout: state.hasAttemptedCheckout,
+              approvedBy: approvedBy || null,
+              items: items.map((it) => ({
+                productId: it.productId,
+                name: it.name,
+                unit: it.selectedUnit.unit_name,
+                quantity: it.quantity,
+                unitPrice: it.unitPrice,
+                totalPrice: it.totalPrice,
+              })),
+            },
+            after_data: { items: [], total: 0 },
+            reason: reason || "Cart voided/cleared",
+            created_at: now,
+          };
+
+          await offlineDb.audit_logs.put(auditEntry);
+          await offlineDb.sync_queue.put({
+            entity_type: "audit_log",
+            entity_id: voidId,
+            action: "INSERT",
+            payload: auditEntry,
+            status: "pending",
+            retry_count: 0,
+            created_at: now,
+          });
+        } catch (err) {
+          console.error("Failed to record void log to Dexie:", err);
+        }
       },
 
       setOrderDiscount: (amount) => {
@@ -373,6 +481,7 @@ export const usePosStore = create<PosState>()(
           state.vatRatePercent
         );
         set({ orderDiscountFixed: amount, totals: nextTotals });
+        broadcastCartState(state.cart, nextTotals);
       },
 
       holdCurrentOrder: (customTitle) => {
@@ -386,7 +495,9 @@ export const usePosStore = create<PosState>()(
 
         // 1. Update current bill with current cart items
         const updatedCurrentBills = currentBills.map((b) =>
-          b.id === currentActiveId ? { ...b, items: [...state.cart], heldAt: new Date().toISOString() } : b
+          b.id === currentActiveId
+            ? { ...b, items: [...state.cart], heldAt: new Date().toISOString(), hasAttemptedCheckout: state.hasAttemptedCheckout }
+            : b
         );
 
         // 2. Find next available index (#1, #2, #3...)
@@ -401,6 +512,7 @@ export const usePosStore = create<PosState>()(
           id: newBillId,
           tabTitle: billTitle,
           items: [],
+          hasAttemptedCheckout: false,
         };
 
         const nextBills = [...updatedCurrentBills, newBill];
@@ -411,6 +523,7 @@ export const usePosStore = create<PosState>()(
           cart: [],
           totals: INITIAL_TOTALS,
           orderDiscountFixed: 0,
+          hasAttemptedCheckout: false,
           holdOrders: nextBills
             .filter((b) => b.id !== newBillId)
             .map((b) => ({
@@ -420,6 +533,7 @@ export const usePosStore = create<PosState>()(
               heldAt: b.heldAt || new Date().toISOString(),
             })),
         });
+        broadcastCartState([], INITIAL_TOTALS);
         return true;
       },
 
@@ -434,7 +548,9 @@ export const usePosStore = create<PosState>()(
 
         // 1. Save current cart into current active bill
         const updatedBills = currentBills.map((b) =>
-          b.id === currentActiveId ? { ...b, items: [...state.cart] } : b
+          b.id === currentActiveId
+            ? { ...b, items: [...state.cart], hasAttemptedCheckout: state.hasAttemptedCheckout }
+            : b
         );
 
         const targetBill = updatedBills.find((b) => b.id === billId);
@@ -452,6 +568,7 @@ export const usePosStore = create<PosState>()(
           cart: [...targetBill.items],
           totals: nextTotals,
           orderDiscountFixed: 0,
+          hasAttemptedCheckout: Boolean(targetBill.hasAttemptedCheckout),
           holdOrders: updatedBills
             .filter((b) => b.id !== billId)
             .map((b) => ({
@@ -461,6 +578,7 @@ export const usePosStore = create<PosState>()(
               heldAt: b.heldAt || new Date().toISOString(),
             })),
         });
+        broadcastCartState(targetBill.items, nextTotals);
       },
 
       deleteBill: (billId) => {
@@ -470,15 +588,17 @@ export const usePosStore = create<PosState>()(
           : [{ id: "bill-1", tabTitle: "ບິນ #1", items: [] }];
 
         if (currentBills.length <= 1) {
-          const defaultBill: PosBillTab = { id: "bill-1", tabTitle: "ບິນ #1", items: [] };
+          const defaultBill: PosBillTab = { id: "bill-1", tabTitle: "ບິນ #1", items: [], hasAttemptedCheckout: false };
           set({
             bills: [defaultBill],
             activeBillId: "bill-1",
             cart: [],
             totals: INITIAL_TOTALS,
             orderDiscountFixed: 0,
+            hasAttemptedCheckout: false,
             holdOrders: [],
           });
+          broadcastCartState([], INITIAL_TOTALS);
           return;
         }
 
@@ -497,6 +617,7 @@ export const usePosStore = create<PosState>()(
             cart: [...newActive.items],
             totals: nextTotals,
             orderDiscountFixed: 0,
+            hasAttemptedCheckout: Boolean(newActive.hasAttemptedCheckout),
             holdOrders: nextBills
               .filter((b) => b.id !== newActive.id)
               .map((b) => ({
@@ -506,6 +627,7 @@ export const usePosStore = create<PosState>()(
                 heldAt: b.heldAt || new Date().toISOString(),
               })),
           });
+          broadcastCartState(newActive.items, nextTotals);
         } else {
           set({
             bills: nextBills,

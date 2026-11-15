@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lao Minimart POS</string>
+    <string name="title_activity_main">Lao Minimart POS</string>
+    <string name="package_name">com.laominimart.pos</string>
+    <string name="custom_url_scheme">com.laominimart.pos</string>
+</resources>

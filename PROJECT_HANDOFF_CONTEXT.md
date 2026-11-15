@@ -16,7 +16,9 @@ Hệ thống phần mềm Quản lý Bán lẻ & POS chuyên sâu cho mô hình 
 - **Phần cứng POS:** Tương thích máy quét mã vạch Barcode USB/Bluetooth (chế độ bàn phím ảo), máy in hóa đơn nhiệt ESC/POS (khổ 80mm tiêu chuẩn và 58mm), cân điện tử mã vạch EAN-13 (tiền tố 20-29).
 
 ### 1.2. Tech Stack Thực tế Codebase
-- **Frontend Core:** Next.js 16.4.6 (App Router), React 19.3.0, TypeScript 5.
+- **Frontend Core:** Next.js 16.4.6 (App Router), React 19.3.0, TypeScript 5 (Static Export `output: "export"`).
+- **Desktop Runtime (Windows):** Tauri v2 (`@tauri-apps/cli` 2.12.4), Rust 1.90+ (`cargo 1.97.1`), đóng gói ra file chạy `.exe` portable và bộ cài `.msi` / `.exe` (NSIS) siêu nhẹ (< 3MB). Hỗ trợ xuất qua lệnh `npm run build:exe` hoặc `npx tauri build`.
+- **Android POS Runtime (APK):** Capacitor 8 (`@capacitor/core`, `@capacitor/android`, `@capacitor/cli`), hỗ trợ máy POS Android 2 màn hình (Sunmi, iMin, Telpo) thông qua native Kotlin plugin `CustomerDisplayPlugin.kt` (`android.app.Presentation`). Xuất file APK qua lệnh `npm run build:apk` hoặc `cd android && ./gradlew assembleDebug`. File APK nằm tại `android/app/build/outputs/apk/debug/app-debug.apk`.
 - **Styling & UI:** Tailwind CSS 4.3.3 (`@tailwindcss/postcss`), Shadcn UI, Base-UI (`@base-ui/react`), `framer-motion` (14.13.0), Sonner Toast (2.0.8).
 - **Icons:** `lucide-react` (1.72.0). **Quy tắc tuyệt đối: Không dùng emoji ở bất cứ đâu trong UI.**
 - **Backend / Cloud DB:** Supabase (PostgreSQL 15+), Row Level Security (RLS), Supabase Storage cho ảnh sản phẩm (`products` bucket).
@@ -125,18 +127,23 @@ flowchart TD
   - Page Component: `src/features/pos/pages/pos-terminal-page.tsx`
   - Layout: `src/app/(pos-terminal)/layout.tsx`
   - Components:
-    - `PosHeader.tsx`: Thanh header POS, trạng thái ca (`ActiveShiftBadge`), nút mở ca/kết ca, trạng thái mạng Online/Offline.
+    - `PosHeader.tsx`: Thanh header POS, trạng thái ca (`ActiveShiftBadge`), nút mở ca/kết ca, trạng thái mạng Online/Offline, nút bật/chuyển đổi màn hình khách (`ຈໍລູກຄ້າ` - `openCustomerDisplayWindow`), nút đăng xuất gọn gàng (đã bỏ hoàn toàn thẻ card user).
     - `CatalogControlBar.tsx`: Ô quét barcode, tìm kiếm tên sản phẩm, bộ lọc danh mục ngang, nút chuyển Grid/Compact.
     - `ProductCatalogGrid.tsx`: Lưới hiển thị sản phẩm trực quan, thẻ `ProductCard.tsx` hiển thị ảnh, giá, tồn kho, badge hết hạn.
     - `CartPanel.tsx`: Khung Giỏ hàng POS cố định bên phải (`w-[440px] xl:w-[480px] shrink-0`).
     - `CartItemRow.tsx`: Từng dòng sản phẩm trong giỏ: Thumbnail (44px) + Tên sản phẩm + Segmented Control chọn đơn vị `[ ຕຸກ | ແພັກ (x6) ]` nút to (`h-7 px-3`) + Stepper `[- Input +]` gõ trực tiếp số lượng + Cột thành tiền kèm đơn giá bên dưới + Nút Xóa `Trash2` riêng ở ngoài cùng.
-    - `PaymentModal.tsx`: Hộp thoại thanh toán đa phương thức (Tiền mặt kèm gợi ý tiền thối thông minh `getSmartCashSuggestions`, Quét mã LAO QR, Kết hợp).
+    - `PaymentModal.tsx`: Hộp thoại thanh toán đa phương thức (Tiền mặt kèm gợi ý tiền thối thông minh `getSmartCashSuggestions`, Quét mã LAO QR, Kết hợp). Tự động phát tín hiệu `PAYMENT_QR` khi chọn QR và `ORDER_SUCCESS` khi thanh toán thành công sang màn hình khách.
     - `HoldOrdersTabs.tsx`: Thanh quản lý nhiều hóa đơn chờ / giữ bill linh hoạt (`Multi-Bill Tabs`):
       - Hiển thị danh sách tất cả các bill đang mở (`ບິນ #1`, `ບິນ #2`, `ບິນ #3`...).
       - **Đồng bộ trạng thái Active chuẩn xác:** Chỉ duy nhất tab đang được chọn mới mang màu xanh lá đậm (`bg-emerald-600 text-white shadow-sm`), các tab chờ khác mang màu xám trung tính (`bg-zinc-100 text-zinc-700 hover:bg-zinc-200`).
       - Khi bấm `+ ພັກບິນ (F2)`: Giữ giỏ hàng hiện tại, tự động tạo bill mới và lập tức chuyển trạng thái Active (màu xanh) sang bill mới.
       - Khi bấm vào bất kỳ tab bill nào: Giỏ hàng chuyển ngay sang nội dung bill đó và tab đó chuyển sang màu xanh active.
       - Hỗ trợ nút `x` để đóng/xóa nhanh bill chờ.
+  - Utilities & Multi-Screen Sync:
+    - `customerDisplaySync.ts`: Kênh `BroadcastChannel('lao_minimart_customer_display')` đồng bộ real-time giữa thu ngân và màn hình khách (`SYNC_CART`, `PAYMENT_QR`, `ORDER_SUCCESS`, `IDLE`, `REQUEST_INITIAL_STATE`).
+    - `dualScreenManager.ts`: Bộ điều phối đa nền tảng thông minh `initCustomerDisplay()`. Tự động nhận diện Windows Tauri (`openCustomerDisplayWindow`), Android POS (`NativeCustomerDisplay.openCustomerDisplay`), hoặc Web Popup (`window.open`).
+    - `tauriWindow.ts`: Điều khiển cửa sổ Tauri trên Windows đa màn hình (tự động nhận diện `availableMonitors()`, đẩy cửa sổ khách sang màn hình phụ số 2 `fullscreen`, ẩn viền `decorations: false`, hoặc mở popup `1024x768` khi test trình duyệt).
+    - `CustomerDisplayPlugin.kt` (`android/...`): Plugin Android native bằng Kotlin dùng `DisplayManager` và `android.app.Presentation` chứa `WebView` chạy trên màn hình phụ máy POS Android (Sunmi, iMin) cùng origin `https://localhost`.
   - Hooks: `useBarcodeScanner`, `useGlobalBarcodeScanner` (Bắt phím máy quét Barcode từ mọi vị trí trên màn hình).
   - Store: `src/features/pos/stores/pos.store.ts`.
 - **Phím tắt POS (Hardware Keyboard Shortcuts):**
@@ -147,12 +154,30 @@ flowchart TD
 - **Luồng xử lý (Data Flow):**
   1. Thu ngân quét mã vạch hoặc chọn sản phẩm trên lưới.
   2. `addToCart` kiểm tra sản phẩm: Tự động gán đúng đơn vị (Lẻ hoặc Pack tùy theo mã vạch vừa quét).
-  3. Giá và tổng tiền được tính tự động, lưu vào Zustand cache (`totals: PosTotals`).
-  4. Bấm Thanh toán -> Chọn Tiền mặt / Chuyển khoản QR -> Xác nhận hoàn tất đơn:
+  3. Giá và tổng tiền được tính tự động, lưu vào Zustand cache (`totals: PosTotals`) và lập tức broadcast sang màn hình phụ khách hàng.
+  4. Bấm Thanh toán -> Chọn Tiền mặt / Chuyển khoản QR -> Màn hình khách hiển thị mã QR cỡ lớn.
+  5. Xác nhận hoàn tất đơn:
+     - Phát tín hiệu `ORDER_SUCCESS` kèm số tiền thối hiển thị trong 3 giây trên màn hình khách.
      - Lưu đơn hàng và các dòng chi tiết vào Dexie (`offlineDb.orders`, `offlineDb.order_items`).
      - Trừ trực tiếp số lượng lô trong Dexie (`offlineDb.product_batches`).
      - Nếu đang Online: Gửi trực tiếp payload lên Supabase RPC `process_pos_order`.
      - Nếu Offline hoặc lỗi mạng: Đẩy đơn hàng vào `offlineDb.sync_queue`. Khi có mạng trở lại, `syncEngine` tự động đồng bộ hóa lên đám mây.
+
+---
+
+### 3.2. Màn Hình Khách Hàng Phụ (`/customer-display`)
+- **Tập tin chính:** `src/app/customer-display/page.tsx`
+- **Đặc điểm:** Hoạt động độc lập hoàn toàn (không chứa Navbar/Sidebar quản trị), giao diện tối Fullscreen (`h-screen overflow-hidden bg-zinc-950 text-white`):
+  - **Cột Trái (65% width):**
+    - Header: Tên cửa hàng `ມິນິມາດ ລາວຈະເລີນ (Lao Chaleun Minimart)`, đèn báo kết nối với POS, đồng hồ thời gian thực.
+    - Danh sách sản phẩm dạng bảng rõ ràng (STT, Thumbnail, Tên sản phẩm + Badge đơn vị Pack/Lẻ nổi bật, Số lượng, Đơn giá, Thành tiền). Tự động cuộn xuống dưới cùng (Auto-scroll) khi có món mới quét.
+    - Khi giỏ hàng trống: Hiển thị màn hình chào lịch sự tiếng Lào: `ຍິນດີຕ້ອນຮັບສູ່ ມິນິມາດ ລາວຈະເລີນ` kèm hướng dẫn đặt hàng lên quầy.
+  - **Cột Phải (35% width - `bg-zinc-900 border-l border-zinc-800`):**
+    - Khu vực tóm tắt: Số lượng món, số lượng cái, tạm tính, giảm giá.
+    - Khu vực trạng thái động: Hiển thị mã QR thanh toán (LAO QR) cỡ lớn khi thu ngân chọn chuyển khoản, hoặc bảng chúc mừng hoàn tất kèm tiền thối khi thanh toán xong.
+    - Khung Tổng thanh toán (`ຍອດລວມທັງໝົດ - TOTAL`): Nền xanh lá đậm `bg-emerald-600` với chữ số tiền Kip Lào cực đại `text-4xl sm:text-5xl font-black` nhìn rõ từ khoảng cách xa.
+
+---
 
 ---
 

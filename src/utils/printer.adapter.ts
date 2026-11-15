@@ -23,7 +23,7 @@ export interface ReceiptData {
   discountAmount: number;
   vatAmount: number;
   finalTotal: number;
-  paymentMethod: "cash" | "lao_qr" | "mixed";
+  paymentMethod: "cash" | "lao_qr" | "mixed" | "transfer" | "card" | string;
   cashTendered?: number;
   changeAmount?: number;
   storeName?: string;

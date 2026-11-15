@@ -1,21 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_Lao, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
-
-const notoSansLao = Noto_Sans_Lao({
-  subsets: ["lao"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-lao",
-  display: "swap",
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-latin",
-  display: "swap",
-});
+import { TauriWindowInitializer } from "@/components/TauriWindowInitializer";
 
 export const metadata: Metadata = {
   title: "Lao Minimart POS - ລະບົບຂາຍໜ້າຮ້ານມິນິມາດ",
@@ -35,8 +21,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="lo" className={`${notoSansLao.variable} ${plusJakartaSans.variable} h-full antialiased`}>
-      <body className="h-full w-full overflow-hidden select-none bg-[#F8F9FA] text-slate-900 font-sans">
+    <html
+      lang="lo"
+      className="h-full antialiased"
+      style={{ backgroundColor: "#F8FAFC" }}
+    >
+      <body
+        className="h-full w-full overflow-hidden select-none bg-[#F8FAFC] text-slate-900 font-sans"
+        style={{ backgroundColor: "#F8FAFC" }}
+      >
+        <TauriWindowInitializer />
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

@@ -1,0 +1,25 @@
+# Bỏ qua toàn bộ thư mục Rust/Tauri (Thủ phạm chính gây nặng 5-6GB)
+src-tauri/
+target/
+
+# Bỏ qua thư mục Android/iOS của Capacitor
+android/
+ios/
+
+# Bỏ qua cache, bản build local và các file cài đặt rời
+node_modules/
+.next/
+out/
+dist/
+build/
+*.exe
+*.msi
+*.apk
+*.aab
+*.iso
+*.zip
+*.rar
+
+# Bỏ qua thư mục cấu hình AI Agent
+.agent/
+.claude/

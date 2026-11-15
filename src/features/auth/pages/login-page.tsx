@@ -13,14 +13,10 @@ export function LoginPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  // If already logged in, redirect to POS or Dashboard
+  // If already logged in, redirect directly to POS Terminal
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      if (user.role === "cashier") {
-        router.replace("/pos");
-      } else {
-        router.replace("/dashboard");
-      }
+      router.replace("/pos");
     }
   }, [isLoading, isAuthenticated, user, router]);
 

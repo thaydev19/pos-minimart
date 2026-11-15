@@ -221,6 +221,96 @@ export const ordersApi = {
   },
 
   /**
+   * Fetches single complete order record with its line items
+   */
+  async getOrderById(orderId: string): Promise<OrderRecord | null> {
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (data && !error) {
+        const rawItems = (data.order_items || []) as any[];
+        return {
+          id: data.id,
+          store_id: data.store_id,
+          shift_id: data.shift_id,
+          cashier_id: data.cashier_id,
+          cashier_name: data.cashier_name,
+          order_number: data.order_number,
+          subtotal: Number(data.subtotal) || 0,
+          discount_amount: Number(data.discount_amount) || 0,
+          vat_amount: Number(data.vat_amount) || 0,
+          final_total: Number(data.final_total) || 0,
+          payment_method: data.payment_method,
+          cash_tendered: Number(data.cash_tendered) || 0,
+          change_amount: Number(data.change_amount) || 0,
+          status: data.status,
+          offline_created_at: data.offline_created_at,
+          notes: data.notes,
+          items: rawItems.map((it) => ({
+            id: it.id,
+            order_id: it.order_id,
+            product_id: it.product_id,
+            product_name: it.product_name,
+            batch_id: it.batch_id,
+            unit_name: it.unit_name,
+            conversion_rate: it.conversion_rate,
+            unit_price: Number(it.unit_price) || 0,
+            quantity: Number(it.quantity) || 1,
+            subtotal_price: Number(it.subtotal_price) || 0,
+            discount_amount: Number(it.discount_amount) || 0,
+            total_price: Number(it.total_price) || 0,
+          })),
+        };
+      }
+    } catch {}
+
+    try {
+      const localOrder = await offlineDb.orders.get(orderId);
+      if (!localOrder) return null;
+      const localItems = await offlineDb.order_items.where("order_id").equals(orderId).toArray();
+
+      return {
+        id: localOrder.id,
+        store_id: localOrder.store_id,
+        shift_id: localOrder.shift_id,
+        cashier_id: localOrder.cashier_id,
+        cashier_name: localOrder.cashier_name,
+        order_number: localOrder.order_number,
+        subtotal: localOrder.subtotal,
+        discount_amount: localOrder.discount_amount,
+        vat_amount: localOrder.vat_amount,
+        final_total: localOrder.final_total,
+        payment_method: ((localOrder.payment_method as any) === "lao_qr" ? "transfer" : localOrder.payment_method) as any,
+        cash_tendered: localOrder.cash_tendered,
+        change_amount: localOrder.change_amount,
+        status: localOrder.status,
+        offline_created_at: localOrder.offline_created_at,
+        notes: localOrder.notes,
+        items: localItems.map((it) => ({
+          id: it.id,
+          order_id: it.order_id,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          batch_id: it.batch_id,
+          unit_name: it.unit_name,
+          conversion_rate: it.conversion_rate,
+          unit_price: it.unit_price,
+          quantity: it.quantity,
+          subtotal_price: it.subtotal_price,
+          discount_amount: it.discount_amount,
+          total_price: it.total_price,
+        })),
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Voids an order with Manager PIN:
    * 1. Updates order status to 'cancelled'.
    * 2. Restores inventory quantity in product_batches.

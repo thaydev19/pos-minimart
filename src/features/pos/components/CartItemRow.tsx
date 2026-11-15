@@ -1,13 +1,12 @@
 "use client";
 
 // ============================================================================
-// Cart Item Row: Compact Density & Refined Unit Switcher
-// - Compact card padding (p-2) & thumbnail (w-9 h-9)
-// - Sleek and refined unit switcher [ ຕຸກ | ແພັກ (x6) ] (h-6 px-2.5 text-[11px])
-// - Crisp product title (text-xs font-bold leading-snug)
-// - Quantity Stepper with direct editable number input [- input +]
-// - Compact Line Total & Subtitle Unit Price
-// - Dedicated Trash2 delete button at far right
+// Cart Item Row: Compact & Refined POS Architecture
+// - Product Name: text-[13px] font-semibold leading-snug line-clamp-2
+// - Container: p-2.5 rounded-2xl gap-2 (maximizes space for product name)
+// - Unit Switcher: text-[11px] px-2 py-0.5 compact segmented control
+// - Stepper: h-8 w-7 buttons with text-xs w-6 numeric display
+// - High-contrast price with formatLak currency
 // ============================================================================
 
 import React, { memo, useState, useEffect } from "react";
@@ -16,6 +15,7 @@ import { CartItem } from "../types/pos.types";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { usePosStore } from "../stores/pos.store";
 import { ProductThumbnail } from "./ProductThumbnail";
+import { triggerHapticFeedback } from "@/utils/haptics";
 
 interface CartItemRowProps {
   item: CartItem;
@@ -51,48 +51,70 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
     }
   };
 
+  const handleMinus = () => {
+    triggerHapticFeedback(25);
+    updateQuantity(item.id, item.quantity - 1);
+  };
+
+  const handlePlus = () => {
+    triggerHapticFeedback(25);
+    updateQuantity(item.id, item.quantity + 1);
+  };
+
+  const handleDelete = () => {
+    triggerHapticFeedback(35);
+    removeItem(item.id);
+  };
+
+  const handleUnitChange = (unitName: string) => {
+    triggerHapticFeedback(20);
+    changeUnit(item.id, unitName);
+  };
+
   return (
-    <div className="group relative flex items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white p-2 shadow-2xs hover:border-emerald-300 transition-all select-none">
-      {/* 1. Left Cluster: Thumbnail + 2-Row Info */}
+    <div className="group relative flex items-center justify-between gap-2 rounded-2xl border border-zinc-200/90 bg-white p-2.5 shadow-2xs hover:border-emerald-300 transition-all select-none touch-manipulation">
+      {/* 1. Left Cluster: Thumbnail + 2-Row Info (Expanded width) */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        {/* Product Thumbnail (w-9 h-9 = 36px) */}
+        {/* Product Thumbnail (Compact 38px) */}
         <ProductThumbnail
           src={item.imageUrl}
           alt={item.name}
           name={item.name}
-          className="h-9 w-9 rounded-md shrink-0 border border-zinc-200/70 overflow-hidden object-cover"
+          className="h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-xl shrink-0 border border-zinc-200/70 overflow-hidden object-cover"
         />
 
-        {/* 2-Row Text Column */}
+        {/* Text Column: Full product name with line-clamp-2 */}
         <div className="min-w-0 flex-1">
-          {/* Row 1: Product Name */}
-          <div className="flex items-center gap-1.5">
-            <h4 className="text-xs font-bold text-zinc-900 line-clamp-1 leading-snug">
+          {/* Row 1: Product Name in fluent Lao */}
+          <div className="flex items-start gap-1">
+            <h4
+              className="text-[13px] font-semibold text-zinc-900 line-clamp-2 leading-snug break-words"
+              title={item.name}
+            >
               {item.name}
             </h4>
 
             {item.isNearExpiry && (
-              <span className="flex items-center gap-0.5 rounded bg-amber-100 px-1 py-0.2 text-[8px] font-bold text-amber-800 shrink-0">
-                <AlertCircle className="h-2 w-2" />
+              <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 shrink-0 mt-0.5">
+                <AlertCircle className="h-2.5 w-2.5" />
                 <span>ໃກ້ໝົດ</span>
               </span>
             )}
           </div>
 
-          {/* Row 2: Refined Unit Switcher or Unit Badge */}
+          {/* Row 2: Refined Unit Switcher (text-[11px] px-2 py-0.5) */}
           {hasMultipleUnits ? (
-            /* Case 1: Has Pack Packaging -> Refined Segmented Control */
-            <div className="inline-flex items-center p-0.5 rounded-md bg-zinc-100 border border-zinc-200 gap-0.5 mt-1">
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-zinc-100 border border-zinc-200/80 gap-0.5 mt-1">
               {item.availableUnits.map((u, idx) => {
                 const isSelected = u.unit_name === item.selectedUnit.unit_name;
                 return (
                   <button
                     key={u.id || `${u.unit_name}-${u.conversion_rate}-${idx}`}
                     type="button"
-                    onClick={() => changeUnit(item.id, u.unit_name)}
-                    className={`h-6 px-2.5 text-[11px] font-semibold rounded transition-all cursor-pointer select-none leading-none flex items-center justify-center ${
+                    onClick={() => handleUnitChange(u.unit_name)}
+                    className={`h-5.5 px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all active:scale-95 cursor-pointer select-none leading-none flex items-center justify-center ${
                       isSelected
-                        ? "bg-emerald-600 text-white shadow-sm"
+                        ? "bg-emerald-600 text-white shadow-xs font-bold"
                         : "text-zinc-600 hover:text-zinc-900"
                     }`}
                   >
@@ -103,26 +125,25 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
               })}
             </div>
           ) : (
-            /* Case 2: Base Unit Only (No Pack) -> Clean Unit Badge */
-            <span className="h-5 px-2 text-[11px] font-medium rounded bg-zinc-100 text-zinc-600 inline-flex items-center mt-1 border border-zinc-200/50 leading-none">
+            <span className="h-5 px-2 text-[11px] font-medium rounded-md bg-zinc-100 text-zinc-600 inline-flex items-center mt-1 border border-zinc-200/50 leading-none">
               {item.selectedUnit.unit_name || "ອັນ"}
             </span>
           )}
         </div>
       </div>
 
-      {/* 2. Right Cluster: Stepper [- input +] + Line Total & Unit Price + Dedicated Trash2 */}
+      {/* 2. Right Cluster: Stepper [- 1 +] + Line Total & Unit Price + Delete Button */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Quantity Stepper (h-8) */}
-        <div className="flex items-center h-8 rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 shadow-2xs">
+        {/* Compact Quantity Stepper: h-8 w-7 buttons with text-xs w-6 quantity */}
+        <div className="flex items-center h-8 rounded-xl border border-zinc-200 bg-zinc-50 p-0.5 shadow-2xs">
           <button
             type="button"
             disabled={item.quantity <= 1}
-            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-            className="flex h-7 w-7 items-center justify-center rounded bg-white text-zinc-700 shadow-2xs hover:bg-zinc-100 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white"
+            onClick={handleMinus}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-zinc-800 shadow-2xs hover:bg-zinc-100 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white"
             title="ຫຼຸດລົງ 1"
           >
-            <Minus className="h-3 w-3" />
+            <Minus className="h-3.5 w-3.5" />
           </button>
 
           <input
@@ -133,22 +154,22 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
             onChange={handleQtyChange}
             onBlur={handleQtyBlur}
             onFocus={(e) => e.target.select()}
-            className="w-9 h-8 text-center font-bold text-sm text-zinc-900 bg-transparent focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-6 h-7 text-center font-bold text-xs text-zinc-900 bg-transparent focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-md outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
           />
 
           <button
             type="button"
-            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-            className="flex h-7 w-7 items-center justify-center rounded bg-white text-zinc-700 shadow-2xs hover:bg-zinc-100 active:scale-95 transition-all cursor-pointer"
+            onClick={handlePlus}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-zinc-800 shadow-2xs hover:bg-zinc-100 active:scale-95 transition-all cursor-pointer"
             title="ເພີ່ມຂຶ້ນ 1"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {/* Total Price for Line + Subtitle Unit Price */}
-        <div className="text-right min-w-[85px] sm:min-w-[95px] shrink-0">
-          <span className="text-sm font-extrabold text-emerald-700 text-right leading-tight block tabular-nums">
+        <div className="text-right min-w-[72px] sm:min-w-[82px] shrink-0">
+          <span className="text-[13px] sm:text-sm font-bold text-emerald-700 text-right leading-tight block tabular-nums">
             {formatLak(item.totalPrice)}
           </span>
           <span className="text-[10px] text-zinc-400 font-medium text-right block mt-0.5 tabular-nums">
@@ -156,11 +177,11 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
           </span>
         </div>
 
-        {/* Dedicated Delete Button (Trash2) */}
+        {/* Delete Button */}
         <button
           type="button"
-          onClick={() => removeItem(item.id)}
-          className="h-8 w-8 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+          onClick={handleDelete}
+          className="h-8 w-8 rounded-xl text-zinc-400 hover:text-red-600 hover:bg-red-50 active:scale-95 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
           title="ລຶບລາຍການ"
         >
           <Trash2 className="h-4 w-4" />

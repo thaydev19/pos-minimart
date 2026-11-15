@@ -41,7 +41,7 @@ export function UserProfileMenu({ compact = false }: UserProfileMenuProps) {
         type="button"
         onClick={handleLogout}
         disabled={isLoggingOut}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
         title="ອອກຈາກລະບົບ (Logout)"
       >
         {isLoggingOut ? (

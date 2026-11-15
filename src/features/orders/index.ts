@@ -13,6 +13,7 @@ export * from "./components/Receipt80mmTemplate";
 export * from "./components/OrderSummaryCards";
 export * from "./components/OrdersTable";
 export * from "./components/OrderDetailDrawer";
+export * from "./components/OrderDetailModal";
 export * from "./components/VoidOrderDialog";
 export * from "./pages/orders-page";
 

@@ -17,6 +17,11 @@ import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 import { useGlobalBarcodeScanner } from "../hooks/useGlobalBarcodeScanner";
 import { usePosStore } from "../stores/pos.store";
 import { formatLak } from "@/utils/formatLakCurrency";
+import {
+  subscribeCustomerDisplay,
+  broadcastCurrentCustomerDisplayState,
+} from "../utils/customerDisplaySync";
+import { FloatingCustomerDisplay } from "../components/FloatingCustomerDisplay";
 
 export function PosTerminalPage() {
   const [scanMessage, setScanMessage] = useState<string | null>(null);
@@ -28,11 +33,36 @@ export function PosTerminalPage() {
   const clearCart = usePosStore((s) => s.clearCart);
   const holdCurrentOrder = usePosStore((s) => s.holdCurrentOrder);
   const loadCatalog = usePosStore((s) => s.loadCatalog);
+  const isCustomerDisplayFloatingOpen = usePosStore(
+    (s) => s.isCustomerDisplayFloatingOpen
+  );
+  const setCustomerDisplayFloatingOpen = usePosStore(
+    (s) => s.setCustomerDisplayFloatingOpen
+  );
 
   // Automatically fetch fresh catalog from Supabase / Local DB on mount
   useEffect(() => {
     loadCatalog();
   }, [loadCatalog]);
+
+  // Dual-Screen Customer Display Synchronization Listener
+  useEffect(() => {
+    // Respond to Customer Display requests for state sync (preserves active payment/QR)
+    const unsubscribe = subscribeCustomerDisplay((msg: any) => {
+      if (
+        msg.type === "REQUEST_INITIAL_STATE" ||
+        msg.type === "REQUEST_CUSTOMER_DISPLAY_SYNC" ||
+        msg.type === "CUSTOMER_DISPLAY_READY" ||
+        msg.type === "CUSTOMER_DISPLAY_PING"
+      ) {
+        broadcastCurrentCustomerDisplayState();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // 1. Global Hardware Barcode Gun Listener (Works from anywhere on screen)
   useGlobalBarcodeScanner({
@@ -83,7 +113,9 @@ export function PosTerminalPage() {
         }
       } else if (e.key === "F4") {
         e.preventDefault();
-        if (cart.length > 0) clearCart();
+        if (cart.length > 0) {
+          window.dispatchEvent(new CustomEvent("pos:trigger-clear-cart"));
+        }
       }
     };
 
@@ -111,6 +143,7 @@ export function PosTerminalPage() {
               onSearchChange={setSearchInput}
               onSearchSubmit={handleBarcodeFormSubmit}
               inputRef={inputRef}
+              onCameraBarcodeScanned={(barcode) => handleManualSearch(barcode)}
             />
 
             {scanMessage && (
@@ -205,6 +238,12 @@ export function PosTerminalPage() {
           </div>
         </div>
       )}
+
+      {/* Floating In-App Customer Display (Single-screen WSA / Tablet / PC fallback) */}
+      <FloatingCustomerDisplay
+        isOpen={isCustomerDisplayFloatingOpen}
+        onClose={() => setCustomerDisplayFloatingOpen(false)}
+      />
     </div>
   );
 }

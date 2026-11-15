@@ -48,12 +48,8 @@ export function LoginForm() {
     try {
       const authUser = await login({ email: cleanEmail, password });
       
-      // Role-based routing
-      if (authUser.role === "cashier") {
-        router.push("/pos");
-      } else {
-        router.push("/dashboard");
-      }
+      // Always navigate directly to POS Terminal upon login
+      router.push("/pos");
     } catch (err: any) {
       setErrorMessage(err.message || "ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ ກະລຸນາກວດສອບອີກຄັ້ງ");
     } finally {

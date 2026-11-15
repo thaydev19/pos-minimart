@@ -4,8 +4,8 @@
 // Manager PIN Authorization Dialog (Anti-Fraud & Manager Override)
 // ============================================================================
 
-import React, { useState } from "react";
-import { ShieldAlert, AlertTriangle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ShieldAlert, AlertTriangle, Delete } from "lucide-react";
 import { lo } from "@/constants/locales/lo";
 
 interface ConfirmPinDialogProps {
@@ -38,6 +38,28 @@ export function ConfirmPinDialog({
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        handleKeyPress(e.key);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        handleDelete();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, pin, isLocked, isVerifying, onClose]);
 
   if (!isOpen) return null;
 
@@ -171,9 +193,9 @@ export function ConfirmPinDialog({
             type="button"
             disabled={isLocked || isVerifying}
             onClick={handleDelete}
-            className="flex h-13 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
+            className="flex h-13 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-200 active:scale-95 cursor-pointer disabled:opacity-40"
           >
-            ⌫
+            <Delete className="h-5 w-5" />
           </button>
         </div>
 

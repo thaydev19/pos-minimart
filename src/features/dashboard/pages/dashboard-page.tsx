@@ -5,7 +5,7 @@
 // 100% Real Database Connected with TanStack / Zustand & Supabase Queries
 // ============================================================================
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -24,8 +24,10 @@ import {
   Calendar,
 } from "lucide-react";
 import { useDashboardStore } from "../stores/dashboard.store";
-import { DashboardTimeRange } from "../types/dashboard.types";
+import { DashboardTimeRange, DashboardRecentOrder } from "../types/dashboard.types";
 import { formatLak } from "@/utils/formatLakCurrency";
+import { OrderRecord, OrderDetailModal, ordersApi } from "@/features/orders";
+import { DEFAULT_STORE } from "@/features/pos/constants/pos.constants";
 
 export function DashboardPage() {
   const {
@@ -39,9 +41,58 @@ export function DashboardPage() {
     loadDashboardStats,
   } = useDashboardStore();
 
+  const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   useEffect(() => {
     loadDashboardStats();
   }, [timeRange, loadDashboardStats]);
+
+  const handleRowClick = async (ord: DashboardRecentOrder) => {
+    try {
+      const fullOrder = await ordersApi.getOrderById(ord.id);
+      if (fullOrder) {
+        setSelectedOrder(fullOrder);
+      } else {
+        setSelectedOrder({
+          id: ord.id,
+          store_id: DEFAULT_STORE.id,
+          cashier_id: "cashier",
+          order_number: ord.orderNumber,
+          subtotal: ord.total,
+          discount_amount: 0,
+          vat_amount: 0,
+          final_total: ord.total,
+          payment_method: ord.paymentMethod.toLowerCase().includes("cash") ? "cash" : "transfer",
+          cash_tendered: ord.total,
+          change_amount: 0,
+          status: (ord.status as any) || "completed",
+          offline_created_at: ord.createdAt,
+          items: [],
+        });
+      }
+      setIsDetailOpen(true);
+    } catch {
+      // Fallback
+      setSelectedOrder({
+        id: ord.id,
+        store_id: DEFAULT_STORE.id,
+        cashier_id: "cashier",
+        order_number: ord.orderNumber,
+        subtotal: ord.total,
+        discount_amount: 0,
+        vat_amount: 0,
+        final_total: ord.total,
+        payment_method: "cash",
+        cash_tendered: ord.total,
+        change_amount: 0,
+        status: "completed",
+        offline_created_at: ord.createdAt,
+        items: [],
+      });
+      setIsDetailOpen(true);
+    }
+  };
 
   const timeRangeOptions: { id: DashboardTimeRange; label: string }[] = [
     { id: "today", label: "ມື້ນີ້ (Today)" },
@@ -70,16 +121,16 @@ export function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Time Range Selector */}
-          <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+          {/* Time Range Selector (min-h-[48px]) */}
+          <div className="flex items-center rounded-2xl bg-slate-100 p-1.5 border border-slate-200/80 shadow-2xs">
             {timeRangeOptions.map((opt) => (
               <button
                 key={opt.id}
                 type="button"
                 onClick={() => setTimeRange(opt.id)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                className={`min-h-[48px] h-12 rounded-xl px-4 py-2 text-xs sm:text-sm font-extrabold transition-all cursor-pointer active:scale-95 touch-manipulation select-none ${
                   timeRange === opt.id
-                    ? "bg-white text-emerald-800 shadow-2xs"
+                    ? "bg-white text-emerald-800 shadow-sm border border-slate-200/60"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -88,23 +139,23 @@ export function DashboardPage() {
             ))}
           </div>
 
-          {/* Refresh Data Button */}
+          {/* Refresh Data Button (min-h-[48px]) */}
           <button
             type="button"
             onClick={() => loadDashboardStats()}
             disabled={isLoading}
-            className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex min-h-[48px] h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 touch-manipulation"
             title="ໂຫຼດຂໍ້ມູນໃໝ່ (Refresh)"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
+            <RefreshCw className={`h-5 w-5 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
-          {/* Jump to POS Terminal */}
+          {/* Jump to POS Terminal (min-h-[48px]) */}
           <Link
             href="/pos"
-            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all"
+            className="flex min-h-[48px] h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all touch-manipulation"
           >
-            <ScanBarcode className="h-4 w-4" />
+            <ScanBarcode className="h-5 w-5" />
             <span className="hidden sm:inline">ຂາຍໜ້າຮ້ານ (POS)</span>
           </Link>
         </div>
@@ -275,19 +326,19 @@ export function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-zinc-100 text-[11px] text-slate-400 uppercase font-semibold">
-                  <th className="py-2">ລະຫັດບິນ</th>
-                  <th className="py-2">ເວລາ</th>
-                  <th className="py-2">ຈຳນວນ</th>
-                  <th className="py-2">ຊ່ອງທາງ</th>
-                  <th className="py-2 text-right">ຍອດລວມ</th>
-                  <th className="py-2 text-center">ສະຖານະ</th>
+                <tr className="border-b border-zinc-200/80 bg-slate-50/70 text-[11px] text-slate-500 uppercase font-bold tracking-wider">
+                  <th className="py-3 px-4">ລະຫັດບິນ (Bill No.)</th>
+                  <th className="py-3 px-3">ເວລາ</th>
+                  <th className="py-3 px-3">ຈຳນວນ</th>
+                  <th className="py-3 px-3">ຊ່ອງທາງ</th>
+                  <th className="py-3 px-4 text-right">ຍອດລວມ (Total)</th>
+                  <th className="py-3 px-3 text-center">ສະຖານະ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-50">
+              <tbody className="divide-y divide-zinc-100">
                 {recentOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400 font-semibold">
+                    <td colSpan={6} className="py-12 text-center text-slate-400 font-semibold">
                       ຍັງບໍ່ທັນມີລາຍການບິນຂາຍໃນຊ່ວງເວລານີ້
                     </td>
                   </tr>
@@ -301,29 +352,34 @@ export function DashboardPage() {
                       : "-";
 
                     return (
-                      <tr key={ord.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-2.5 font-mono font-bold text-slate-800">
+                      <tr
+                        key={ord.id}
+                        onClick={() => handleRowClick(ord)}
+                        className="hover:bg-emerald-50/60 active:bg-emerald-100/70 active:scale-[0.99] transition-all cursor-pointer touch-manipulation select-none group"
+                        title="ແຕະເພື່ອເບິ່ງລາຍລະອຽດບິນ & ພິມບິນຄືນ"
+                      >
+                        <td className="py-4 px-4 font-mono font-black text-slate-900 group-hover:text-emerald-700 text-xs sm:text-sm">
                           {ord.orderNumber}
                         </td>
-                        <td className="py-2.5 text-slate-500">{timeFormatted}</td>
-                        <td className="py-2.5 text-slate-600">{ord.itemsCount} ລາຍການ</td>
-                        <td className="py-2.5">
+                        <td className="py-4 px-3 text-slate-600 font-medium">{timeFormatted}</td>
+                        <td className="py-4 px-3 text-slate-700 font-bold">{ord.itemsCount} ລາຍການ</td>
+                        <td className="py-4 px-3">
                           <span
-                            className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                              ord.paymentMethod.includes("Cash")
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                : "bg-blue-50 text-blue-700 border border-blue-100"
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-bold border ${
+                              ord.paymentMethod.includes("Cash") || ord.paymentMethod.includes("ສົດ")
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-blue-50 text-blue-700 border-blue-200"
                             }`}
                           >
                             {ord.paymentMethod}
                           </span>
                         </td>
-                        <td className="py-2.5 text-right font-extrabold text-slate-900 tabular-nums">
+                        <td className="py-4 px-4 text-right font-black text-slate-900 text-sm tabular-nums">
                           {formatLak(ord.total)}
                         </td>
-                        <td className="py-2.5 text-center">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                            <CheckCircle2 className="h-2.5 w-2.5" />
+                        <td className="py-4 px-3 text-center">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[10px] font-bold">
+                            <CheckCircle2 className="h-3 w-3" />
                             <span>{ord.status}</span>
                           </span>
                         </td>
@@ -400,6 +456,13 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        order={selectedOrder}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+      />
     </div>
   );
 }

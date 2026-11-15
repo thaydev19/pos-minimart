@@ -8,9 +8,10 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ShieldAlert, ArrowRight, ScanBarcode, Lock, Loader2 } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { ShieldAlert, ArrowRight, ScanBarcode, Lock } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { BrandSplashScreen } from "@/components/BrandSplashScreen";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -19,28 +20,20 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, requireBackoffice = false }: AuthGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading, isAuthenticated, canAccessBackoffice, isCashier } =
     useAuth();
 
   // If unauthenticated and finished loading, automatically redirect to login
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated && pathname && !pathname.startsWith("/login")) {
       router.replace("/login");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, pathname, router]);
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-2.5">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-          <p className="text-xs font-semibold text-slate-500">
-            ກຳລັງກວດສອບສິດການໃຊ້ງານ...
-          </p>
-        </div>
-      </div>
-    );
+    return <BrandSplashScreen message="ກຳລັງກວດສອບສິດການໃຊ້ງານ..." />;
   }
 
   // Not logged in fallback screen

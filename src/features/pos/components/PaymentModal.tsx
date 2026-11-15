@@ -23,9 +23,18 @@ import { lo } from "@/constants/locales/lo";
 import { usePosStore } from "../stores/pos.store";
 import { posApi } from "../api/pos.api";
 import { ThermalPrinterAdapter, ReceiptData } from "@/utils/printer.adapter";
+import { HardwareService } from "../services/hardware.service";
+import { TouchNumpad } from "./TouchNumpad";
+import { triggerHapticFeedback } from "@/utils/haptics";
 import { DEFAULT_STORE } from "../constants/pos.constants";
 import { roundToLaoKip } from "../utils/pos.util";
 import { useAuth } from "@/features/auth";
+import {
+  CustomerPaymentMethod,
+  updatePaymentMethodOnCustomerDisplay,
+  closePaymentOnCustomerDisplay,
+  completePaymentOnCustomerDisplay,
+} from "../utils/customerDisplaySync";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -64,6 +73,7 @@ export function PaymentModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [lastCompletedOrder, setLastCompletedOrder] = useState<any>(null);
+  const [autoCloseSeconds, setAutoCloseSeconds] = useState(5);
 
   // Compute net payable total after discount and rounding
   const netTotalBeforeRounding = Math.max(0, finalTotal - cashDiscount);
@@ -75,6 +85,9 @@ export function PaymentModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Anti-fraud: mark that this cart has attempted checkout
+      usePosStore.getState().setAttemptedCheckout(true);
+
       setCashDiscount(0);
       const initialTotal =
         roundingStep > 0 ? roundToLaoKip(finalTotal, roundingStep as 500 | 1000) : finalTotal;
@@ -84,8 +97,141 @@ export function PaymentModal({
       setIsCompleted(false);
       setIsProcessing(false);
       setLastCompletedOrder(null);
+      setAutoCloseSeconds(5);
     }
   }, [isOpen]);
+
+  // Fast Next-Customer Auto-Close Countdown (5 seconds)
+  useEffect(() => {
+    if (!isCompleted) return;
+
+    setAutoCloseSeconds(5);
+    const interval = setInterval(() => {
+      setAutoCloseSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onClose();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isCompleted, onClose]);
+
+  const handleCloseModal = () => {
+    if (!isCompleted) {
+      closePaymentOnCustomerDisplay();
+    }
+    onClose();
+  };
+
+  // Synchronize state with Customer Display (Unified State Machine)
+  useEffect(() => {
+    if (!isOpen || isCompleted) return;
+
+    const method: CustomerPaymentMethod =
+      activeTab === "lao_qr" ? "QR" : activeTab === "mixed" ? "SPLIT" : "CASH";
+
+    const qrAmount =
+      activeTab === "lao_qr"
+        ? roundedPayableTotal
+        : activeTab === "mixed"
+        ? Math.max(0, roundedPayableTotal - splitCashPortion)
+        : 0;
+
+    const cashReceived =
+      activeTab === "cash"
+        ? cashTendered
+        : activeTab === "mixed"
+        ? splitCashPortion
+        : 0;
+
+    const changeAmount =
+      activeTab === "cash"
+        ? Math.max(0, cashTendered - roundedPayableTotal)
+        : 0;
+
+    updatePaymentMethodOnCustomerDisplay({
+      isOpen: true,
+      method,
+      qrPayload: "/QR.png",
+      qrAmount,
+      cashReceived,
+      changeAmount,
+      totalAmount: roundedPayableTotal,
+    });
+  }, [
+    isOpen,
+    isCompleted,
+    activeTab,
+    roundedPayableTotal,
+    cashTendered,
+    splitCashPortion,
+  ]);
+
+  // Modal Keyboard Shortcuts: Enter, F9, Space, Esc
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Success state: Enter, Space, Escape to close immediately
+      if (isCompleted) {
+        if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+        }
+        return;
+      }
+
+      // 2. Active checkout state
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleCloseModal();
+        return;
+      }
+
+      const isSufficient = cashTendered >= roundedPayableTotal;
+      const splitValid =
+        splitCashPortion > 0 &&
+        roundedPayableTotal - splitCashPortion > 0 &&
+        splitCashPortion < roundedPayableTotal;
+
+      const canSubmit =
+        !isProcessing &&
+        ((activeTab === "cash" && isSufficient) ||
+          activeTab === "lao_qr" ||
+          (activeTab === "mixed" && splitValid));
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canSubmit) {
+          handleFinalizeTransaction(true);
+        }
+      } else if (e.key === "F9") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canSubmit) {
+          handleFinalizeTransaction(false);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isOpen,
+    isCompleted,
+    isProcessing,
+    activeTab,
+    cashTendered,
+    roundedPayableTotal,
+    splitCashPortion,
+    onClose,
+  ]);
 
   if (!isOpen) return null;
 
@@ -178,6 +324,11 @@ export function PaymentModal({
       setLastCompletedOrder(orderPayload);
       setIsCompleted(true);
 
+      // Open cash drawer immediately if cash is involved
+      if (finalPaymentMethod === "cash" || finalPaymentMethod === "mixed") {
+        HardwareService.openCashDrawer().catch(() => {});
+      }
+
       // Print thermal receipt if requested
       if (shouldPrint) {
         const receiptData: ReceiptData = {
@@ -203,11 +354,27 @@ export function PaymentModal({
           storeTel: DEFAULT_STORE.phone,
           storeTaxCode: DEFAULT_STORE.taxCode,
         };
-        await ThermalPrinterAdapter.printReceipt(receiptData);
+        await HardwareService.printReceipt(receiptData);
       }
 
       // Deduct batch inventory in memory & clear active cart
       usePosStore.getState().deductCartInventory(cart);
+
+      const customerPaymentMethod: CustomerPaymentMethod =
+        finalPaymentMethod === "lao_qr"
+          ? "QR"
+          : finalPaymentMethod === "mixed"
+          ? "SPLIT"
+          : "CASH";
+
+      // Broadcast STEP 4 (SUCCESS) to customer display (auto resets to IDLE after 4s)
+      completePaymentOnCustomerDisplay({
+        totalAmount: roundedPayableTotal,
+        cashReceived: finalCashTendered,
+        changeAmount: finalChangeAmount,
+        paymentMethod: customerPaymentMethod,
+      });
+
       clearCart();
       onPaymentSuccess?.();
     } finally {
@@ -230,7 +397,7 @@ export function PaymentModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
@@ -238,7 +405,7 @@ export function PaymentModal({
         </div>
 
         {isCompleted ? (
-          <div className="py-6 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="py-5 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-md shadow-emerald-600/20">
               <CheckCircle className="h-9 w-9" />
             </div>
@@ -252,42 +419,54 @@ export function PaymentModal({
               </p>
             </div>
 
-            {/* Final Total Paid Display */}
-            <div className="rounded-2xl bg-emerald-50/80 p-4 border border-emerald-200 w-full text-center">
+            {/* 1. Final Total Paid Display */}
+            <div className="rounded-2xl bg-emerald-50/80 p-3.5 border border-emerald-200 w-full text-center">
               <span className="text-xs text-emerald-800 font-bold block">
                 ຍອດຊຳລະເງິນທັງໝົດ
               </span>
-              <div className="text-3xl font-black text-emerald-900 tabular-nums mt-1">
+              <div className="text-3xl font-black text-emerald-900 tabular-nums mt-0.5">
                 {formatLak(lastCompletedOrder?.final_total || 0)}
               </div>
             </div>
 
-            {/* Change Due Display */}
-            {lastCompletedOrder?.payment_method === "cash" && (lastCompletedOrder?.change_amount > 0) && (
-              <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-200 w-full text-center">
-                <span className="text-xs text-slate-500 font-bold block">
-                  {lo.payment.cashChange}
+            {/* 2. Tendered Amount + Method Breakdown */}
+            <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-200 w-full text-xs space-y-2 text-left">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-600">ຮູບແບບການຊຳລະ:</span>
+                <span className="font-bold text-slate-900">
+                  {lastCompletedOrder?.payment_method === "cash"
+                    ? "ເງິນສົດ (Cash)"
+                    : lastCompletedOrder?.payment_method === "lao_qr"
+                    ? "ໂອນ LAO QR (BCEL One)"
+                    : "ຈ່າຍຮ່ວມ (ສົດ + LAO QR)"}
                 </span>
-                <div className="text-2xl font-black text-slate-900 tabular-nums mt-0.5 text-emerald-700">
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-600">ເງິນທີ່ຮັບມາ:</span>
+                <span className="font-extrabold text-slate-900 text-sm tabular-nums">
+                  {lastCompletedOrder?.payment_method === "cash"
+                    ? formatLak(lastCompletedOrder?.cash_tendered || 0)
+                    : lastCompletedOrder?.payment_method === "lao_qr"
+                    ? formatLak(lastCompletedOrder?.final_total || 0)
+                    : `${formatLak(lastCompletedOrder?.cash_tendered || 0)} (ສົດ) + ${formatLak((lastCompletedOrder?.final_total || 0) - (lastCompletedOrder?.cash_tendered || 0))} (QR)`}
+                </span>
+              </div>
+            </div>
+
+            {/* 3. Change Due Display (Highlighted if > 0) */}
+            {lastCompletedOrder?.change_amount > 0 && (
+              <div className="w-full text-center p-4 rounded-xl border border-amber-200 bg-amber-50">
+                <span className="text-xs text-amber-800 font-bold block mb-1">
+                  ເງິນທອນລູກຄ້າ
+                </span>
+                <div className="text-3xl font-black text-amber-600 tabular-nums">
                   {formatLak(lastCompletedOrder.change_amount)}
                 </div>
               </div>
             )}
 
-            {/* Split breakdown confirmation */}
-            {lastCompletedOrder?.payment_method === "mixed" && (
-              <div className="rounded-2xl bg-slate-50 p-3 border border-slate-200 w-full text-xs space-y-1.5">
-                <div className="flex justify-between font-semibold text-slate-600">
-                  <span>ເງິນສົດ:</span>
-                  <span className="font-bold text-slate-900">{formatLak(lastCompletedOrder.cash_tendered)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-slate-600">
-                  <span>ໂອນ LAO QR:</span>
-                  <span className="font-bold text-emerald-700">{formatLak((lastCompletedOrder.final_total || 0) - (lastCompletedOrder.cash_tendered || 0))}</span>
-                </div>
-              </div>
-            )}
-
+            {/* 4. Action Buttons & Next Customer Fast Flow */}
             <div className="flex w-full gap-2.5 pt-2">
               <button
                 type="button"
@@ -317,7 +496,7 @@ export function PaymentModal({
                     storeTel: DEFAULT_STORE.phone,
                     storeTaxCode: DEFAULT_STORE.taxCode,
                   };
-                  await ThermalPrinterAdapter.printReceipt(receiptData);
+                  await HardwareService.printReceipt(receiptData);
                 }}
                 className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
               >
@@ -328,11 +507,18 @@ export function PaymentModal({
               <button
                 type="button"
                 onClick={() => onClose()}
-                className="flex-1 rounded-xl bg-emerald-600 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
               >
-                ປິດ (ຂາຍລາຍການຕໍ່ໄປ)
+                <span>ປິດ (ຂາຍລາຍການຕໍ່ໄປ)</span>
+                <span className="rounded bg-emerald-700 px-1.5 py-0.5 text-[11px] font-mono">
+                  {autoCloseSeconds}s
+                </span>
               </button>
             </div>
+
+            <p className="text-[11px] text-slate-400 font-medium">
+              ກົດ Enter, Space ຫຼື Esc ເພື່ອປິດທັນທີ • ປິດອັດຕະໂນມັດໃນ {autoCloseSeconds}s...
+            </p>
           </div>
         ) : (
           <div>
@@ -470,83 +656,53 @@ export function PaymentModal({
 
             {/* TAB 1: CASH ONLY */}
             {activeTab === "cash" && (
-              <div className="space-y-3.5">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    {lo.payment.cashTendered}
-                  </label>
-                  <KipCurrencyInput
-                    value={cashTendered}
-                    onValueChange={(val) => setCashTendered(val)}
-                    autoFocus
-                    className="h-12 text-2xl font-black text-right text-slate-900 border-2 border-emerald-500/80 shadow-xs focus:ring-2 focus:ring-emerald-500/20"
-                  />
-                </div>
-
-                {/* Fast Denomination Buttons: Exact, 20k, 50k, 100k, 200k, 500k */}
-                <div>
-                  <span className="text-[11px] font-semibold text-slate-500 block mb-1">
-                    ເລືອກດ່ວນຕາມໃບເງິນ (Fast Denominations):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {/* Exact Cash Button */}
-                    <button
-                      type="button"
-                      onClick={() => setCashTendered(roundedPayableTotal)}
-                      className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                        cashTendered === roundedPayableTotal
-                          ? "bg-emerald-600 text-white shadow-2xs"
-                          : "border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+              <div className="space-y-3">
+                <div
+                  className={`rounded-2xl p-3.5 transition-all ${
+                    !isCashSufficient
+                      ? "bg-rose-50 border-2 border-rose-300 text-rose-900"
+                      : changeDue > 0
+                      ? "bg-amber-50 border-2 border-amber-400 text-amber-900 shadow-xs"
+                      : "bg-slate-50 border border-slate-200 text-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      {lo.payment.cashTendered}:
+                    </label>
+                    <span className="text-base font-mono text-emerald-800 font-black">
+                      {formatLak(cashTendered)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-xs font-bold ${
+                        changeDue > 0 ? "text-amber-900 font-extrabold" : "text-slate-500"
                       }`}
                     >
-                      ພໍດີ ({formatLak(roundedPayableTotal)})
-                    </button>
-
-                    {/* Standard Lao Banknotes */}
-                    {STANDARD_LAO_DENOMINATIONS.map((amount) => (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => setCashTendered(amount)}
-                        className={`rounded-xl px-2 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                          cashTendered === amount
-                            ? "bg-slate-800 text-white shadow-2xs"
-                            : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {formatLak(amount)}
-                      </button>
-                    ))}
-
-                    {/* Smart Suggested amounts */}
-                    {smartSuggestions
-                      .filter((s) => !STANDARD_LAO_DENOMINATIONS.includes(s) && s !== roundedPayableTotal)
-                      .slice(0, 2)
-                      .map((amount) => (
-                        <button
-                          key={amount}
-                          type="button"
-                          onClick={() => setCashTendered(amount)}
-                          className="rounded-xl px-2 py-1.5 text-xs font-semibold border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                        >
-                          {formatLak(amount)}
-                        </button>
-                      ))}
+                      {lo.payment.cashChange}:
+                    </span>
+                    <span
+                      className={`tabular-nums ${
+                        !isCashSufficient
+                          ? "text-lg font-bold text-rose-600"
+                          : changeDue > 0
+                          ? "text-2xl font-black text-amber-600"
+                          : "text-xl font-bold text-slate-400"
+                      }`}
+                    >
+                      {isCashSufficient ? formatLak(changeDue) : lo.payment.notEnoughCash}
+                    </span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-slate-50 p-3 border border-slate-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">
-                    {lo.payment.cashChange}:
-                  </span>
-                  <span
-                    className={`text-lg sm:text-xl font-extrabold tabular-nums ${
-                      isCashSufficient ? "text-emerald-700" : "text-rose-600"
-                    }`}
-                  >
-                    {isCashSufficient ? formatLak(changeDue) : lo.payment.notEnoughCash}
-                  </span>
-                </div>
+                {/* Touch-First On-Screen Keypad with Denominations */}
+                <TouchNumpad
+                  value={cashTendered}
+                  onChange={(val) => setCashTendered(val)}
+                  exactAmount={roundedPayableTotal}
+                  showDenominations={true}
+                />
               </div>
             )}
 
@@ -606,8 +762,9 @@ export function PaymentModal({
             {/* TAB 3: SPLIT TENDER (CASH + LAO QR) */}
             {activeTab === "mixed" && (
               <div className="space-y-3">
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800 font-medium">
-                  💡 ລູກຄ້າຈ່າຍເງິນສົດບາງສ່ວນ ແລະ ສ່ວນທີ່ເຫຼືອໂອນຜ່ານ LAO QR
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800 font-medium flex items-center gap-2">
+                  <WalletCards className="h-4 w-4 shrink-0 text-amber-600" />
+                  <span>ລູກຄ້າຈ່າຍເງິນສົດບາງສ່ວນ ແລະ ສ່ວນທີ່ເຫຼືອໂອນຜ່ານ LAO QR</span>
                 </div>
 
                 {/* Cash Portion Input */}
@@ -661,7 +818,7 @@ export function PaymentModal({
               </div>
             )}
 
-            {/* Action Buttons: Print Receipt or Complete Directly */}
+            {/* Action Buttons: Print Receipt (Enter) or Complete Directly (F9) */}
             <div className="mt-5 flex gap-2.5">
               <button
                 type="button"
@@ -674,7 +831,10 @@ export function PaymentModal({
                 className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-98 disabled:opacity-40 transition-all cursor-pointer"
               >
                 <Printer className="h-4 w-4" />
-                <span>{lo.payment.printReceipt}</span>
+                <span>ພິມໃບບິນຮັບເງິນ (80mm)</span>
+                <span className="rounded bg-emerald-700/80 px-1.5 py-0.5 text-[10px] font-mono font-bold">
+                  Enter
+                </span>
               </button>
 
               <button
@@ -685,9 +845,12 @@ export function PaymentModal({
                   (activeTab === "mixed" && !isSplitValid)
                 }
                 onClick={() => handleFinalizeTransaction(false)}
-                className="flex items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all cursor-pointer"
               >
-                <span>{lo.payment.completeWithoutPrint}</span>
+                <span>ສຳເລັດ (ບໍ່ພິມໃບບິນ)</span>
+                <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-600">
+                  F9
+                </span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>

@@ -12,6 +12,7 @@ import { ProductWithDetails } from "../types/pos.types";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { ProductThumbnail } from "./ProductThumbnail";
 import { usePosStore } from "../stores/pos.store";
+import { triggerHapticFeedback } from "@/utils/haptics";
 
 interface ProductCardProps {
   product: ProductWithDetails;
@@ -26,11 +27,16 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
   const hasNearExpiry = Boolean(clearanceBatch);
   const displayPrice = clearanceBatch?.clearance_price || product.selling_price;
 
+  const handleCardClick = () => {
+    triggerHapticFeedback(25);
+    addToCart(product);
+  };
+
   return (
     <motion.div
-      whileTap={{ scale: 0.97 }}
-      onClick={() => addToCart(product)}
-      className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:border-emerald-500/60 hover:shadow-md transition-all cursor-pointer select-none"
+      whileTap={{ scale: 0.95 }}
+      onClick={handleCardClick}
+      className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:border-emerald-500/60 hover:shadow-md active:bg-emerald-50/30 transition-all cursor-pointer select-none touch-manipulation min-h-[160px]"
     >
       {/* 1. Proportional 4:3 Edge-to-Edge Image Header (No padding, rounded-t matches card) */}
       <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">

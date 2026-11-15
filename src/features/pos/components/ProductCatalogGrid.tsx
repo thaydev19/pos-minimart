@@ -46,7 +46,7 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
   // 1. Skeleton Loading State (Matches touch-optimized layout)
   if (isLoadingCatalog && products.length === 0) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5 pr-1 pb-3">
+      <div className="h-full overflow-y-auto content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5 pr-1 pb-4">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
           <div
             key={n}
@@ -110,7 +110,7 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
   // 4. Compact / List Mode Layout: Horizontal Strip Cards
   if (viewMode === "compact") {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 overflow-y-auto pr-1 pb-3">
+      <div className="h-full overflow-y-auto content-start grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 pr-1 pb-4">
         {filteredProducts.map((prod) => {
           const clearanceBatch = prod.batches?.find(
             (b) => b.is_clearance && b.quantity_on_hand > 0
@@ -205,7 +205,7 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
 
   // 5. Standard Grid Mode: Touch-Optimized Layout (Compact gap between cards)
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 overflow-y-auto pr-1 pb-3">
+    <div className="h-full overflow-y-auto content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 pr-1 pb-4">
       {filteredProducts.map((prod) => (
         <ProductCard key={prod.id} product={prod} />
       ))}

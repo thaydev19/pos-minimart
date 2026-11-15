@@ -134,10 +134,10 @@ export function PosTerminalPage() {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#F8F9FA] select-none text-slate-900 font-sans">
       <PosHeader />
 
-      <main className="flex flex-1 overflow-hidden p-2.5 sm:p-3 gap-2.5 sm:gap-3">
+      <main className="flex flex-1 overflow-hidden p-2.5 sm:p-3 gap-2.5 sm:gap-3 min-h-0">
         {/* Left Area: Unified Control Bar + Product Catalog Grid */}
-        <section className="flex flex-1 flex-col overflow-hidden gap-2.5 min-w-0">
-          <div className="relative">
+        <section className="flex flex-1 flex-col overflow-hidden gap-2.5 min-w-0 min-h-0">
+          <div className="relative shrink-0">
             <CatalogControlBar
               searchValue={searchInput}
               onSearchChange={setSearchInput}
@@ -158,7 +158,7 @@ export function PosTerminalPage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ProductCatalogGrid searchFilter={searchInput} />
           </div>
         </section>

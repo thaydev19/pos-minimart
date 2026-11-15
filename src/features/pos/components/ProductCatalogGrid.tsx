@@ -137,14 +137,14 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
             >
               {/* Left Cluster: Fixed Thumbnail + Product Meta */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                {/* Fixed Thumbnail Container (Never overflows or blows up) */}
-                <div className="relative h-13 w-13 shrink-0 rounded-xl bg-slate-50/80 p-1 overflow-hidden border border-slate-100 flex items-center justify-center">
+                {/* Fixed Thumbnail Container (Pure white background + mix-blend-multiply) */}
+                <div className="relative h-13 w-13 shrink-0 rounded-xl bg-white p-0.5 overflow-hidden border border-slate-200/70 flex items-center justify-center">
                   <ProductThumbnail
                     src={prod.image_url}
                     alt={prod.name_lo}
                     name={prod.name_lo}
                     className="w-full h-full"
-                    imgClassName="object-contain object-center scale-105 group-hover:scale-110 transition-transform duration-200"
+                    imgClassName="object-contain object-center mix-blend-multiply scale-105 group-hover:scale-110 transition-transform duration-200"
                   />
                 </div>
 

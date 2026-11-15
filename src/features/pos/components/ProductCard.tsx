@@ -43,14 +43,14 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
       onClick={handleCardClick}
       className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white p-2 pb-2.5 shadow-xs hover:border-emerald-500/60 hover:shadow-md active:bg-emerald-50/20 transition-all cursor-pointer select-none touch-manipulation"
     >
-      {/* 1. Seamless Image Container (Taller h-40/160px for prominent display, no inner border, soft slate-50/80 background) */}
-      <div className="relative h-40 w-full rounded-xl bg-slate-50/80 p-2 overflow-hidden flex items-center justify-center">
+      {/* 1. Seamless Edge-to-Edge Image Header (Pure white bg, p-0, mix-blend-multiply to blend .jpg borders) */}
+      <div className="relative h-40 w-full bg-white p-0 overflow-hidden flex items-center justify-center border-b border-slate-100/80 pb-2 mb-2">
         <ProductThumbnail
           src={product.image_url}
           alt={product.name_lo}
           name={product.name_lo}
           className="w-full h-full"
-          imgClassName="object-contain object-center scale-105 group-hover:scale-110 transition-transform duration-200"
+          imgClassName="w-full h-full object-contain mix-blend-multiply scale-110 group-hover:scale-115 transition-transform duration-200"
         />
 
         {/* Floating Badges */}

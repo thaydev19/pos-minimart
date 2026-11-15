@@ -101,12 +101,13 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
     >
       {/* 1. Left Cluster: Thumbnail + 2-Row Info (Expanded width) */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        {/* Product Thumbnail (Compact 38px) */}
+        {/* Product Thumbnail with mix-blend-multiply to blend .jpg borders into frame */}
         <ProductThumbnail
           src={item.imageUrl}
           alt={item.name}
           name={item.name}
-          className="h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-xl shrink-0 border border-zinc-200/70 overflow-hidden object-cover"
+          className="h-9.5 w-9.5 sm:h-10 sm:w-10 rounded-xl shrink-0 border border-zinc-200/70 bg-white p-0.5 overflow-hidden"
+          imgClassName="w-full h-full object-contain mix-blend-multiply"
         />
 
         {/* Text Column: Full product name with line-clamp-2 */}

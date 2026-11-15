@@ -55,17 +55,24 @@ export const posApi = {
         productsRes.data &&
         productsRes.data.length > 0
       ) {
-        // Map Categories
+        // Map Categories with color parsing
         const remoteCategories: LocalCategory[] = (categoriesRes.data || []).map(
-          (cat) => ({
-            id: cat.id,
-            store_id: cat.store_id,
-            name_lo: cat.name_lo,
-            name_en: cat.name_en,
-            icon: cat.icon || "LayoutGrid",
-            sort_order: cat.sort_order ?? 99,
-            created_at: cat.created_at,
-          })
+          (cat) => {
+            const rawIcon = cat.icon || "LayoutGrid";
+            const [icon, color] = rawIcon.includes(":")
+              ? rawIcon.split(":")
+              : [rawIcon, cat.color || "emerald"];
+            return {
+              id: cat.id,
+              store_id: cat.store_id,
+              name_lo: cat.name_lo,
+              name_en: cat.name_en,
+              icon: icon || "LayoutGrid",
+              color: color || "emerald",
+              sort_order: cat.sort_order ?? 99,
+              created_at: cat.created_at,
+            };
+          }
         );
 
         const categories: LocalCategory[] = [

@@ -23,6 +23,7 @@ export function BrandSplashScreen({
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#F8FAFC] select-none text-center p-6 overflow-hidden pointer-events-none"
     >
       {/* Subtle radial ambient glow */}
@@ -44,10 +45,16 @@ export function BrandSplashScreen({
 
       {/* Store Brand Typography */}
       <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+        <h1
+          style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
+          className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight"
+        >
           ມິນິມາດ ລາວຈະເລີນ
         </h1>
-        <p className="text-xs sm:text-sm font-semibold text-slate-500">
+        <p
+          style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
+          className="text-xs sm:text-sm font-semibold text-slate-500"
+        >
           Lao Minimart POS • Enterprise Terminal
         </p>
       </div>
@@ -55,11 +62,19 @@ export function BrandSplashScreen({
       {/* Real-time Status Badge */}
       <div className="mt-8 flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-xs border border-slate-200/90">
         <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-[11px] font-medium text-slate-600">{message}</span>
+        <span
+          style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
+          className="text-[11px] font-semibold text-slate-600"
+        >
+          {message}
+        </span>
       </div>
 
       {/* Bottom Footer Attribution */}
-      <div className="absolute bottom-6 text-[10px] text-slate-400 font-medium">
+      <div
+        style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
+        className="absolute bottom-6 text-[10px] text-slate-400 font-medium"
+      >
         Lao Minimart Retail POS Solution • ພາສາລາວ (LAK)
       </div>
     </motion.div>

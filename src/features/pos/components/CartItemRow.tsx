@@ -9,7 +9,8 @@
 // - High-contrast price with formatLak currency
 // ============================================================================
 
-import React, { memo, useState, useEffect } from "react";
+import React, { memo, useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, Trash2, AlertCircle } from "lucide-react";
 import { CartItem } from "../types/pos.types";
 import { formatLak } from "@/utils/formatLakCurrency";
@@ -29,10 +30,27 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
 
   // Local state for smooth editable quantity input
   const [localQty, setLocalQty] = useState<string>(String(item.quantity));
+  const [isBouncing, setIsBouncing] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const prevQtyRef = useRef<number>(item.quantity);
 
   useEffect(() => {
     setLocalQty(String(item.quantity));
-  }, [item.quantity]);
+
+    // Trigger keyframe pulse animation whenever quantity changes (regardless of item count)
+    if (item.quantity !== prevQtyRef.current) {
+      setIsBouncing(true);
+      const timer = setTimeout(() => setIsBouncing(false), 200);
+
+      if (item.quantity > prevQtyRef.current) {
+        rowRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      prevQtyRef.current = item.quantity;
+      return () => clearTimeout(timer);
+    }
+    prevQtyRef.current = item.quantity;
+  }, [item.quantity, item.totalPrice]);
 
   const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -72,7 +90,15 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
   };
 
   return (
-    <div className="group relative flex items-center justify-between gap-2 rounded-2xl border border-zinc-200/90 bg-white p-2.5 shadow-2xs hover:border-emerald-300 transition-all select-none touch-manipulation">
+    <motion.div
+      ref={rowRef}
+      layout="position"
+      initial={{ opacity: 0, y: -10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 20, scale: 0.95 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="group relative flex items-center justify-between gap-2 rounded-2xl bg-white border border-zinc-200/90 hover:border-emerald-300 p-2.5 shadow-2xs transition-colors select-none touch-manipulation"
+    >
       {/* 1. Left Cluster: Thumbnail + 2-Row Info (Expanded width) */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
         {/* Product Thumbnail (Compact 38px) */}
@@ -146,16 +172,22 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
             <Minus className="h-3.5 w-3.5" />
           </button>
 
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={localQty}
-            onChange={handleQtyChange}
-            onBlur={handleQtyBlur}
-            onFocus={(e) => e.target.select()}
-            className="w-6 h-7 text-center font-bold text-xs text-zinc-900 bg-transparent focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-md outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
-          />
+          <motion.div
+            animate={isBouncing ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="flex items-center justify-center origin-center"
+          >
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={localQty}
+              onChange={handleQtyChange}
+              onBlur={handleQtyBlur}
+              onFocus={(e) => e.target.select()}
+              className="w-6 h-7 text-center font-bold text-xs text-zinc-900 bg-transparent focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-md outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+            />
+          </motion.div>
 
           <button
             type="button"
@@ -169,9 +201,17 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
 
         {/* Total Price for Line + Subtitle Unit Price */}
         <div className="text-right min-w-[72px] sm:min-w-[82px] shrink-0">
-          <span className="text-[13px] sm:text-sm font-bold text-emerald-700 text-right leading-tight block tabular-nums">
+          <motion.span
+            animate={
+              isBouncing
+                ? { scale: [1, 1.08, 1], color: ["#047857", "#059669", "#047857"] }
+                : { scale: 1, color: "#047857" }
+            }
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="text-[13px] sm:text-sm font-bold text-emerald-700 text-right leading-tight block tabular-nums origin-right"
+          >
             {formatLak(item.totalPrice)}
-          </span>
+          </motion.span>
           <span className="text-[10px] text-zinc-400 font-medium text-right block mt-0.5 tabular-nums">
             {formatLak(item.unitPrice, true)}/{item.selectedUnit.unit_name || "ອັນ"}
           </span>
@@ -187,6 +227,6 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 });

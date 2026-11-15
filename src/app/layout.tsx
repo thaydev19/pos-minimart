@@ -26,6 +26,22 @@ export default function RootLayout({
       className="h-full antialiased"
       style={{ backgroundColor: "#F8FAFC" }}
     >
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/NotoSansLao.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/PlusJakartaSans.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className="h-full w-full overflow-hidden select-none bg-[#F8FAFC] text-slate-900 font-sans"
         style={{ backgroundColor: "#F8FAFC" }}

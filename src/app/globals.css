@@ -12,32 +12,72 @@
   font-family: 'Noto Sans Lao';
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
+  font-display: block;
   src: url('/fonts/NotoSansLao.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'Noto Sans Lao Looped';
+  font-family: 'Noto Sans Lao';
   font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/NotoSansLaoLooped.ttf') format('truetype');
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/NotoSansLao.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('/fonts/NotoSansLao.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/NotoSansLao.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/NotoSansLao.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url('/fonts/NotoSansLao.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/NotoSansLao.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'Plus Jakarta Sans';
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
+  font-display: block;
   src: url('/fonts/PlusJakartaSans.ttf') format('truetype');
 }
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Noto Sans Lao', 'Noto Sans Lao Looped', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Noto Sans Lao', 'Plus Jakarta Sans', ui-monospace, monospace;
-  --font-heading: 'Noto Sans Lao', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'Noto Sans Lao', 'Plus Jakarta Sans', monospace;
+  --font-heading: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -120,9 +160,27 @@
   --ring: #10b981;
 }
 
-/* Lao typography geometry adjustments */
+/* Lao typography geometry adjustments - Strictly locked to Noto Sans Lao to prevent DokChampa fallback */
+html,
+body,
+button,
+input,
+optgroup,
+select,
+textarea,
+span,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif !important;
+}
+
 body {
-  font-family: var(--font-sans);
+  font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif !important;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -133,6 +191,7 @@ body {
 /* Ensure Lao tone marks and stacked vowels do not get clipped */
 input, button, select, textarea, table, th, td {
   line-height: 1.55;
+  font-family: inherit;
 }
 
 /* Number formatting for Kip currency (LAK) */
@@ -156,29 +215,129 @@ input, button, select, textarea, table, th, td {
   background: #94a3b8;
 }
 
-/* Thermal 80mm Print Styling */
+/* Thermal 80mm / 72mm Print Styling for POS-80 Thermal Receipt Printers */
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 0mm !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* 1. Hide everything in the page by default */
   body * {
     visibility: hidden !important;
   }
+
+  /* 2. Reset modal backdrop & card layout completely to eliminate the top whitespace */
+  .receipt-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  .receipt-modal-card {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+
+  .receipt-modal-body {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  /* 3. Hide non-printable UI controls */
+  .no-print,
+  button,
+  header,
+  footer,
+  nav {
+    display: none !important;
+  }
+
+  /* 4. Display Receipt in exact 72mm printable thermal width */
   .receipt-80mm,
   .receipt-80mm * {
     visibility: visible !important;
   }
+
   .receipt-80mm {
     position: absolute !important;
-    left: 0 !important;
     top: 0 !important;
-    width: 78mm !important;
-    max-width: 78mm !important;
-    padding: 2mm 3mm !important;
-    margin: 0 auto !important;
-    font-family: var(--font-sans) !important;
+    left: 0 !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    min-width: 72mm !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 1.5mm 2.5mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     background: #ffffff !important;
     color: #000000 !important;
+    font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 8.5pt !important;
+    line-height: 1.35 !important;
+    overflow: visible !important;
   }
-  @page {
-    size: 80mm auto;
-    margin: 0;
+
+  .receipt-80mm h2 {
+    font-size: 11pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .receipt-80mm p,
+  .receipt-80mm span,
+  .receipt-80mm div {
+    color: #000000 !important;
+  }
+
+  .receipt-80mm .border-dashed {
+    border-color: #555555 !important;
   }
 }

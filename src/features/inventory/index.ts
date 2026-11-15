@@ -13,6 +13,7 @@ export * from "./components/ExpiryBadge";
 export * from "./components/InventorySummaryCards";
 export * from "./components/StockOverviewTable";
 export * from "./components/StockInSheet";
+export * from "./components/MultiProductGRNForm";
 export * from "./components/BatchDetailDrawer";
 export * from "./components/StockAdjustmentDialog";
 export * from "./pages/inventory-page";

@@ -11,6 +11,7 @@ import {
   CategoryFormData,
   DeleteCategoryResult,
 } from "../types/category.types";
+import { parseCategoryIconAndColor } from "../utils/category.util";
 import { usePosStore } from "@/features/pos/stores/pos.store";
 
 export const categoriesApi = {
@@ -53,17 +54,20 @@ export const categoriesApi = {
         }
       }
 
-      const items: CategoryItem[] = (catRes.data || []).map((cat) => ({
-        id: cat.id,
-        store_id: cat.store_id || DEFAULT_STORE.id,
-        name_lo: cat.name_lo,
-        name_en: cat.name_en,
-        icon: cat.icon || "LayoutGrid",
-        sort_order: cat.sort_order ?? 0,
-        color: cat.color || "emerald",
-        created_at: cat.created_at,
-        product_count: productCountMap.get(cat.id) || 0,
-      }));
+      const items: CategoryItem[] = (catRes.data || []).map((cat) => {
+        const parsed = parseCategoryIconAndColor(cat.icon);
+        return {
+          id: cat.id,
+          store_id: cat.store_id || DEFAULT_STORE.id,
+          name_lo: cat.name_lo,
+          name_en: cat.name_en,
+          icon: parsed.icon,
+          sort_order: cat.sort_order ?? 0,
+          color: parsed.color || cat.color || "emerald",
+          created_at: cat.created_at,
+          product_count: productCountMap.get(cat.id) || 0,
+        };
+      });
 
       // Cache directly to Dexie (Offline-First)
       const dexieEntries: LocalCategory[] = items.map((c) => ({
@@ -72,6 +76,7 @@ export const categoriesApi = {
         name_lo: c.name_lo,
         name_en: c.name_en || undefined,
         icon: c.icon || "LayoutGrid",
+        color: c.color || "emerald",
         sort_order: c.sort_order,
         created_at: c.created_at,
       }));
@@ -81,24 +86,39 @@ export const categoriesApi = {
     } catch (err: any) {
       console.error("[CategoriesApi] fetchCategories failed:", err);
       const localCats = await offlineDb.categories.toArray();
-      return localCats.map((c) => ({
-        ...c,
-        product_count: 0,
-      }));
+      return localCats.map((c) => {
+        const parsed = parseCategoryIconAndColor(c.icon);
+        return {
+          id: c.id,
+          store_id: c.store_id,
+          name_lo: c.name_lo,
+          name_en: c.name_en || undefined,
+          icon: parsed.icon,
+          color: (c as any).color || parsed.color || "emerald",
+          sort_order: c.sort_order ?? 0,
+          created_at: c.created_at,
+          product_count: 0,
+        };
+      });
     }
   },
 
   /**
    * Creates a new category in Supabase and updates Dexie.
+   * Encodes color into icon as "IconName:color" for 100% Supabase schema compatibility.
    */
   async createCategory(input: CategoryFormData): Promise<CategoryItem> {
     const id = crypto.randomUUID();
+    const cleanIcon = input.icon?.split(":")[0]?.trim() || "LayoutGrid";
+    const selectedColor = input.color || "emerald";
+    const combinedIcon = `${cleanIcon}:${selectedColor}`;
+
     const payload = {
       id,
       store_id: DEFAULT_STORE.id,
       name_lo: input.name_lo.trim(),
       name_en: input.name_en?.trim() || null,
-      icon: input.icon || "LayoutGrid",
+      icon: combinedIcon,
       sort_order: input.sort_order ?? 0,
       created_at: new Date().toISOString(),
     };
@@ -108,9 +128,9 @@ export const categoriesApi = {
       store_id: DEFAULT_STORE.id,
       name_lo: input.name_lo.trim(),
       name_en: input.name_en?.trim() || null,
-      icon: input.icon || "LayoutGrid",
+      icon: cleanIcon,
       sort_order: input.sort_order ?? 0,
-      color: input.color || "emerald",
+      color: selectedColor,
       created_at: payload.created_at,
       product_count: 0,
     };
@@ -125,14 +145,15 @@ export const categoriesApi = {
       if (error) {
         console.warn("[CategoriesApi] Supabase RLS / Network warning:", error.message);
       } else if (data) {
+        const parsed = parseCategoryIconAndColor(data.icon);
         created = {
           id: data.id,
           store_id: data.store_id,
           name_lo: data.name_lo,
           name_en: data.name_en,
-          icon: data.icon,
+          icon: parsed.icon,
           sort_order: data.sort_order,
-          color: input.color || "emerald",
+          color: parsed.color || selectedColor,
           created_at: data.created_at,
           product_count: 0,
         };
@@ -147,7 +168,8 @@ export const categoriesApi = {
       store_id: created.store_id,
       name_lo: created.name_lo,
       name_en: created.name_en || undefined,
-      icon: created.icon || "LayoutGrid",
+      icon: cleanIcon,
+      color: selectedColor,
       sort_order: created.sort_order,
       created_at: created.created_at,
     });
@@ -162,10 +184,14 @@ export const categoriesApi = {
    * Updates an existing category in Supabase and Dexie.
    */
   async updateCategory(id: string, input: CategoryFormData): Promise<void> {
+    const cleanIcon = input.icon?.split(":")[0]?.trim() || "LayoutGrid";
+    const selectedColor = input.color || "emerald";
+    const combinedIcon = `${cleanIcon}:${selectedColor}`;
+
     const payload = {
       name_lo: input.name_lo.trim(),
       name_en: input.name_en?.trim() || null,
-      icon: input.icon || "LayoutGrid",
+      icon: combinedIcon,
       sort_order: input.sort_order ?? 0,
     };
 
@@ -186,7 +212,8 @@ export const categoriesApi = {
     await offlineDb.categories.update(id, {
       name_lo: payload.name_lo,
       name_en: payload.name_en || undefined,
-      icon: payload.icon,
+      icon: cleanIcon,
+      color: selectedColor,
       sort_order: payload.sort_order,
     });
 

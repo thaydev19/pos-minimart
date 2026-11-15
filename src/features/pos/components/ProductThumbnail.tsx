@@ -13,6 +13,7 @@ interface ProductThumbnailProps {
   alt: string;
   name?: string;
   className?: string;
+  imgClassName?: string;
 }
 
 export function ProductThumbnail({
@@ -20,6 +21,7 @@ export function ProductThumbnail({
   alt,
   name,
   className = "",
+  imgClassName = "",
 }: ProductThumbnailProps) {
   const [hasError, setHasError] = useState(false);
 
@@ -42,10 +44,12 @@ export function ProductThumbnail({
   if (isEmoji) {
     return (
       <div
-        className={`flex items-center justify-center bg-zinc-100/90 text-zinc-700 select-none overflow-hidden ${className}`}
+        className={`flex items-center justify-center select-none overflow-hidden ${className}`}
         aria-label={alt}
       >
-        <span className="text-3xl leading-none">{src}</span>
+        <span className="text-4xl leading-none scale-105 group-hover:scale-110 transition-transform duration-200">
+          {src}
+        </span>
       </div>
     );
   }
@@ -54,30 +58,32 @@ export function ProductThumbnail({
   if (!src || hasError) {
     return (
       <div
-        className={`flex items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200/90 text-zinc-600 select-none overflow-hidden font-bold ${className}`}
+        className={`flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200/80 text-slate-600 select-none overflow-hidden font-bold ${className}`}
         aria-label={alt}
       >
         {monogram ? (
-          <span className="text-sm font-extrabold tracking-tight text-zinc-700">
+          <span className="text-sm font-extrabold tracking-tight text-slate-700">
             {monogram}
           </span>
         ) : (
-          <Package className="h-6 w-6 text-zinc-400" />
+          <Package className="h-6 w-6 text-slate-400" />
         )}
       </div>
     );
   }
 
-  // 3. Pure <img> Filling 100% Edge-to-Edge (object-cover)
+  // 3. Image Container with proper containment (Prevents flex overflow in list view)
   return (
-    <div className={`relative overflow-hidden bg-zinc-50 ${className}`}>
+    <div
+      className={`relative flex items-center justify-center shrink-0 overflow-hidden ${className}`}
+    >
       <img
         src={src}
         alt={alt}
         loading="lazy"
         decoding="async"
         onError={() => setHasError(true)}
-        className="w-full h-full object-cover object-center block transition-transform duration-300 group-hover:scale-105"
+        className={`w-full h-full block ${imgClassName || "object-contain object-center transition-transform duration-200 group-hover:scale-105"}`}
       />
     </div>
   );

@@ -1,13 +1,13 @@
 "use client";
 
 // ============================================================================
-// Product Card: Edge-to-Edge Proportional 4:3 Image, Floating Badges,
-// Equal Row Heights & Lao Typography
+// Product Card: Modern Retail POS (Edge-to-Edge Visuals, High Contrast)
+// Zero Nested Borders, Solid Black Price, Crisp Lao Typography & Haptic Feedback
 // ============================================================================
 
 import React, { memo } from "react";
 import { motion } from "framer-motion";
-import { Plus, AlertCircle, Scale, Tag } from "lucide-react";
+import { Plus, AlertCircle, Scale, Layers } from "lucide-react";
 import { ProductWithDetails } from "../types/pos.types";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { ProductThumbnail } from "./ProductThumbnail";
@@ -27,6 +27,11 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
   const hasNearExpiry = Boolean(clearanceBatch);
   const displayPrice = clearanceBatch?.clearance_price || product.selling_price;
 
+  const totalStock =
+    product.batches && product.batches.length > 0
+      ? product.batches.reduce((sum, b) => sum + (b.quantity_on_hand || 0), 0)
+      : null;
+
   const handleCardClick = () => {
     triggerHapticFeedback(25);
     addToCart(product);
@@ -34,67 +39,71 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
 
   return (
     <motion.div
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.96 }}
       onClick={handleCardClick}
-      className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:border-emerald-500/60 hover:shadow-md active:bg-emerald-50/30 transition-all cursor-pointer select-none touch-manipulation min-h-[160px]"
+      className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white p-2 pb-2.5 shadow-xs hover:border-emerald-500/60 hover:shadow-md active:bg-emerald-50/20 transition-all cursor-pointer select-none touch-manipulation"
     >
-      {/* 1. Proportional 4:3 Edge-to-Edge Image Header (No padding, rounded-t matches card) */}
-      <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+      {/* 1. Seamless Image Container (Taller h-40/160px for prominent display, no inner border, soft slate-50/80 background) */}
+      <div className="relative h-40 w-full rounded-xl bg-slate-50/80 p-2 overflow-hidden flex items-center justify-center">
         <ProductThumbnail
           src={product.image_url}
           alt={product.name_lo}
           name={product.name_lo}
           className="w-full h-full"
+          imgClassName="object-contain object-center scale-105 group-hover:scale-110 transition-transform duration-200"
         />
 
-        {/* Floating High-Contrast Badges (absolute top-2 left-2 / right-2 z-10) */}
-        <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between pointer-events-none gap-1">
+        {/* Floating Badges */}
+        <div className="absolute top-1.5 left-1.5 right-1.5 z-10 flex items-start justify-between pointer-events-none gap-1">
           <div className="flex flex-col gap-1 items-start">
             {hasNearExpiry && (
-              <span className="flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                <AlertCircle className="h-3 w-3" />
-                <span>ລັອດໃກ້ໝົດ</span>
+              <span className="flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+                <AlertCircle className="h-2.5 w-2.5" />
+                <span>ໃກ້ໝົດ</span>
               </span>
             )}
             {product.is_weighing && (
-              <span className="flex items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                <Scale className="h-3 w-3" />
+              <span className="flex items-center gap-1 rounded-md bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+                <Scale className="h-2.5 w-2.5" />
                 <span>ຊັ່ງກິໂລ</span>
+              </span>
+            )}
+            {totalStock !== null && totalStock <= 5 && totalStock > 0 && (
+              <span className="flex items-center gap-1 rounded-md bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+                <span>ເຫຼືອ {totalStock}</span>
               </span>
             )}
           </div>
 
           {product.units && product.units.length > 1 && (
-            <span className="flex items-center gap-1 rounded-full bg-zinc-900/75 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-              <Tag className="h-2.5 w-2.5" />
-              <span>{product.units.length} ຕົວໜ່ວຍ</span>
+            <span className="flex items-center gap-1 rounded-md bg-zinc-900/75 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+              <Layers className="h-2.5 w-2.5" />
+              <span>{product.units.length} ໜ່ວຍ</span>
             </span>
           )}
         </div>
       </div>
 
-      {/* 2. Content Body: Equal Row Heights (min-h-[2.5rem] on 2-line title) */}
-      <div className="p-3 flex flex-col flex-1">
-        <h3 className="text-xs sm:text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem] leading-snug">
+      {/* 2. Text & Actions Section */}
+      <div className="px-1 pt-2 flex flex-col justify-between flex-1">
+        {/* Product Name: High readability Lao typography with consistent min height */}
+        <h3 className="text-[13.5px] font-semibold text-slate-800 leading-snug line-clamp-2 min-h-[38px] flex items-center mb-1">
           {product.name_lo}
         </h3>
 
-        <p className="text-[11px] text-zinc-400 font-mono truncate mt-0.5 mb-2">
-          {product.barcode}
-        </p>
-
-        {/* 3. Bottom Row: Kip Price + Quick Add Button pinned to bottom */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-auto">
-          <div className="flex flex-col min-w-0 pr-1">
-            <span className="text-sm sm:text-base font-extrabold text-slate-900 tabular-nums truncate">
+        {/* 3. Bottom Row: High-Contrast Charcoal Price + Neutral Unit + Refined Emerald Plus Button */}
+        {/* Soft light grey divider (border-slate-100) to gently separate title from price */}
+        <div className="mt-auto pt-1.5 flex items-center justify-between border-t border-slate-100">
+          <div className="flex items-baseline gap-1 min-w-0 truncate">
+            <span className="text-[16px] font-extrabold text-slate-900 tracking-tight tabular-nums truncate">
               {formatLak(displayPrice)}
             </span>
-            <span className="text-[10px] text-slate-500 font-medium truncate">
+            <span className="text-xs font-medium text-slate-400 shrink-0">
               /{product.base_unit}
             </span>
           </div>
 
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-2xs">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white active:scale-95 transition-all shadow-xs">
             <Plus className="h-4 w-4" />
           </div>
         </div>

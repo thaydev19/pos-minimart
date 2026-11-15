@@ -17,16 +17,18 @@ export function isTauri(): boolean {
  * Invokes native Rust command for 0ms visual reveal, eliminating all white flash.
  */
 export async function showTauriMainWindow(): Promise<void> {
-  if (typeof window === "undefined" || !isTauri()) return;
+  if (typeof window === "undefined") return;
 
   try {
     const { invoke } = await import("@tauri-apps/api/core");
     await invoke("show_main_window");
+    return;
   } catch {
     try {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       const win = getCurrentWindow();
       if (win) {
+        if (typeof win.maximize === "function") await win.maximize();
         if (typeof win.show === "function") await win.show();
         if (typeof win.setFocus === "function") await win.setFocus();
       }

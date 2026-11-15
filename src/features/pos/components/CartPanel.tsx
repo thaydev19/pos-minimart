@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { usePosStore } from "../stores/pos.store";
@@ -195,9 +195,15 @@ export function CartPanel() {
           <h2 className="text-xs sm:text-sm font-bold text-slate-800">
             {lo.pos.cartTitle}
           </h2>
-          <span className="rounded-full bg-slate-100 px-1.5 py-0.2 text-[11px] font-bold text-slate-700 tabular-nums">
+          <motion.span
+            key={totalItemCount}
+            initial={{ scale: 1.25 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.18 }}
+            className="rounded-full bg-slate-100 px-1.5 py-0.2 text-[11px] font-bold text-slate-700 tabular-nums"
+          >
             {totalItemCount}
-          </span>
+          </motion.span>
         </div>
 
         {cart.length > 0 && (
@@ -228,7 +234,11 @@ export function CartPanel() {
             </p>
           </div>
         ) : (
-          cart.map((item) => <CartItemRow key={item.id} item={item} />)
+          <AnimatePresence initial={false} mode="popLayout">
+            {cart.map((item) => (
+              <CartItemRow key={item.id} item={item} />
+            ))}
+          </AnimatePresence>
         )}
       </div>
 
@@ -284,10 +294,16 @@ export function CartPanel() {
             <span className="text-xs sm:text-sm">{lo.pos.checkoutBtn}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold tabular-nums">
+          <motion.div
+            key={finalTotal}
+            initial={{ scale: 1.08 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold tabular-nums"
+          >
             <span>{formatLak(finalTotal)}</span>
             <ArrowRight className="h-4 w-4" />
-          </div>
+          </motion.div>
         </motion.button>
       </div>
 

@@ -1,15 +1,16 @@
 "use client";
 
 // ============================================================================
-// Product Catalog Grid: Ultra Compact 6-Column Layout Desktop (xl:grid-cols-6)
-// Breakpoints: Mobile (2 cols), sm (3 cols), md (4 cols), lg (5 cols), xl (6 cols)
+// Product Catalog Grid: Touch-Optimized POS Layout (4-5 Cols on Desktop/POS)
+// Breakpoints: Mobile (2 cols), sm (3 cols), lg (4 cols), xl (5 cols), 2xl (6 cols)
 // ============================================================================
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Plus, RefreshCw, PackageX } from "lucide-react";
+import { Plus, RefreshCw, PackageX, AlertCircle, Scale } from "lucide-react";
 import { usePosStore } from "../stores/pos.store";
 import { formatLak } from "@/utils/formatLakCurrency";
+import { triggerHapticFeedback } from "@/utils/haptics";
 import { ProductThumbnail } from "./ProductThumbnail";
 import { ProductCard } from "./ProductCard";
 
@@ -42,21 +43,21 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
     );
   });
 
-  // 1. Skeleton Loading State (Matches 6-column layout)
+  // 1. Skeleton Loading State (Matches touch-optimized layout)
   if (isLoadingCatalog && products.length === 0) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 pr-1 pb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5 pr-1 pb-3">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
           <div
             key={n}
-            className="flex flex-col h-full rounded-xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs animate-pulse"
+            className="flex flex-col h-full rounded-2xl border border-slate-200/80 bg-white p-1.5 pb-2.5 shadow-2xs animate-pulse"
           >
-            <div className="h-24 w-full bg-slate-200" />
-            <div className="p-2 flex flex-col flex-1 justify-between">
-              <div className="h-3 w-3/4 rounded bg-slate-200" />
-              <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 mt-1.5">
-                <div className="h-3.5 w-14 rounded bg-slate-200" />
-                <div className="h-6 w-6 rounded-md bg-slate-200" />
+            <div className="h-36 w-full rounded-xl bg-slate-100" />
+            <div className="flex flex-col flex-1 justify-between px-1.5 pt-2">
+              <div className="h-4 w-3/4 rounded bg-slate-200 mb-2" />
+              <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 mt-auto">
+                <div className="h-4 w-16 rounded bg-slate-200" />
+                <div className="h-8 w-8 rounded-xl bg-slate-200" />
               </div>
             </div>
           </div>
@@ -106,10 +107,10 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
     );
   }
 
-  // 4. Compact Mode Layout
+  // 4. Compact / List Mode Layout: Horizontal Strip Cards
   if (viewMode === "compact") {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 overflow-y-auto pr-1 pb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 overflow-y-auto pr-1 pb-3">
         {filteredProducts.map((prod) => {
           const clearanceBatch = prod.batches?.find(
             (b) => b.is_clearance && b.quantity_on_hand > 0
@@ -117,46 +118,83 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
           const hasNearExpiry = Boolean(clearanceBatch);
           const displayPrice = clearanceBatch?.clearance_price || prod.selling_price;
 
+          const totalStock =
+            prod.batches && prod.batches.length > 0
+              ? prod.batches.reduce((sum, b) => sum + (b.quantity_on_hand || 0), 0)
+              : null;
+
+          const handleItemClick = () => {
+            triggerHapticFeedback(25);
+            addToCart(prod);
+          };
+
           return (
             <motion.div
               key={prod.id}
               whileTap={{ scale: 0.98 }}
-              onClick={() => addToCart(prod)}
-              className="group flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-2 shadow-2xs hover:border-emerald-500/60 hover:shadow-xs transition-all cursor-pointer select-none"
+              onClick={handleItemClick}
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:border-emerald-500/60 hover:shadow-xs active:bg-emerald-50/20 transition-all cursor-pointer select-none touch-manipulation min-w-0"
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <ProductThumbnail
-                  src={prod.image_url}
-                  alt={prod.name_lo}
-                  name={prod.name_lo}
-                  className="h-10 w-10 rounded-lg shrink-0 border border-zinc-200/70 overflow-hidden"
-                />
+              {/* Left Cluster: Fixed Thumbnail + Product Meta */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {/* Fixed Thumbnail Container (Never overflows or blows up) */}
+                <div className="relative h-13 w-13 shrink-0 rounded-xl bg-slate-50/80 p-1 overflow-hidden border border-slate-100 flex items-center justify-center">
+                  <ProductThumbnail
+                    src={prod.image_url}
+                    alt={prod.name_lo}
+                    name={prod.name_lo}
+                    className="w-full h-full"
+                    imgClassName="object-contain object-center scale-105 group-hover:scale-110 transition-transform duration-200"
+                  />
+                </div>
 
-                <div className="min-w-0 flex-1">
+                {/* Product Meta */}
+                <div className="min-w-0 flex-1 flex flex-col justify-center">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="text-xs font-bold text-slate-800 truncate leading-tight">
+                    <h3 className="text-[13px] font-bold text-slate-800 truncate leading-snug">
                       {prod.name_lo}
                     </h3>
                     {hasNearExpiry && (
-                      <span className="rounded bg-orange-100 px-1 py-0.2 text-[9px] font-bold text-orange-800">
-                        ໃກ້ໝົດ
+                      <span className="flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.2 text-[9px] font-bold text-amber-800">
+                        <AlertCircle className="h-2.5 w-2.5" />
+                        <span>ໃກ້ໝົດ</span>
+                      </span>
+                    )}
+                    {prod.is_weighing && (
+                      <span className="flex items-center gap-0.5 rounded bg-blue-100 px-1.5 py-0.2 text-[9px] font-bold text-blue-700">
+                        <Scale className="h-2.5 w-2.5" />
+                        <span>ຊັ່ງກິໂລ</span>
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-slate-400 font-mono truncate">
-                    {prod.barcode}
-                  </p>
-                  <div className="text-xs font-extrabold text-slate-900 tabular-nums">
-                    {formatLak(displayPrice)}{" "}
-                    <span className="text-[9px] text-slate-400 font-normal">
+
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {prod.barcode && (
+                      <span className="text-[10.5px] text-slate-400 font-mono truncate">
+                        {prod.barcode}
+                      </span>
+                    )}
+                    {totalStock !== null && totalStock <= 5 && totalStock > 0 && (
+                      <span className="text-[10px] font-semibold text-rose-500">
+                        ເຫຼືອ {totalStock}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-1 flex items-baseline gap-1">
+                    <span className="text-[14px] font-extrabold text-slate-900 tabular-nums">
+                      {formatLak(displayPrice)}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-400">
                       /{prod.base_unit}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-2xs ml-1.5">
-                <Plus className="h-3 w-3" />
+              {/* Right Action: Plus Button */}
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white active:scale-95 transition-all shadow-2xs">
+                <Plus className="h-4 w-4" />
               </div>
             </motion.div>
           );
@@ -165,9 +203,9 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
     );
   }
 
-  // 5. Standard Grid Mode: 6 Columns on Desktop (xl:grid-cols-6) with gap-2
+  // 5. Standard Grid Mode: Touch-Optimized Layout (Compact gap between cards)
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 overflow-y-auto pr-1 pb-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 overflow-y-auto pr-1 pb-3">
       {filteredProducts.map((prod) => (
         <ProductCard key={prod.id} product={prod} />
       ))}

@@ -7,17 +7,17 @@ export const POS_SHORTCUTS = {
 
 export const DEFAULT_STORE = {
   id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-  name_lo: "ມິນິມາດ ລາວຈະເລີນ",
-  name_en: "Lao Chaleun Minimart",
+  name_lo: "QuickOne",
+  name_en: "QuickOne",
   branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
-  phone: "020 5555 8888",
+  phone: "55257555",
   taxCode: "0102030405", 
   currency: "LAK",
 };
 
 export const DEFAULT_CASHIER = {
   id: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b22",
-  name: "ສຸລິວັນ (Sourivanh)",
+  name: "ພະນັກງານຂາຍ (Cashier)",
   role: "cashier" as const,
-  shiftNumber: "SHIFT-2026-088",
+  shiftNumber: "",
 };

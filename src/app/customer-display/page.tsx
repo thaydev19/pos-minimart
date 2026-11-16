@@ -300,10 +300,10 @@ export default function CustomerDisplayPage() {
               </div>
               <div>
                 <h1 className="text-base font-extrabold text-white tracking-wide leading-tight">
-                  {payload.storeName || "ມິນິມາດ ລາວຈະເລີນ"}
+                  {payload.storeName || "QuickOne"}
                 </h1>
                 <p className="text-[11px] text-zinc-400 font-medium">
-                  Lao Chaleun Minimart • Customer Display System
+                  QuickOne • Customer Display System
                 </p>
               </div>
             </div>
@@ -354,10 +354,10 @@ export default function CustomerDisplayPage() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-              ຍິນດີຕ້ອນຮັບສູ່ {payload.storeName || "ມິນິມາດ ລາວຈະເລີນ"}
+              ຍິນດີຕ້ອນຮັບສູ່ {payload.storeName || "QuickOne"}
             </h2>
             <p className="text-base sm:text-lg text-zinc-400 mt-2.5 max-w-lg font-medium">
-              Welcome to Lao Chaleun Minimart
+              Welcome to QuickOne
             </p>
 
             <div className="mt-8 flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-sm font-semibold text-zinc-200 shadow-xl max-w-md">
@@ -406,10 +406,10 @@ export default function CustomerDisplayPage() {
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold text-white tracking-wide leading-tight">
-                    {payload.storeName || "ມິນິມາດ ລາວຈະເລີນ"}
+                    {payload.storeName || "QuickOne"}
                   </h1>
                   <p className="text-[11px] text-zinc-400 font-medium">
-                    Lao Chaleun Minimart • Customer Display
+                    QuickOne • Customer Display
                   </p>
                 </div>
               </div>

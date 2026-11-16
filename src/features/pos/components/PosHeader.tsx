@@ -427,9 +427,9 @@ export function PosHeader() {
               title="ກວດສອບ ຫຼື ປິດກະຂາຍ (Click to view or close shift)"
             >
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="whitespace-nowrap max-w-[130px] sm:max-w-[170px] truncate">
-                {activeShift.cashier_name || "ກະຂາຍເປີດຢູ່"}{" "}
-                <span className="font-mono text-[11px] text-emerald-700">
+              <span className="whitespace-nowrap">
+                ປິດກະ{" "}
+                <span className="font-mono text-[11px] text-emerald-700 font-semibold">
                   ({shiftDuration})
                 </span>
               </span>

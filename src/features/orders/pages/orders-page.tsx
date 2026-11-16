@@ -52,13 +52,18 @@ export function OrdersPage() {
     <div className="space-y-4">
       {/* 1. Header Bar with Tab Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
-        <div>
-          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            ປະຫວັດບິນຂາຍ & ກະເຮັດວຽກ (Sales & Shifts)
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            ກວດສອບລາຍການບິນ, ພິມບິນຄືນ (80mm) ແລະ ຕິດຕາມກະຂາຍເຄື່ອງ
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+            <Receipt className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              ປະຫວັດບິນຂາຍ & ກະເຮັດວຽກ (Sales & Shifts)
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ກວດສອບລາຍການບິນ, ພິມບິນຄືນ (80mm) ແລະ ຕິດຕາມກະຂາຍເຄື່ອງ
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

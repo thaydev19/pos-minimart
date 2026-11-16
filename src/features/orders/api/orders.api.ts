@@ -10,14 +10,13 @@ import {
   LocalAuditLog,
 } from "@/apis/offline-db";
 import { DEFAULT_STORE, DEFAULT_CASHIER } from "@/features/pos/constants/pos.constants";
-import { useAuthStore } from "@/features/auth";
+import { useAuthStore, authApi } from "@/features/auth";
 import {
   OrderRecord,
   OrderItemRecord,
   VoidOrderInput,
   OrderPaymentMethod,
 } from "../types/order.types";
-import { DEFAULT_MANAGER_PIN } from "../constants/order.constants";
 import { usePosStore } from "@/features/pos/stores/pos.store";
 
 export const ordersApi = {
@@ -318,9 +317,10 @@ export const ordersApi = {
    * 4. Updates Dexie and notifies POS terminal.
    */
   async voidOrder(input: VoidOrderInput): Promise<void> {
-    // 1. PIN Check
-    if (input.manager_pin !== DEFAULT_MANAGER_PIN) {
-      throw new Error("ລະຫັດ PIN ຜູ້ຈັດການບໍ່ຖືກຕ້ອງ! ບໍ່ສາມາດຍົກເລີກບິນໄດ້.");
+    // 1. PIN Check via Real Auth Security
+    const pinRes = await authApi.verifyManagerPin(input.manager_pin, undefined, "VOID_ORDER", input.order_id);
+    if (!pinRes.valid) {
+      throw new Error(pinRes.error || "ລະຫັດ PIN ຜູ້ຈັດການບໍ່ຖືກຕ້ອງ! ບໍ່ສາມາດຍົກເລີກບິນໄດ້.");
     }
 
     const timestamp = new Date().toISOString();

@@ -49,13 +49,13 @@ export function BrandSplashScreen({
           style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
           className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight"
         >
-          ມິນິມາດ ລາວຈະເລີນ
+          QuickOne
         </h1>
         <p
           style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
           className="text-xs sm:text-sm font-semibold text-slate-500"
         >
-          Lao Minimart POS • Enterprise Terminal
+          QuickOne POS • Enterprise Terminal
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export function BrandSplashScreen({
         style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
         className="absolute bottom-6 text-[10px] text-slate-400 font-medium"
       >
-        Lao Minimart Retail POS Solution • ພາສາລາວ (LAK)
+        QuickOne Retail POS Solution • ພາສາລາວ (LAK)
       </div>
     </motion.div>
   );

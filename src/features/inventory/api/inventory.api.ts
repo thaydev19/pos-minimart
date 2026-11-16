@@ -147,7 +147,46 @@ export const inventoryApi = {
         };
       });
 
-      // Cache batches to Dexie in background
+      // Cache products, categories and batches to Dexie in background for robust offline support
+      if (productsRes.data && productsRes.data.length > 0) {
+        offlineDb.products
+          .bulkPut(
+            productsRes.data.map((raw: any) => ({
+              id: raw.id,
+              store_id: raw.store_id || DEFAULT_STORE.id,
+              category_id: raw.category_id,
+              barcode: raw.barcode,
+              sku: raw.sku,
+              name_lo: raw.name_lo,
+              name_en: raw.name_en,
+              base_unit: raw.base_unit || "ອັນ",
+              cost_price: Number(raw.cost_price) || 0,
+              selling_price: Number(raw.selling_price) || 0,
+              is_perishable: Boolean(raw.is_perishable),
+              warning_days_before_expiry: raw.warning_days_before_expiry || 30,
+              is_weighing: Boolean(raw.is_weighing),
+              image_url: raw.image_url,
+              is_active: Boolean(raw.is_active),
+              created_at: raw.created_at,
+              updated_at: raw.updated_at,
+            }))
+          )
+          .catch(() => {});
+      }
+
+      if (categoriesRes.data && categoriesRes.data.length > 0) {
+        offlineDb.categories
+          .bulkPut(
+            categoriesRes.data.map((c: any) => ({
+              id: c.id,
+              store_id: c.store_id || DEFAULT_STORE.id,
+              name_lo: c.name_lo,
+              sort_order: c.sort_order ?? 99,
+            }))
+          )
+          .catch(() => {});
+      }
+
       if (allBatchesForDexie.length > 0) {
         offlineDb.product_batches.bulkPut(allBatchesForDexie).catch(console.error);
       }

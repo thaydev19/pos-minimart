@@ -51,7 +51,8 @@ export function InventoryPage() {
   const setSelectedCategory = useInventoryStore((s) => s.setSelectedCategory);
   const openStockIn = useInventoryStore((s) => s.openStockIn);
 
-  const { categories } = useCategories();
+  const { allCategories, categories } = useCategories();
+  const displayCategories = allCategories && allCategories.length > 0 ? allCategories : categories;
 
   return (
     <div className="space-y-4">
@@ -61,13 +62,18 @@ export function InventoryPage() {
 
       {/* 1. Header Bar & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
-        <div>
-          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            ຄຸ້ມຄອງສາງສິນຄ້າ & ລັອດ FEFO (Inventory & Expiry)
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            ຫຼັກການ FEFO (First-Expired, First-Out) ຈັດການວັນໝົດອາຍຸ ແລະ ປັບຍອດສະຕັອກ
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+            <Boxes className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              ຄຸ້ມຄອງສາງສິນຄ້າ & ລັອດ FEFO (Inventory & Expiry)
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ຫຼັກການ FEFO (First-Expired, First-Out) ຈັດການວັນໝົດອາຍຸ ແລະ ປັບຍອດສະຕັອກ
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -118,12 +124,12 @@ export function InventoryPage() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600"
+            className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600 cursor-pointer"
           >
-            <option value="all">ທຸກໝວດໝູ່ ({categories.length})</option>
-            {categories.map((c) => (
+            <option value="all">ທຸກໝວດໝູ່ ({displayCategories.length})</option>
+            {displayCategories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name_lo}
+                {c.name_lo} {c.product_count !== undefined ? `(${c.product_count})` : ""}
               </option>
             ))}
           </select>

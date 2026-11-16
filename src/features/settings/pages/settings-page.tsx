@@ -24,6 +24,7 @@ import {
   AlertCircle,
   RefreshCw,
   Sliders,
+  Settings,
   Send,
   Lock,
   X,
@@ -99,7 +100,7 @@ export function SettingsPage() {
   // --- VAT & Lao QR state ---
   const [vatRate, setVatRate] = useState<number>(7);
   const [qrAccountNo, setQrAccountNo] = useState("010-12-00-01234567-001");
-  const [qrAccountName, setQrAccountName] = useState("LAO CHALEUN MINIMART");
+  const [qrAccountName, setQrAccountName] = useState("QUICKONE POS");
   const [qrBankName, setQrBankName] = useState("BCEL OnePay / LAPNet");
 
   // --- Staff & PIN state ---
@@ -256,18 +257,19 @@ export function SettingsPage() {
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Sliders className="h-6 w-6 text-emerald-600" />
-            <span>ຕັ້ງຄ່າລະບົບ & ພະນັກງານ</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-              Settings & Users
-            </span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            ກຳນົດຄ່າເຄື່ອງພິມຄວາມຮ້ອນ, ລິ້ນຊັກເງິນ, ອັດຕາອາກອນ (VAT) ແລະ ບັນຊີພະນັກງານ
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+            <Settings className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              ຕັ້ງຄ່າລະບົບ & ພະນັກງານ (Settings & Users)
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ກຳນົດຄ່າເຄື່ອງພິມຄວາມຮ້ອນ, ລິ້ນຊັກເງິນ, ອັດຕາອາກອນ (VAT) ແລະ ບັນຊີພະນັກງານ
+            </p>
+          </div>
         </div>
 
         <button
@@ -817,7 +819,7 @@ export function SettingsPage() {
                   type="text"
                   value={qrAccountName}
                   onChange={(e) => setQrAccountName(e.target.value)}
-                  placeholder="LAO CHALEUN MINIMART"
+                  placeholder="QUICKONE POS"
                   className="min-h-[48px] h-12 w-full rounded-xl border border-slate-300 px-3.5 font-bold uppercase text-slate-800 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>

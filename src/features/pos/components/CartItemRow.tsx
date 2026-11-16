@@ -115,7 +115,7 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
           {/* Row 1: Product Name in fluent Lao */}
           <div className="flex items-start gap-1">
             <h4
-              className="text-[13px] font-semibold text-zinc-900 line-clamp-2 leading-snug break-words"
+              className="text-[13px] font-semibold text-zinc-900 line-clamp-2 leading-snug wrap-break-word"
               title={item.name}
             >
               {item.name}
@@ -167,7 +167,7 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
             type="button"
             disabled={item.quantity <= 1}
             onClick={handleMinus}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-zinc-800 shadow-2xs hover:bg-zinc-100 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-zinc-800 shadow-2xs hover:bg-zinc-100 active:scale-95 transition-all enabled:cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white"
             title="ຫຼຸດລົງ 1"
           >
             <Minus className="h-3.5 w-3.5" />
@@ -186,7 +186,7 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
               onChange={handleQtyChange}
               onBlur={handleQtyBlur}
               onFocus={(e) => e.target.select()}
-              className="w-6 h-7 text-center font-bold text-xs text-zinc-900 bg-transparent focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-md outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+              className="w-6 h-7 text-center font-bold text-xs text-zinc-900 focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-md outline-none no-spin-button font-mono"
             />
           </motion.div>
 
@@ -201,7 +201,7 @@ export const CartItemRow = memo(function CartItemRow({ item }: CartItemRowProps)
         </div>
 
         {/* Total Price for Line + Subtitle Unit Price */}
-        <div className="text-right min-w-[72px] sm:min-w-[82px] shrink-0">
+        <div className="text-right min-w-18 sm:min-w-20.5 shrink-0">
           <motion.span
             animate={
               isBouncing

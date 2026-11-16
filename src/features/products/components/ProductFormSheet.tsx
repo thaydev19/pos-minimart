@@ -360,37 +360,35 @@ export function ProductFormContent({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <form onSubmit={handleSubmit} className="flex h-full flex-col min-h-0 overflow-hidden">
         {/* 1. Header Bar */}
-        <div className="flex h-14 items-center justify-between border-b border-zinc-200/90 px-6 shrink-0 bg-white">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5 bg-slate-50/70 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-2xs">
               <Package className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-extrabold text-slate-900 leading-tight">
+              <h3 className="text-sm font-bold text-slate-900">
                 {product ? "ແກ້ໄຂສິນຄ້າ (Edit Product)" : "ເພີ່ມສິນຄ້າໃໝ່ (New Product)"}
-              </h2>
-              <p className="text-[10px] text-slate-500 font-medium">
+              </h3>
+              <p className="text-[10px] text-slate-500">
                 {product ? `ລະຫັດ: ${product.barcode}` : "ກຳນົດຫົວໜ່ວຍຂາຍ, ລາຄາ ແລະ ບາໂຄດ"}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* 2. Scrollable Body: Balanced 2-Column Desktop Grid */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* ========================================================= */}
             {/* LEFT COLUMN: General Info, Image & Settings (5 cols)      */}
@@ -972,7 +970,7 @@ export function ProductFormContent({
         </div>
 
         {/* 3. Sticky Footer Action Bar */}
-        <div className="flex h-16 items-center justify-between border-t border-zinc-200/90 bg-zinc-50 px-6 shrink-0">
+        <div className="flex h-16 items-center justify-between border-t border-zinc-200/90 bg-zinc-50 px-6 shrink-0 z-10 shadow-sm">
           <div>
             {product && (
               <button
@@ -1051,7 +1049,7 @@ export function ProductFormSheet(props?: ProductFormSheetProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className="relative flex flex-col w-full max-w-5xl xl:max-w-6xl max-h-[92vh] bg-white rounded-2xl border border-zinc-200/90 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+        className="relative flex flex-col w-full max-w-5xl xl:max-w-6xl h-[88vh] max-h-[88vh] min-h-[560px] bg-white rounded-2xl border border-zinc-200/90 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
       >

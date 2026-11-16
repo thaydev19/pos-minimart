@@ -29,6 +29,7 @@ import { triggerHapticFeedback } from "@/utils/haptics";
 import { DEFAULT_STORE } from "../constants/pos.constants";
 import { roundToLaoKip } from "../utils/pos.util";
 import { useAuth } from "@/features/auth";
+import { useShiftStore } from "@/features/shifts";
 import {
   CustomerPaymentMethod,
   updatePaymentMethodOnCustomerDisplay,
@@ -48,6 +49,7 @@ export function PaymentModal({
   onPaymentSuccess,
 }: PaymentModalProps) {
   const { user } = useAuth();
+  const activeShift = useShiftStore((s) => s.activeShift);
   const cart = usePosStore((s) => s.cart);
   const cashier = usePosStore((s) => s.cashier);
   const clearCart = usePosStore((s) => s.clearCart);
@@ -288,7 +290,7 @@ export function PaymentModal({
       const orderPayload = {
         id: orderId,
         store_id: activeStoreId,
-        shift_id: cashier.shiftNumber,
+        shift_id: activeShift?.id || undefined,
         cashier_id: activeCashierId,
         cashier_name: activeCashierName,
         order_number: orderNumber,
@@ -392,7 +394,7 @@ export function PaymentModal({
               {lo.payment.modalTitle}
             </h2>
             <p className="text-[11px] text-slate-500">
-              {user?.store_name_lo || DEFAULT_STORE.name_lo} • {cashier.name}
+              {user?.store_name_lo || DEFAULT_STORE.name_lo} • {user?.full_name_lo || cashier.name}
             </p>
           </div>
           <button

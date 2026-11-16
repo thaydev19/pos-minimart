@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { ShieldAlert, AlertTriangle, Delete } from "lucide-react";
 import { lo } from "@/constants/locales/lo";
+import { authApi } from "@/features/auth/api/auth.api";
 
 interface ConfirmPinDialogProps {
   isOpen: boolean;
@@ -16,22 +17,11 @@ interface ConfirmPinDialogProps {
   expectedPinHash?: string;
 }
 
-async function sha256(str: string): Promise<string> {
-  const buf = new TextEncoder().encode(str);
-  const hashBuf = await crypto.subtle.digest("SHA-256", buf);
-  const hashArr = Array.from(new Uint8Array(hashBuf));
-  return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-const DEFAULT_MANAGER_PIN_HASH =
-  "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
-
 export function ConfirmPinDialog({
   isOpen,
   onClose,
   onSuccess,
   actionTitle,
-  expectedPinHash = DEFAULT_MANAGER_PIN_HASH,
 }: ConfirmPinDialogProps) {
   const [pin, setPin] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -90,8 +80,8 @@ export function ConfirmPinDialog({
   const verifyPin = async (inputPin: string) => {
     setIsVerifying(true);
     try {
-      const hashed = await sha256(inputPin);
-      if (hashed === expectedPinHash || inputPin === "123456") {
+      const res = await authApi.verifyManagerPin(inputPin);
+      if (res.valid) {
         setPin("");
         setErrorMsg(null);
         setFailedAttempts(0);
@@ -110,9 +100,11 @@ export function ConfirmPinDialog({
             setErrorMsg(null);
           }, 30000);
         } else {
-          setErrorMsg(lo.pin.invalidPin.replace("{attempts}", nextAttempts.toString()));
+          setErrorMsg(res.error || lo.pin.invalidPin.replace("{attempts}", nextAttempts.toString()));
         }
       }
+    } catch {
+      setErrorMsg("ລະບົບກວດສອບ PIN ຜິດພາດ");
     } finally {
       setIsVerifying(false);
     }

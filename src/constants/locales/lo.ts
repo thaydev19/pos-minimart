@@ -4,8 +4,8 @@
 
 export const lo = {
   app: {
-    title: "ລະບົບຂາຍໜ້າຮ້ານມິນິມາດ",
-    subTitle: "Lao Minimart POS Terminal",
+    title: "ລະບົບ QuickOne POS",
+    subTitle: "QuickOne POS Terminal",
     offlineNotice: "ກຳລັງເຮັດວຽກແບບອອບລາຍ (Offline Mode)",
     onlineNotice: "ເຊື່ອມຕໍ່ລະບົບສຳເລັດ (Online Mode)",
     syncQueuePending: "ລໍຖ້າຊິງຄ໌ {count} ລາຍການ",
@@ -62,9 +62,9 @@ export const lo = {
     notEnoughCash: "ຈຳນວນເງິນສົດທີ່ຮັບຍັງບໍ່ພໍດີກັບຍອດເງິນ",
   },
   receipt: {
-    storeName: "ມິນິມາດ ລາວຈະເລີນ",
+    storeName: "QuickOne",
     storeBranch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
-    storeTel: "ໂທ: 020 5555 8888",
+    storeTel: "ໂທ: 55257555",
     storeTax: "ເລກປະຈຳຕົວຜູ້ເສຍພາສີ: 0102030405",
     receiptTitle: "ໃບບິນຮັບເງິນ / RECEIPT",
     billNo: "ເລກທີບິນ",

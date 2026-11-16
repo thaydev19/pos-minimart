@@ -91,13 +91,13 @@ export function StockAdjustmentDialog() {
       {/* Modal Dialog */}
       <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-5">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5 bg-slate-50/70 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-2xs">
               <ClipboardList className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900 leading-tight">
+              <h3 className="text-sm font-bold text-slate-900">
                 ກວດນັບ / ປັບຍອດສະຕັອກສິນຄ້າ
               </h3>
               <p className="text-[10px] text-slate-500 font-mono">
@@ -110,7 +110,7 @@ export function StockAdjustmentDialog() {
             type="button"
             onClick={closeAdjustment}
             disabled={isSubmitting}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>

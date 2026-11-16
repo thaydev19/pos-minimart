@@ -199,6 +199,17 @@ input, button, select, textarea, table, th, td {
   font-variant-numeric: tabular-nums;
 }
 
+/* Hide number input spinners across all browsers */
+.no-spin-button {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.no-spin-button::-webkit-outer-spin-button,
+.no-spin-button::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Custom scrollbars for POS panels */
 ::-webkit-scrollbar {
   width: 6px;

@@ -28,9 +28,13 @@ export function useProducts() {
   const filterType = useProductStore((s) => s.filterType);
 
   const filteredProducts = products.filter((prod) => {
-    // 1. Category filter
-    if (selectedCategory !== "all" && prod.category_id !== selectedCategory) {
-      return false;
+    // 1. Category filter (matches by category_id or category_name)
+    if (selectedCategory !== "all") {
+      const matchesCategory =
+        prod.category_id === selectedCategory ||
+        (prod.category_name &&
+          prod.category_name.toLowerCase() === selectedCategory.toLowerCase());
+      if (!matchesCategory) return false;
     }
 
     // 2. Type filter

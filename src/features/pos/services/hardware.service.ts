@@ -127,8 +127,8 @@ export class HardwareService {
     }
 
     // 3. Web simulation / fallback
-    console.info("[HardwareService] Cash Drawer pulse executed (Web Mock mode)");
-    return { success: true, message: "[ຈຳລອງ] ສົ່ງສັນຍານໄຂລິ້ນຊັກເງິນແລ້ວ" };
+    console.info("[HardwareService] Cash Drawer pulse executed (Web mode)");
+    return { success: true, message: "ສົ່ງສັນຍານໄຂລິ້ນຊັກເງິນແລ້ວ" };
   }
 
   /**
@@ -218,9 +218,9 @@ export class HardwareService {
       paymentMethod: "cash",
       cashTendered: 100000,
       changeAmount: 50000,
-      storeName: "ມິນິມາດ ລາວຈະເລີນ",
+      storeName: "QuickOne",
       storeBranch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
-      storeTel: "020 5555 8888",
+      storeTel: "55257555",
     };
 
     return this.printReceipt(testData);

@@ -45,13 +45,18 @@ export function ProductsPage() {
     <div className="space-y-4">
       {/* 1. Page Header & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
-        <div>
-          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            ລາຍການສິນຄ້າ & ຫົວໜ່ວຍ (Products & Units)
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            ຈັດການສິນຄ້າມິນິມາດ, ບາໂຄດ, ຫົວໜ່ວຍຍ່ອຍ/ແພັກ/ແກັດ ແລະ ລາຄາຂາຍ
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+            <Package className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              ລາຍການສິນຄ້າ & ຫົວໜ່ວຍ (Products & Units)
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ຈັດການສິນຄ້າມິນິມາດ, ບາໂຄດ, ຫົວໜ່ວຍຍ່ອຍ/ແພັກ/ແກັດ ແລະ ລາຄາຂາຍ
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  LayoutDashboard,
   TrendingUp,
   ShoppingBag,
   AlertTriangle,
@@ -111,13 +112,18 @@ export function DashboardPage() {
     <div className="space-y-5">
       {/* 1. Header Bar: Title, Range Filter & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
-        <div>
-          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-            ພາບລວມລະບົບຮ້ານຄ້າ (Store Overview)
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            ອັບເດດສະຖິຕິຍອດຂາຍ, ຕົ້ນທຶນ, ກຳໄລ, ການຊຳລະເງິນ ແລະ ແຈ້ງເຕືອນສາງສິນຄ້າ (FEFO)
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+            <LayoutDashboard className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              ພາບລວມລະບົບຮ້ານຄ້າ (Store Overview)
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ອັບເດດສະຖິຕິຍອດຂາຍ, ຕົ້ນທຶນ, ກຳໄລ, ການຊຳລະເງິນ ແລະ ແຈ້ງເຕືອນສາງສິນຄ້າ (FEFO)
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -150,14 +156,7 @@ export function DashboardPage() {
             <RefreshCw className={`h-5 w-5 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
-          {/* Jump to POS Terminal (min-h-[48px]) */}
-          <Link
-            href="/pos"
-            className="flex min-h-[48px] h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all touch-manipulation"
-          >
-            <ScanBarcode className="h-5 w-5" />
-            <span className="hidden sm:inline">ຂາຍໜ້າຮ້ານ (POS)</span>
-          </Link>
+          
         </div>
       </div>
 

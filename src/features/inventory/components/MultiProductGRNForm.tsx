@@ -1,13 +1,14 @@
 "use client";
 
 // ============================================================================
-// MultiProductGRNForm: Full-Width 1-Column Workspace (Flat UI, No Gradient)
-// Enterprise Goods Receipt Note (GRN) with Realtime Dual-Currency (THB ฿ & LAK ₭)
-// 7-Column Full Table (No Right Clipping), 3-Tier Mobile Card & FEFO Batch Controls
+// MultiProductGRNForm: Goods Receipt Note (GRN) - Focused & Compact Modal (max-w-5xl)
+// Clean LAK Currency, FEFO Batch Tracking
+// Metadata: ເລກທີບິນ (Auto-gen + Editable), ຮ້ານສົ່ງ (Supplier text input), ໝາຍເຫດ (Note)
+// Rich Autocomplete Search Dropdown with Product Thumbnails, Expanded Height & z-index
+// 100% Vector Lucide Icons - Zero Emoji
 // ============================================================================
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Trash2,
@@ -22,13 +23,7 @@ import {
   Search,
   Camera,
   Edit3,
-  CheckCircle2,
-  ArrowRightLeft,
-  Coins,
-  Plus,
-  Check,
-  UserCheck,
-  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { useInventoryStore } from "../stores/inventory.store";
 import { useStockMutations } from "../hooks/useStockMutations";
@@ -41,26 +36,18 @@ import { generateDefaultBatchNumber } from "../utils/inventory.util";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
 import { ProductThumbnail } from "@/features/pos/components/ProductThumbnail";
+import { CameraBarcodeScannerModal } from "@/features/pos/components/CameraBarcodeScannerModal";
 import { useCategories } from "@/features/categories";
-import { useAuthStore } from "@/features/auth/stores/auth.store";
+import { toast } from "sonner";
 
-export type PaymentStatus = "paid" | "unpaid" | "partial";
-
-// Extended item form data to support dual-currency calculations
-export interface GRNItemRow extends StockInItemFormData {
-  cost_thb: number;
-}
-
-const DEFAULT_EXCHANGE_RATE = 720; // 1 THB = 720 LAK
-
-const COMMON_SUPPLIERS = [
-  "ບໍລິສັດ ເບຍລາວ ຈຳກັດ (Lao Brewery)",
-  "ບໍລິສັດ ດີເຄເອັສເອັຊ ລາວ (DKSH Lao)",
-  "ບໍລິສັດ ຊີພີ ລາວ ຈຳກັດ (CP Laos)",
-  "ບໍລິສັດ ຢູນິລີເວີ ລາວ (Unilever Laos)",
-  "ບໍລິສັດ ໂຄຄາ-ໂຄລາ ລາວ (Coca-Cola)",
-  "ຕະຫຼາດເຊົ້າ / ຮ້ານຂາຍສົ່ງຫຼວງ",
-];
+const generateDefaultBillNumber = () => {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const rand = Math.floor(100 + Math.random() * 900);
+  return `BILL-${yy}${mm}${dd}-${rand}`;
+};
 
 export function MultiProductGRNForm() {
   const isStockInOpen = useInventoryStore((s) => s.isStockInOpen);
@@ -68,44 +55,48 @@ export function MultiProductGRNForm() {
   const itemsCatalog = useInventoryStore((s) => s.items);
   const loadInventory = useInventoryStore((s) => s.loadInventory);
   const initialProductId = useInventoryStore((s) => s.initialProductIdForStockIn);
-  const currentUser = useAuthStore((s) => s.user);
 
-  const { categories } = useCategories();
+  const { allCategories, categories } = useCategories();
+  const displayCategories = allCategories && allCategories.length > 0 ? allCategories : categories;
   const { createStockIn, isSubmitting, errorMessage, clearError } =
     useStockMutations();
 
-  // 1. PO Metadata
-  const [poCode, setPoCode] = useState(() => `PO-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-001`);
+  // 1. Metadata: Bill number (auto-gen & editable), Supplier text input, Note
+  const [billNumber, setBillNumber] = useState(generateDefaultBillNumber);
   const [supplierName, setSupplierName] = useState("");
-  const [receiverName, setReceiverName] = useState("");
   const [notes, setNotes] = useState("");
-  const [exchangeRate, setExchangeRate] = useState(DEFAULT_EXCHANGE_RATE);
-  const [isEditingRate, setIsEditingRate] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("paid");
 
   // 2. Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Reset highlighted index when query or category changes
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [searchQuery, selectedCategory]);
 
   // 3. Receipt Lines
-  const [grnItems, setGrnItems] = useState<GRNItemRow[]>([]);
+  const [grnItems, setGrnItems] = useState<StockInItemFormData[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // 4. Modals / Popovers
+  // 4. Modals
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
-  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
 
-  // Set default receiver name from auth session
+  // Close autocomplete on click outside
   useEffect(() => {
-    if (currentUser?.full_name_lo || currentUser?.username) {
-      setReceiverName(currentUser.full_name_lo || currentUser.username || "");
-    } else {
-      setReceiverName("ຜູ້ຈັດການສາງ (Store Manager)");
-    }
-  }, [currentUser]);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Reset form on close
   const handleClose = () => {
@@ -132,7 +123,6 @@ export function MultiProductGRNForm() {
     const selectedUnitName = usePack && packUnit ? packUnit.unit_name : product.base_unit;
     const conversionRate = usePack && packUnit ? packUnit.conversion_rate : 1;
     const initialUnitCostLak = (product.latest_cost_price || 0) * conversionRate;
-    const initialUnitCostThb = Math.round(initialUnitCostLak / exchangeRate);
 
     const existingIndex = grnItems.findIndex((i) => i.product_id === product.id);
 
@@ -144,7 +134,6 @@ export function MultiProductGRNForm() {
         existing.selected_unit_name = packUnit!.unit_name;
         existing.conversion_rate = packUnit!.conversion_rate;
         existing.input_cost_price = (product.latest_cost_price || 0) * packUnit!.conversion_rate;
-        existing.cost_thb = Math.round(existing.input_cost_price / exchangeRate);
         existing.input_quantity += 1;
         existing.total_base_quantity = existing.input_quantity * existing.conversion_rate;
       } else {
@@ -154,7 +143,7 @@ export function MultiProductGRNForm() {
 
       setGrnItems(updated);
     } else {
-      const newItem: GRNItemRow = {
+      const newItem: StockInItemFormData = {
         id: crypto.randomUUID(),
         product_id: product.id,
         product_name: product.name_lo,
@@ -165,7 +154,6 @@ export function MultiProductGRNForm() {
         input_quantity: 1,
         total_base_quantity: conversionRate,
         input_cost_price: initialUnitCostLak,
-        cost_thb: initialUnitCostThb,
         base_unit_cost: product.latest_cost_price || 0,
         batch_number: generateDefaultBatchNumber(),
         expiry_date: "",
@@ -198,81 +186,156 @@ export function MultiProductGRNForm() {
         }
       }
     }
-  }, [isStockInOpen, initialProductId, itemsCatalog.length]);
+  }, [isStockInOpen, itemsCatalog.length, initialProductId]);
 
-  // Autofocus search on open
+  // Keyboard shortcut: F1 to focus search bar
   useEffect(() => {
-    if (isStockInOpen) {
-      const timer = setTimeout(() => {
+    if (!isStockInOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F1") {
+        e.preventDefault();
         searchInputRef.current?.focus();
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [isStockInOpen]);
-
-  if (!isStockInOpen) return null;
-
-  // Handle Search Input Keydown (Barcode Scan Enter support)
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      e.preventDefault();
-      const code = searchQuery.trim().toLowerCase();
-
-      // 1. Try matching secondary pack barcode directly
-      for (const p of itemsCatalog) {
-        const packUnit = p.units?.find(
-          (u) =>
-            !u.is_base_unit &&
-            u.barcode &&
-            u.barcode.trim().toLowerCase() === code
-        );
-        if (packUnit) {
-          addOrIncrementProduct(p, "pack");
-          return;
-        }
+      } else if (e.key === "Escape" && !isCameraScannerOpen && editingItemIndex === null) {
+        handleClose();
       }
+    };
 
-      // 2. Try matching base product barcode
-      const foundByBaseBarcode = itemsCatalog.find(
-        (p) => p.barcode && p.barcode.trim().toLowerCase() === code
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isStockInOpen, isCameraScannerOpen, editingItemIndex]);
+
+  // Filtered products for autocomplete search (expanded to 40 items)
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim() && selectedCategory === "all") {
+      return itemsCatalog.slice(0, 30);
+    }
+
+    const q = searchQuery.toLowerCase().trim();
+    return itemsCatalog
+      .filter((p) => {
+        const matchesCategory =
+          selectedCategory === "all" ||
+          p.category_id === selectedCategory ||
+          (p.category_name &&
+            p.category_name.toLowerCase() === selectedCategory.toLowerCase());
+
+        if (!matchesCategory) return false;
+        if (!q) return true;
+
+        const matchesBarcode = p.barcode.toLowerCase().includes(q);
+        const matchesName = p.name_lo.toLowerCase().includes(q);
+        const matchesPackBarcode = p.units?.some((u) =>
+          u.barcode?.toLowerCase().includes(q)
+        );
+
+        return matchesBarcode || matchesName || matchesPackBarcode;
+      })
+      .slice(0, 40);
+  }, [itemsCatalog, searchQuery, selectedCategory]);
+
+  // Search keyboard navigation (Arrow keys + Enter + Esc)
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setIsSearchOpen(true);
+      setHighlightedIndex((prev) =>
+        prev < filteredProducts.length - 1 ? prev + 1 : prev
       );
-      if (foundByBaseBarcode) {
-        addOrIncrementProduct(foundByBaseBarcode, "base");
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+      return;
+    }
+    if (e.key === "Escape") {
+      setIsSearchOpen(false);
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const query = searchQuery.trim();
+
+      // If dropdown is open and user pressed enter on a highlighted item
+      if (
+        isSearchOpen &&
+        filteredProducts.length > 0 &&
+        highlightedIndex >= 0 &&
+        highlightedIndex < filteredProducts.length
+      ) {
+        addOrIncrementProduct(filteredProducts[highlightedIndex]);
         return;
       }
 
-      // 3. Fallback: match first product by name
-      const foundByName = itemsCatalog.find(
-        (p) =>
-          p.name_lo.toLowerCase().includes(code) ||
-          (p.name_en && p.name_en.toLowerCase().includes(code))
+      if (!query) return;
+
+      const exactBarcode = itemsCatalog.find(
+        (p) => p.barcode && p.barcode.toLowerCase() === query.toLowerCase()
       );
-      if (foundByName) {
-        addOrIncrementProduct(foundByName);
+
+      if (exactBarcode) {
+        addOrIncrementProduct(exactBarcode, "base");
+        return;
+      }
+
+      const packBarcodeProduct = itemsCatalog.find((p) =>
+        p.units?.some(
+          (u) =>
+            !u.is_base_unit &&
+            u.barcode &&
+            u.barcode.toLowerCase() === query.toLowerCase()
+        )
+      );
+
+      if (packBarcodeProduct) {
+        addOrIncrementProduct(packBarcodeProduct, "pack");
+        return;
+      }
+
+      if (filteredProducts.length > 0) {
+        addOrIncrementProduct(filteredProducts[0]);
       }
     }
   };
 
-  // Filter products for autocomplete dropdown
-  const filteredProducts = searchQuery.trim()
-    ? itemsCatalog
-        .filter((p) => {
-          const matchesCat =
-            selectedCategory === "all" || p.category_id === selectedCategory;
-          if (!matchesCat) return false;
+  // Optical camera barcode scan handler (Shared with POS)
+  const handleCameraBarcodeDetected = (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
 
-          const q = searchQuery.toLowerCase();
-          return (
-            p.name_lo.toLowerCase().includes(q) ||
-            (p.name_en && p.name_en.toLowerCase().includes(q)) ||
-            p.barcode.toLowerCase().includes(q)
-          );
-        })
-        .slice(0, 8)
-    : [];
+    // 1. Check exact base product barcode
+    const exactBarcode = itemsCatalog.find(
+      (p) => p.barcode && p.barcode.toLowerCase() === trimmed.toLowerCase()
+    );
 
-  // Toggle unit mode between Base Unit (1x) and Pack Unit (Nx)
-  const handleToggleUnitMode = (index: number, mode: "base" | "pack") => {
+    if (exactBarcode) {
+      addOrIncrementProduct(exactBarcode, "base");
+      toast.success(`ເພີ່ມ "${exactBarcode.name_lo}" ເຂົ້າໃບຮັບແລ້ວ`);
+      return;
+    }
+
+    // 2. Check pack barcode
+    const packBarcodeProduct = itemsCatalog.find((p) =>
+      p.units?.some(
+        (u) =>
+          !u.is_base_unit &&
+          u.barcode &&
+          u.barcode.toLowerCase() === trimmed.toLowerCase()
+      )
+    );
+
+    if (packBarcodeProduct) {
+      addOrIncrementProduct(packBarcodeProduct, "pack");
+      toast.success(`ເພີ່ມ "${packBarcodeProduct.name_lo}" (ແພັກ) ເຂົ້າໃບຮັບແລ້ວ`);
+      return;
+    }
+
+    toast.error(`ບໍ່ພົບສິນຄ້າທີ່ມີບາໂຄດ: ${trimmed}`);
+  };
+
+  // Toggle unit mode (base vs pack)
+  const handleToggleUnitMode = (index: number, mode: "pack" | "base") => {
     const updated = [...grnItems];
     const item = { ...updated[index] };
     const product = itemsCatalog.find((p) => p.id === item.product_id);
@@ -284,12 +347,10 @@ export function MultiProductGRNForm() {
       item.selected_unit_name = packUnit.unit_name;
       item.conversion_rate = packUnit.conversion_rate;
       item.input_cost_price = (product.latest_cost_price || 0) * packUnit.conversion_rate;
-      item.cost_thb = Math.round(item.input_cost_price / exchangeRate);
     } else {
       item.selected_unit_name = product.base_unit;
       item.conversion_rate = 1;
       item.input_cost_price = product.latest_cost_price || 0;
-      item.cost_thb = Math.round(item.input_cost_price / exchangeRate);
     }
 
     item.total_base_quantity = item.input_quantity * item.conversion_rate;
@@ -310,26 +371,11 @@ export function MultiProductGRNForm() {
     setGrnItems(updated);
   };
 
-  // Update THB cost -> auto convert to LAK
-  const handleUpdateCostThb = (index: number, thb: number) => {
-    const updated = [...grnItems];
-    const item = { ...updated[index] };
-    item.cost_thb = thb;
-    item.input_cost_price = Math.round(thb * exchangeRate);
-    item.base_unit_cost =
-      item.conversion_rate > 0
-        ? Math.round(item.input_cost_price / item.conversion_rate)
-        : item.input_cost_price;
-    updated[index] = item;
-    setGrnItems(updated);
-  };
-
-  // Update LAK cost -> auto convert to THB
+  // Update LAK cost
   const handleUpdateCostLak = (index: number, lak: number) => {
     const updated = [...grnItems];
     const item = { ...updated[index] };
     item.input_cost_price = lak;
-    item.cost_thb = exchangeRate > 0 ? Math.round(lak / exchangeRate) : 0;
     item.base_unit_cost =
       item.conversion_rate > 0
         ? Math.round(lak / item.conversion_rate)
@@ -376,10 +422,8 @@ export function MultiProductGRNForm() {
 
     const payload: StockInFormData = {
       supplier_name: supplierName.trim() || undefined,
-      invoice_ref: poCode.trim() || undefined,
-      notes: notes.trim()
-        ? `${notes.trim()} | ສະຖານະ: ${paymentStatus.toUpperCase()} | ອັດຕາແລກປ່ຽນ: 1฿=${exchangeRate}₭ | ຜູ້ກວດຮັບ: ${receiverName}`
-        : `ສະຖານະ: ${paymentStatus.toUpperCase()} | ອັດຕາແລກປ່ຽນ: 1฿=${exchangeRate}₭ | ຜູ້ກວດຮັບ: ${receiverName}`,
+      invoice_ref: billNumber.trim() || undefined,
+      notes: notes.trim() || undefined,
       items: grnItems,
     };
 
@@ -389,152 +433,103 @@ export function MultiProductGRNForm() {
     }
   };
 
-  // Totals
+  // Totals in Kip (LAK)
   const totalCostLak = grnItems.reduce(
     (sum, item) => sum + item.input_cost_price * item.input_quantity,
     0
   );
-  const totalCostThb = exchangeRate > 0 ? Math.round(totalCostLak / exchangeRate) : 0;
   const totalBaseUnits = grnItems.reduce((sum, item) => sum + item.total_base_quantity, 0);
+
+  if (!isStockInOpen) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex flex-col bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150 select-none overflow-y-auto p-0 sm:p-2 lg:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150 select-none p-2 sm:p-4 lg:p-6"
     >
-      {/* FULL-WIDTH CONTAINER: 100% flat background, zero gradient, zero clipping */}
-      <div className="relative w-full min-h-full sm:min-h-0 sm:my-auto rounded-none sm:rounded-2xl bg-slate-50 flex flex-col overflow-hidden border border-slate-200 shadow-2xl">
+      {/* FOCUSED MODAL CONTAINER: Fixed Height (h-[88vh] min-h-[560px] max-h-[88vh]) - 100% Stable */}
+      <div className="relative w-full max-w-5xl h-[88vh] min-h-[560px] max-h-[88vh] rounded-2xl bg-slate-50 flex flex-col overflow-hidden border border-slate-200 shadow-2xl">
         {/* ================================================================= */}
         {/* HEADER BAR: Crisp Modern Retail Topbar                            */}
         {/* ================================================================= */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-              <PackagePlus className="h-5 w-5" />
+        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5 bg-slate-50/70 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-2xs">
+              <PackagePlus className="h-4 w-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm lg:text-base font-extrabold text-slate-900 leading-tight">
-                  ໃບຮັບສິນຄ້າເຂົ້າສາງ (Goods Receipt Note - GRN)
-                </h2>
-                <span className="hidden sm:inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  Full-Width
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-                ຕາຕະລາງນຳເຂົ້າສິນຄ້າເຕັມຈໍ, ຄຳນວນຕົ້ນທຶນ 2 ສະກຸນເງິນ (฿ & ₭) ແລະ ຕັດລັອດ FEFO
+              <h3 className="text-sm font-bold text-slate-900">
+                ໃບຮັບສິນຄ້າເຂົ້າສາງ (Goods Receipt Note - GRN)
+              </h3>
+              <p className="text-[10px] text-slate-500">
+                ຕາຕະລາງນຳເຂົ້າສິນຄ້າ ແລະ ຕັດລັອດ FEFO
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Quick Exchange Rate Pill */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
-              <Coins className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-slate-500 font-medium">1 ฿ =</span>
-              {isEditingRate ? (
-                <input
-                  type="number"
-                  min="1"
-                  value={exchangeRate}
-                  onChange={(e) => setExchangeRate(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  onBlur={() => setIsEditingRate(false)}
-                  autoFocus
-                  className="w-14 rounded border border-emerald-500 bg-white px-1 py-0.5 text-center font-bold text-slate-900 outline-none text-xs"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingRate(true)}
-                  className="font-extrabold text-slate-900 hover:text-emerald-700 underline decoration-dotted cursor-pointer"
-                  title="ກົດເພື່ອປ່ຽນອັດຕາແລກປ່ຽນ"
-                >
-                  {exchangeRate.toLocaleString()} ₭
-                </button>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
-              title="ປິດ"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
+            title="ປິດ"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* ================================================================= */}
-        {/* MAIN BODY: 3 Tiers Stacking Vertically Full-Width                 */}
+        {/* MAIN BODY: Form Stack                                             */}
         {/* ================================================================= */}
-        <div className="w-full px-4 lg:px-6 py-4 flex-1 overflow-y-auto space-y-4">
+        <div className="w-full px-4 sm:px-6 py-3.5 flex-1 flex flex-col min-h-0 space-y-3 overflow-hidden">
           {/* --------------------------------------------------------------- */}
-          {/* TẦNG 1: Thanh Thông Tin Nhà Cung Cấp Siêu Gọn (1 Hàng Ngang)     */}
+          {/* TẦNG 1: Thông tin phiếu nhập (3 ô: Số phiếu, Nhà cung cấp, Ghi chú)*/}
           {/* --------------------------------------------------------------- */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              {/* 1. Mã phiếu (PO Code) */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-slate-400" />
-                  <span>ລະຫັດໃບສັ່ງຊື້ (PO Code)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={poCode}
-                    onChange={(e) => setPoCode(e.target.value)}
-                    placeholder="PO-2026..."
-                    className="h-8.5 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-mono font-bold text-slate-800 outline-none focus:border-emerald-600 focus:bg-white transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* 2. Nhà cung cấp (Supplier) + Nút quản lý */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* 1. Mã phiếu / Số hóa đơn (Tự generate và tự nhập) */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                    <span>ຮ້ານສົ່ງ (Supplier)</span>
+                    <FileText className="h-3.5 w-3.5 text-slate-400" />
+                    <span>ເລກທີບິນ (Bill / Invoice No.)</span>
                   </label>
                   <button
                     type="button"
-                    onClick={() => setIsSupplierModalOpen(true)}
-                    className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-0.5 cursor-pointer"
+                    onClick={() => setBillNumber(generateDefaultBillNumber())}
+                    className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                    title="ສ້າງເລກບິນໃໝ່ອັດຕະໂນມັດ"
                   >
-                    <Plus className="h-2.5 w-2.5" />
-                    <span>ຈັດການຮ້ານສົ່ງ</span>
+                    <RefreshCw className="h-2.5 w-2.5" />
+                    <span>ສ້າງເລກໃໝ່</span>
                   </button>
                 </div>
                 <input
                   type="text"
-                  value={supplierName}
-                  onChange={(e) => setSupplierName(e.target.value)}
-                  placeholder="ເຊັ່ນ: ບໍລິສັດ ເບຍລາວ..."
-                  className="h-8.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 transition-colors"
+                  value={billNumber}
+                  onChange={(e) => setBillNumber(e.target.value)}
+                  placeholder="BILL-..."
+                  className="h-8.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-mono font-bold text-slate-800 outline-none focus:border-emerald-600 transition-colors"
                 />
               </div>
 
-              {/* 3. Người nhận (Receiver *) */}
+              {/* 2. Nhà cung cấp (Supplier) - Ô nhập thuần túy, không có nút modal */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                  <UserCheck className="h-3.5 w-3.5 text-slate-400" />
-                  <span>ຜູ້ກວດຮັບ (Receiver *)</span>
+                  <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                  <span>ຮ້ານສົ່ງ (Supplier)</span>
                 </label>
                 <input
                   type="text"
-                  required
-                  value={receiverName}
-                  onChange={(e) => setReceiverName(e.target.value)}
-                  placeholder="ຊື່ພະນັກງານກວດຮັບ..."
+                  value={supplierName}
+                  onChange={(e) => setSupplierName(e.target.value)}
+                  placeholder="ເຊັ່ນ: ບໍລິສັດ ເບຍລາວ, ຮ້ານຂາຍສົ່ງ..."
                   className="h-8.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 transition-colors"
                 />
               </div>
 
-              {/* 4. Ghi chú (Note) */}
+              {/* 3. Ghi chú (Note) */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700">ໝາຍເຫດ (Note)</label>
                 <input
@@ -557,13 +552,13 @@ export function MultiProductGRNForm() {
           )}
 
           {/* --------------------------------------------------------------- */}
-          {/* TẦNG 2: Khối Tìm Kiếm & Bảng Hàng Nhập Tràn Viền (Đủ 7 Cột)       */}
+          {/* TẦNG 2: Khối Tìm Kiếm & Bảng Hàng Nhập (Fixed Flex-1 Layout)   */}
           {/* --------------------------------------------------------------- */}
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
-            {/* Header Thẻ: Thanh Tìm Kiếm + Lọc Danh Mục + Quét Camera */}
-            <div className="p-3 lg:p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col md:flex-row items-center justify-between gap-3">
-              {/* Autocomplete Search Bar */}
-              <div className="relative flex-1 w-full">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-xs flex-1 flex flex-col min-h-0 relative">
+            {/* Header Thẻ: Thanh Tìm Kiếm + Lọc Danh Mục + Quét Camera (shrink-0) */}
+            <div className="p-3 sm:p-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row items-center justify-between gap-3 relative z-30 rounded-t-2xl shrink-0">
+              {/* Autocomplete Search Bar Container */}
+              <div ref={searchContainerRef} className="relative flex-1 w-full">
                 <div className="relative flex items-center">
                   <div className="pointer-events-none absolute left-3 flex items-center text-emerald-600">
                     <ScanBarcode className="h-4.5 w-4.5" />
@@ -579,46 +574,98 @@ export function MultiProductGRNForm() {
                     onKeyDown={handleSearchKeyDown}
                     onFocus={() => setIsSearchOpen(true)}
                     placeholder="ຍິງບາໂຄດ ຫຼື ພິມຊື່ສິນຄ້າ, ລະຫັດ SKU ແລ້ວກົດ Enter..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-24 text-xs font-bold text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 placeholder:text-slate-400 transition-colors"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-24 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 transition-all shadow-2xs"
                   />
-                  <div className="absolute right-2 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
-                    <Search className="h-3 w-3" />
-                    <span>ພ້ອມຍິງບາໂຄດ</span>
+                  <div className="absolute right-2.5 flex items-center gap-1.5">
+                    <span className="hidden sm:inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-500 border border-slate-200">
+                      F1
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSearchOpen((prev) => !prev)}
+                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Autocomplete Suggestions */}
-                {isSearchOpen && filteredProducts.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
-                    {filteredProducts.map((p) => {
-                      const packUnit = p.units?.find((u) => !u.is_base_unit && u.conversion_rate > 1);
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => addOrIncrementProduct(p)}
-                          className="flex items-center justify-between p-2.5 hover:bg-emerald-50/70 border-b border-slate-100 last:border-0 transition-colors cursor-pointer"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="font-bold text-xs text-slate-900 truncate">
-                              {p.name_lo}
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-mono">
-                              ບາໂຄດ: {p.barcode} | ຫົວໜ່ວຍ: {p.base_unit}
-                              {packUnit && ` / ${packUnit.unit_name} (x${packUnit.conversion_rate})`}
-                            </div>
-                          </div>
-                          <div className="text-right pl-3 shrink-0">
-                            <span className="text-[11px] font-bold text-slate-700 block">
-                              ທຶນ: {formatLak(p.latest_cost_price || 0)}
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                              ຄົງເຫຼືອ: {p.total_stock} {p.base_unit}
-                            </span>
-                          </div>
+                {/* Autocomplete Dropdown: Floating z-50, optimized height (max-h-72), product images, keyboard nav */}
+                {isSearchOpen && (
+                  <>
+                    {filteredProducts.length > 0 ? (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 animate-in fade-in duration-100">
+                        {/* Header bar inside dropdown */}
+                        <div className="sticky top-0 z-10 flex items-center justify-between px-3.5 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-500 bg-slate-50/95 backdrop-blur-xs">
+                          <span>ພົບ {filteredProducts.length} ລາຍການ</span>
+                          <span className="text-slate-400 font-normal">ກົດ Enter ຫຼື ຄລິກເພື່ອເລືອກ</span>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div className="p-1.5 space-y-0.5">
+                          {filteredProducts.map((p, idx) => {
+                            const packUnit = p.units?.find((u) => !u.is_base_unit && u.conversion_rate > 1);
+                            const isSelected = highlightedIndex === idx;
+                            return (
+                              <div
+                                key={p.id}
+                                onClick={() => addOrIncrementProduct(p)}
+                                onMouseEnter={() => setHighlightedIndex(idx)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500/30"
+                                    : "hover:bg-slate-50 text-slate-800"
+                                }`}
+                              >
+                                {/* Product Thumbnail */}
+                                <ProductThumbnail
+                                  src={p.image_url}
+                                  alt={p.name_lo}
+                                  name={p.name_lo}
+                                  className="h-9 w-9 rounded-xl bg-white shrink-0 border border-slate-200/80 overflow-hidden"
+                                  imgClassName="w-full h-full object-contain p-0.5 mix-blend-multiply"
+                                />
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1">
+                                  <div className={`font-bold text-xs truncate ${isSelected ? "text-emerald-900" : "text-slate-900"}`}>
+                                    {p.name_lo}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                    <span>{p.barcode}</span>
+                                    <span>•</span>
+                                    <span>
+                                      {p.base_unit}
+                                      {packUnit ? ` (ແພັກ x${packUnit.conversion_rate})` : ""}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Cost & Stock on Right */}
+                                <div className="text-right pl-2 shrink-0">
+                                  <span className="text-xs font-black text-emerald-700 block tabular-nums">
+                                    {formatLak(p.latest_cost_price || 0)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 tabular-nums">
+                                    ຄົງເຫຼືອ: {p.total_stock} {p.base_unit}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : searchQuery.trim() ? (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-2xl ring-1 ring-black/5 animate-in fade-in duration-100">
+                        <AlertCircle className="h-5 w-5 text-slate-300 mx-auto mb-1" />
+                        <div className="text-xs text-slate-600 font-semibold">
+                          ບໍ່ພົບສິນຄ້າທີ່ກົງກັບ &quot;<span className="text-emerald-700">{searchQuery}</span>&quot;
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          ກະລຸນາກວດສອບຊື່ສິນຄ້າ ຫຼື ລະຫັດບາໂຄດຄືນໃໝ່
+                        </p>
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
 
@@ -626,13 +673,16 @@ export function MultiProductGRNForm() {
               <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600 flex-1 md:flex-initial"
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setIsSearchOpen(true);
+                  }}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600 flex-1 md:flex-initial cursor-pointer"
                 >
-                  <option value="all">ທຸກໝວດໝູ່ ({categories.length})</option>
-                  {categories.map((c) => (
+                  <option value="all">ທຸກໝວດໝູ່ ({displayCategories.length})</option>
+                  {displayCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name_lo}
+                      {c.name_lo} {c.product_count !== undefined ? `(${c.product_count})` : ""}
                     </option>
                   ))}
                 </select>
@@ -649,35 +699,36 @@ export function MultiProductGRNForm() {
               </div>
             </div>
 
-            {/* Empty State */}
-            {grnItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center bg-white">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-2 border border-emerald-100">
-                  <ScanBarcode className="h-6 w-6" />
+            {/* Scrollable Table Area inside Card */}
+            <div className="flex-1 overflow-y-auto min-h-0 rounded-b-2xl">
+              {/* Empty State */}
+              {grnItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full min-h-[220px] py-16 text-center bg-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-2 border border-emerald-100">
+                    <ScanBarcode className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-800">
+                    ຍັງບໍ່ທັນມີລາຍການສິນຄ້າໃນໃບຮັບ
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                    ໃຊ້ເຄື່ອງສະແກນຍິງບາໂຄດເທິງກ່ອງ/ແພັກ ຫຼື ພິມຊື່ສິນຄ້າໃນຊ່ອງຄົ້ນຫາດ້ານເທິງເພື່ອເພີ່ມລາຍການ
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-slate-800">
-                  ຍັງບໍ່ທັນມີລາຍການສິນຄ້າໃນໃບຮັບ
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                  ໃຊ້ເຄື່ອງສະແກນຍິງບາໂຄດເທິງກ່ອງ/ແພັກ ຫຼື ພິມຊື່ສິນຄ້າໃນຊ່ອງຄົ້ນຫາດ້ານເທິງເພື່ອເພີ່ມລາຍການ
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* 1. Desktop & iPad Table (7 Columns Full-Width, No Cutoff) */}
-                <div className="hidden md:block overflow-x-auto w-full">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-[11px] text-slate-600 font-bold uppercase tracking-wider">
-                        <th className="py-3 px-4 min-w-[220px]">ຮູບ & ຊື່ສິນຄ້າ</th>
-                        <th className="py-3 px-3 text-center w-[150px]">ຫົວໜ່ວຍນຳເຂົ້າ</th>
-                        <th className="py-3 px-3 text-center w-[120px]">ຈຳນວນ</th>
-                        <th className="py-3 px-3 text-right w-[120px]">ຕົ້ນທຶນ ฿</th>
-                        <th className="py-3 px-3 text-right w-[130px]">ຕົ້ນທຶນ ₭</th>
-                        <th className="py-3 px-4 text-right w-[140px]">ລວມເງິນ ₭</th>
-                        <th className="py-3 px-3 text-center w-[90px]">ຈັດການ</th>
-                      </tr>
-                    </thead>
+              ) : (
+                <>
+                  {/* 1. Desktop Table (6 Clean Columns with Sticky Header) */}
+                  <div className="hidden md:block overflow-x-auto w-full">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="sticky top-0 z-10 bg-slate-50 shadow-2xs">
+                        <tr className="border-b border-slate-200 text-[11px] text-slate-600 font-bold uppercase tracking-wider">
+                          <th className="py-3 px-4 min-w-[220px]">ຮູບ & ຊື່ສິນຄ້າ</th>
+                          <th className="py-3 px-3 text-center w-[150px]">ຕົວໜ່ວຍນຳເຂົ້າ</th>
+                          <th className="py-3 px-3 text-center w-[120px]">ຈຳນວນ</th>
+                          <th className="py-3 px-3 text-right w-[140px]">ຕົ້ນທຶນ ₭</th>
+                          <th className="py-3 px-4 text-right w-[150px]">ລວມເງິນ ₭</th>
+                          <th className="py-3 px-3 text-center w-[90px]">ຈັດການ</th>
+                        </tr>
+                      </thead>
                     <tbody className="divide-y divide-slate-100">
                       {grnItems.map((item, index) => {
                         const product = itemsCatalog.find((p) => p.id === item.product_id);
@@ -700,8 +751,8 @@ export function MultiProductGRNForm() {
                                   src={product?.image_url}
                                   alt={item.product_name}
                                   name={item.product_name}
-                                  className="h-10 w-10 rounded-xl bg-slate-50 shrink-0 border border-slate-200/70"
-                                  imgClassName="w-full h-full object-contain p-1"
+                                  className="h-10 w-10 rounded-xl bg-white shrink-0 border border-slate-200/80 overflow-hidden"
+                                  imgClassName="w-full h-full object-contain p-0.5 mix-blend-multiply"
                                 />
                                 <div className="min-w-0 flex-1">
                                   <div className="font-bold text-slate-900 leading-snug line-clamp-1">
@@ -791,7 +842,7 @@ export function MultiProductGRNForm() {
                                     }
                                   }}
                                   placeholder="1"
-                                  className="h-full w-12 text-center text-xs font-black text-slate-900 outline-none tabular-nums px-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="h-full w-12 text-center text-xs font-black text-slate-900 outline-none tabular-nums px-0.5 no-spin-button"
                                 />
                                 <button
                                   type="button"
@@ -806,36 +857,12 @@ export function MultiProductGRNForm() {
                               </div>
                             </td>
 
-                            {/* 4. Giá vốn ฿ (Thai Baht) */}
-                            <td className="py-3 px-3 text-right">
-                              <div className="relative inline-flex items-center">
-                                <span className="absolute left-2 text-[11px] font-bold text-amber-500">
-                                  ฿
-                                </span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="any"
-                                  value={item.cost_thb === 0 ? "" : item.cost_thb}
-                                  onChange={(e) => {
-                                    const val =
-                                      e.target.value === ""
-                                        ? 0
-                                        : Math.max(0, parseFloat(e.target.value) || 0);
-                                    handleUpdateCostThb(index, val);
-                                  }}
-                                  placeholder="0"
-                                  className="h-8 w-24 rounded-lg border border-slate-200 bg-white pl-6 pr-2 text-right text-xs font-extrabold text-slate-900 outline-none focus:border-emerald-600 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                />
-                              </div>
-                            </td>
-
-                            {/* 5. Giá vốn ₭ (Lao Kip) */}
+                            {/* 4. Giá vốn ₭ (Lao Kip) */}
                             <td className="py-3 px-3 text-right">
                               <KipCurrencyInput
                                 value={item.input_cost_price || 0}
                                 onValueChange={(val) => handleUpdateCostLak(index, val)}
-                                className="h-8 w-28 text-xs font-extrabold text-slate-900 text-right bg-white rounded-lg border border-slate-200"
+                                className="h-8 w-32 text-xs font-extrabold text-slate-900 text-right bg-white rounded-lg border border-slate-200"
                               />
                               {item.conversion_rate > 1 && (
                                 <div className="text-[9.5px] text-slate-400 mt-0.5">
@@ -844,7 +871,7 @@ export function MultiProductGRNForm() {
                               )}
                             </td>
 
-                            {/* 6. Thành tiền ₭ */}
+                            {/* 5. Thành tiền ₭ */}
                             <td className="py-3 px-4 text-right">
                               <div className="font-extrabold text-slate-900 text-[13px] tabular-nums">
                                 {formatLak(lineTotalCostLak)}
@@ -854,7 +881,7 @@ export function MultiProductGRNForm() {
                               </div>
                             </td>
 
-                            {/* 7. Quản lý (Sửa FEFO / Xóa) */}
+                            {/* 6. Quản lý (Sửa FEFO / Xóa) */}
                             <td className="py-3 px-3 text-center">
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
@@ -882,7 +909,7 @@ export function MultiProductGRNForm() {
                   </table>
                 </div>
 
-                {/* 2. Mobile Responsive Card List (3 Tầng Dễ Chạm) */}
+                {/* 2. Mobile Responsive Card List */}
                 <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
                   {grnItems.map((item, index) => {
                     const product = itemsCatalog.find((p) => p.id === item.product_id);
@@ -988,16 +1015,10 @@ export function MultiProductGRNForm() {
                           </div>
                         </div>
 
-                        {/* Tầng 3: Giá vốn ฿ & ₭ + Thành tiền */}
+                        {/* Tầng 3: Giá vốn ₭ + Thành tiền */}
                         <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
-                          <div className="flex items-center gap-2">
-                            <div className="text-[11px] font-bold text-amber-600">
-                              ฿ {item.cost_thb.toLocaleString()}
-                            </div>
-                            <span className="text-slate-300">|</span>
-                            <div className="text-[11px] font-extrabold text-slate-900">
-                              {formatLak(item.input_cost_price)}
-                            </div>
+                          <div className="text-[11px] font-extrabold text-slate-900">
+                            {formatLak(item.input_cost_price)}
                           </div>
 
                           <div className="text-right">
@@ -1015,86 +1036,41 @@ export function MultiProductGRNForm() {
                 </div>
               </>
             )}
+            </div>
           </div>
 
           {/* --------------------------------------------------------------- */}
-          {/* TẦNG 3: Thanh Tổng Kết Thanh Toán & Nút Lưu Nằm Ngang Gọn Gàng   */}
+          {/* TẦNG 3: Thanh Tổng Kết & Nút Lưu Nằm Ngang Gọn Gàng             */}
           {/* --------------------------------------------------------------- */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-              {/* Bên trái (lg:col-span-5): 2 ô tổng tiền LAK & THB */}
-              <div className="lg:col-span-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <div className="text-[11px] font-semibold text-slate-500">
-                    ຍອດລວມ ₭ (LAK)
-                  </div>
-                  <div className="text-base lg:text-lg font-black text-slate-900 tabular-nums mt-0.5">
-                    {formatLak(totalCostLak)}
-                  </div>
-                  <div className="text-[10px] text-emerald-700 font-bold mt-0.5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs shrink-0">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              {/* Bên trái: Tổng kết số lượng & tổng tiền KIP */}
+              <div className="flex items-center gap-4 sm:gap-6 text-xs w-full sm:w-auto justify-between sm:justify-start">
+                <div>
+                  <span className="text-slate-400">ລາຍການ: </span>
+                  <strong className="text-slate-800 tabular-nums font-bold">{grnItems.length}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400">ຈຳນວນລວມ: </span>
+                  <strong className="text-emerald-700 tabular-nums font-bold">
                     +{totalBaseUnits} {grnItems.length > 0 ? "ໜ່ວຍເຂົ້າສາງ" : "ໜ່ວຍ"}
-                  </div>
+                  </strong>
                 </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <div className="text-[11px] font-semibold text-slate-500">
-                    ຍອດລວມ ฿ (THB)
-                  </div>
-                  <div className="text-base lg:text-lg font-black text-amber-600 tabular-nums mt-0.5">
-                    ฿ {totalCostThb.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-medium mt-0.5">
-                    ອັດຕາ: 1 ฿ = {exchangeRate} ₭
-                  </div>
+                <div>
+                  <span className="text-slate-400">ຍອດລວມທັງໝົດ: </span>
+                  <strong className="text-emerald-700 text-sm sm:text-base tabular-nums font-black ml-1">
+                    {formatLak(totalCostLak)}
+                  </strong>
                 </div>
               </div>
 
-              {/* Ở giữa (lg:col-span-4): 3 nút trạng thái thanh toán với layoutId trượt mượt */}
-              <div className="lg:col-span-4 flex flex-col justify-center">
-                <label className="text-[11px] font-bold text-slate-600 mb-1.5 block">
-                  ສະຖານະການຊຳລະເງິນ (Payment Status)
-                </label>
-                <div className="relative flex rounded-xl border border-slate-200 bg-slate-100 p-1">
-                  {(
-                    [
-                      { key: "paid", label: "ຈ່າຍຄົບ" },
-                      { key: "unpaid", label: "ຄ້າງຊຳລະ" },
-                      { key: "partial", label: "ຈ່າຍບາງສ່ວນ" },
-                    ] as const
-                  ).map((st) => {
-                    const isActive = paymentStatus === st.key;
-                    return (
-                      <button
-                        key={st.key}
-                        type="button"
-                        onClick={() => setPaymentStatus(st.key)}
-                        className={`relative flex-1 py-1.5 text-xs font-extrabold rounded-lg transition-colors cursor-pointer z-10 ${
-                          isActive
-                            ? "text-slate-900"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        {isActive && (
-                          <motion.div
-                            layoutId="grnPaymentStatusActivePill"
-                            className="absolute inset-0 rounded-lg bg-white shadow-2xs -z-10"
-                            transition={{ type: "spring", bounce: 0.15, duration: 0.3 }}
-                          />
-                        )}
-                        <span>{st.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bên phải (lg:col-span-3): Nút lưu chính to rõ, dễ bấm */}
-              <div className="lg:col-span-3 flex items-center justify-end gap-2">
+              {/* Bên phải: Nút Hủy và Nút Lưu */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={handleClose}
                   disabled={isSubmitting}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-xs font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                  className="h-10 rounded-xl border border-slate-300 bg-white px-4 text-xs font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
                 >
                   ຍົກເລີກ
                 </button>
@@ -1103,7 +1079,7 @@ export function MultiProductGRNForm() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting || grnItems.length === 0}
-                  className="flex-1 h-11 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-extrabold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1119,7 +1095,7 @@ export function MultiProductGRNForm() {
       </div>
 
       {/* =================================================================== */}
-      {/* MODAL 1: Edit FEFO Batch & Expiry Date for Item                     */}
+      {/* SUBMODALS: Batch FEFO & Camera Scanner                              */}
       {/* =================================================================== */}
       {editingItemIndex !== null && grnItems[editingItemIndex] && (
         <ItemBatchEditModal
@@ -1129,38 +1105,12 @@ export function MultiProductGRNForm() {
         />
       )}
 
-      {/* =================================================================== */}
-      {/* MODAL 2: Supplier Selection & Management                            */}
-      {/* =================================================================== */}
-      {isSupplierModalOpen && (
-        <SupplierManagerModal
-          currentSupplier={supplierName}
-          onSelect={(name) => {
-            setSupplierName(name);
-            setIsSupplierModalOpen(false);
-          }}
-          onClose={() => setIsSupplierModalOpen(false)}
-        />
-      )}
-
-      {/* =================================================================== */}
-      {/* MODAL 3: Camera Barcode Scanner Simulator                           */}
-      {/* =================================================================== */}
-      {isCameraScannerOpen && (
-        <CameraScannerModal
-          itemsCatalog={itemsCatalog}
-          onScan={(code) => {
-            const found = itemsCatalog.find(
-              (p) => p.barcode && p.barcode.trim().toLowerCase() === code.trim().toLowerCase()
-            );
-            if (found) {
-              addOrIncrementProduct(found);
-            }
-            setIsCameraScannerOpen(false);
-          }}
-          onClose={() => setIsCameraScannerOpen(false)}
-        />
-      )}
+      {/* Optical Camera Barcode Scanner Modal (Shared with POS) */}
+      <CameraBarcodeScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        onBarcodeDetected={handleCameraBarcodeDetected}
+      />
     </div>
   );
 }
@@ -1169,7 +1119,7 @@ export function MultiProductGRNForm() {
 // Submodal 1: Item Batch & Expiry Date Edit Modal
 // ============================================================================
 interface ItemBatchEditModalProps {
-  item: GRNItemRow;
+  item: StockInItemFormData;
   onSave: (batchNumber: string, expiryDate: string) => void;
   onClose: () => void;
 }
@@ -1187,16 +1137,16 @@ function ItemBatchEditModal({ item, onSave, onClose }: ItemBatchEditModalProps) 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-2xs">
               <Calendar className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900">
                 ກຳນົດລັອດ & ວັນໝົດອາຍຸ (FEFO)
               </h3>
-              <p className="text-[10px] text-slate-400 font-medium truncate max-w-[240px]">
+              <p className="text-[10px] text-slate-500 truncate max-w-[240px]">
                 {item.product_name}
               </p>
             </div>
@@ -1204,7 +1154,7 @@ function ItemBatchEditModal({ item, onSave, onClose }: ItemBatchEditModalProps) 
           <button
             type="button"
             onClick={onClose}
-            className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -1283,175 +1233,6 @@ function ItemBatchEditModal({ item, onSave, onClose }: ItemBatchEditModalProps) 
             className="h-9 px-5 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer shadow-xs"
           >
             ບັນທຶກ
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Submodal 2: Supplier Selection & Quick Add
-// ============================================================================
-interface SupplierManagerModalProps {
-  currentSupplier: string;
-  onSelect: (name: string) => void;
-  onClose: () => void;
-}
-
-function SupplierManagerModal({
-  currentSupplier,
-  onSelect,
-  onClose,
-}: SupplierManagerModalProps) {
-  const [newSupplier, setNewSupplier] = useState("");
-
-  return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Building2 className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-900">
-                ເລືອກ / ຈັດການຮ້ານສົ່ງ (Supplier)
-              </h3>
-              <p className="text-[10px] text-slate-400 font-medium">
-                ເລືອກຮ້ານຄ້າສົ່ງທີ່ໃຊ້ປະຈຳ ຫຼື ພິມຊື່ຮ້ານໃໝ່
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Quick Add Custom */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newSupplier}
-            onChange={(e) => setNewSupplier(e.target.value)}
-            placeholder="ພິມຊື່ຮ້ານສົ່ງໃໝ່..."
-            className="h-9 flex-1 rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-600"
-          />
-          <button
-            type="button"
-            disabled={!newSupplier.trim()}
-            onClick={() => onSelect(newSupplier.trim())}
-            className="h-9 px-3.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 disabled:opacity-40 cursor-pointer shadow-xs"
-          >
-            ເລືອກ
-          </button>
-        </div>
-
-        {/* Common list */}
-        <div className="space-y-1.5 max-h-56 overflow-y-auto">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            ລາຍຊື່ຮ້ານສົ່ງທົ່ວໄປ
-          </p>
-          {COMMON_SUPPLIERS.map((s) => {
-            const isSelected = currentSupplier === s;
-            return (
-              <div
-                key={s}
-                onClick={() => onSelect(s)}
-                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
-                  isSelected
-                    ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                    : "border-slate-100 hover:bg-slate-50 text-slate-700"
-                }`}
-              >
-                <span>{s}</span>
-                {isSelected && <Check className="h-4 w-4 text-emerald-600" />}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Submodal 3: Camera Barcode Scanner Modal
-// ============================================================================
-interface CameraScannerModalProps {
-  itemsCatalog: InventoryProductItem[];
-  onScan: (code: string) => void;
-  onClose: () => void;
-}
-
-function CameraScannerModal({
-  itemsCatalog,
-  onScan,
-  onClose,
-}: CameraScannerModalProps) {
-  const [manualCode, setManualCode] = useState("");
-
-  return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Camera className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-900">
-                ສະແກນບາໂຄດດ້ວຍກ້ອງ
-              </h3>
-              <p className="text-[10px] text-slate-400 font-medium">
-                ກ້ອງພ້ອມສະແກນ ຫຼື ປ້ອນເລກບາໂຄດໂດຍກົງ
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Viewfinder simulation */}
-        <div className="relative aspect-4/3 w-full rounded-xl bg-slate-900 flex flex-col items-center justify-center text-white overflow-hidden p-4">
-          <div className="w-3/4 h-24 border-2 border-emerald-400 border-dashed rounded-lg flex items-center justify-center animate-pulse">
-            <ScanBarcode className="h-10 w-10 text-emerald-400" />
-          </div>
-          <p className="text-[11px] text-slate-300 font-medium mt-3 text-center">
-            ຈໍ່ບາໂຄດສິນຄ້າໃຫ້ກົງກັບກອບສີຂຽວ
-          </p>
-        </div>
-
-        {/* Manual Barcode Input */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={manualCode}
-            onChange={(e) => setManualCode(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && manualCode.trim()) {
-                onScan(manualCode.trim());
-              }
-            }}
-            placeholder="ປ້ອນບາໂຄດທົດສອບ..."
-            className="h-9 flex-1 rounded-xl border border-slate-200 px-3 text-xs font-mono outline-none focus:border-emerald-600"
-          />
-          <button
-            type="button"
-            disabled={!manualCode.trim()}
-            onClick={() => onScan(manualCode.trim())}
-            className="h-9 px-3.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 disabled:opacity-40 cursor-pointer shadow-xs"
-          >
-            ສະແກນ
           </button>
         </div>
       </div>

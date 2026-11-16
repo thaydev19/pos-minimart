@@ -73,5 +73,3 @@ export const VOID_ORDER_REASONS = [
   },
 ];
 
-export const DEFAULT_MANAGER_PIN = "1234";
-

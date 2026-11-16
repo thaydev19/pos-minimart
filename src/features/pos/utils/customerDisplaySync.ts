@@ -96,7 +96,7 @@ export const DEFAULT_CUSTOMER_DISPLAY_PAYLOAD: CustomerDisplayPayload = {
     cashReceived: 0,
     changeAmount: 0,
   },
-  storeName: "ມິນິມາດ ລາວຈະເລີນ",
+  storeName: "QuickOne",
   cashierName: "Thu ngân",
   lastUpdated: Date.now(),
 };

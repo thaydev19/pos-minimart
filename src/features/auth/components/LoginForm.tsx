@@ -145,6 +145,66 @@ export function LoginForm() {
           )}
           <span>{isLoading ? "ກຳລັງກວດສອບຂໍ້ມູນ..." : "ເຂົ້າສູ່ລະບົບ (Sign In)"}</span>
         </button>
+
+        {/* Quick Test Accounts Toolbar */}
+        <div className="pt-2">
+          <div className="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+            <span>ບັນຊີເລີ່ມຕົ້ນ (Default Accounts):</span>
+            <span className="text-[10px] text-slate-400 font-mono">ລະຫັດ: password123</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("admin@laochaleun.la");
+                setPassword("password123");
+                setErrorMessage(null);
+              }}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group"
+              title="admin@laochaleun.la / password123"
+            >
+              <div className="flex items-center gap-1 mb-0.5">
+                <Crown className="h-3.5 w-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-bold text-slate-800">ເຈົ້າຂອງຮ້ານ</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium">Owner (Admin)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("manager@laochaleun.la");
+                setPassword("password123");
+                setErrorMessage(null);
+              }}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group"
+              title="manager@laochaleun.la / password123"
+            >
+              <div className="flex items-center gap-1 mb-0.5">
+                <UserCheck className="h-3.5 w-3.5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-bold text-slate-800">ຜູ້ຈັດການ</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium">PIN: 123456</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("cashier@laochaleun.la");
+                setPassword("password123");
+                setErrorMessage(null);
+              }}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group"
+              title="cashier@laochaleun.la / password123"
+            >
+              <div className="flex items-center gap-1 mb-0.5">
+                <ShoppingCart className="h-3.5 w-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-bold text-slate-800">ເກັບເງິນ</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium">Cashier</span>
+            </button>
+          </div>
+        </div>
       </form>
 
       {/* Security Footer Notice */}

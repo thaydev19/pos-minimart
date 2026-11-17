@@ -6,7 +6,8 @@
 // Zero Infinite Loops - Pure Event Handlers - TanStack Query Mutations
 // ============================================================================
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import {
   X,
   Package,
@@ -24,7 +25,9 @@ import {
   Percent,
   ScanBarcode,
   CheckCircle2,
+  Camera,
 } from "lucide-react";
+import { CameraBarcodeScannerModal } from "@/features/pos/components/CameraBarcodeScannerModal";
 import { useProductStore } from "../stores/product.store";
 import {
   useCreateProduct,
@@ -150,6 +153,7 @@ export function ProductFormContent({
   const [packCost, setPackCost] = useState<number>(0);
   const [packSellingPrice, setPackSellingPrice] = useState<number>(existingPackUnit?.selling_price || 0);
   const [packBarcode, setPackBarcode] = useState<string>(existingPackUnit?.barcode || "");
+  const [cameraScanTarget, setCameraScanTarget] = useState<"base" | "pack" | null>(null);
 
   // Pure initial stock state (Only used in create mode)
   const [initialQuantity, setInitialQuantity] = useState<number>(0);
@@ -225,6 +229,28 @@ export function ProductFormContent({
         u.is_base_unit ? { ...u, barcode: newBarcode } : u
       ),
     }));
+  };
+
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const packBarcodeInputRef = useRef<HTMLInputElement>(null);
+
+  const playBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      }
+    } catch {}
   };
 
   const handleToggleWeighing = (isWeighing: boolean) => {
@@ -742,14 +768,38 @@ export function ProductFormContent({
 
                 {/* Hàng 3: Barcode lẻ (NẰM DƯỚI CỘT GIÁ MUA GIÁ BÁN, KHÔNG TỰ ĐIỀN, KHÔNG CÓ NÚT TỰ TẠO) */}
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    ບາໂຄດຂາຍຍ່ອຍ (Retail Barcode) <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <ScanBarcode className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>ບາໂຄດຂາຍຍ່ອຍ (Retail Barcode)</span>
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setCameraScanTarget("base")}
+                      className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                      title="ສະແກນບາໂຄດດ້ວຍກ້ອງ (Camera Scanner)"
+                    >
+                      <Camera className="h-3 w-3" />
+                      <span>ສະແກນກ້ອງ</span>
+                    </button>
+                  </div>
                   <input
+                    ref={barcodeInputRef}
                     type="text"
                     required
                     value={formData.barcode}
                     onChange={(e) => handleBarcodeChange(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        playBeep();
+                        if (formData.barcode.trim()) {
+                          toast.success(`ໄດ້ຮັບບາໂຄດສິນຄ້າ: ${formData.barcode.trim()}`);
+                        }
+                      }
+                    }}
                     placeholder="ຍິງ ຫຼື ພິມບາໂຄດຂາຍຍ່ອຍ..."
                     className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-mono font-semibold text-slate-800 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 placeholder:text-slate-400"
                   />
@@ -885,12 +935,32 @@ export function ProductFormContent({
                           </span>
                         </div>
                         <input
+                          ref={packBarcodeInputRef}
                           type="text"
                           value={packBarcode}
                           onChange={(e) => setPackBarcode(e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              playBeep();
+                              if (packBarcode.trim()) {
+                                toast.success(`ໄດ້ຮັບບາໂຄດແພັກ: ${packBarcode.trim()}`);
+                              }
+                            }
+                          }}
                           placeholder={`ຍິງ ຫຼື ພິມບາໂຄດເທິງ${packUnitName || "ແພັກ"}...`}
                           className="h-7 flex-1 rounded-lg border border-slate-200 px-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-emerald-600 placeholder:text-slate-400"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setCameraScanTarget("pack")}
+                          className="flex h-6 items-center gap-1 rounded-md bg-emerald-50 px-2 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition-colors cursor-pointer shrink-0"
+                          title="ສະແກນບາໂຄດແພັກດ້ວຍກ້ອງ"
+                        >
+                          <Camera className="h-2.5 w-2.5" />
+                          <span>ກ້ອງ</span>
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1023,6 +1093,20 @@ export function ProductFormContent({
           </div>
         </div>
       </form>
+
+      {/* Optical Camera Barcode Scanner Modal (Shared with POS) */}
+      <CameraBarcodeScannerModal
+        isOpen={cameraScanTarget !== null}
+        onClose={() => setCameraScanTarget(null)}
+        onBarcodeDetected={(scannedBarcode) => {
+          if (cameraScanTarget === "base") {
+            handleBarcodeChange(scannedBarcode);
+          } else if (cameraScanTarget === "pack") {
+            setPackBarcode(scannedBarcode);
+          }
+          setCameraScanTarget(null);
+        }}
+      />
     </>
   );
 }

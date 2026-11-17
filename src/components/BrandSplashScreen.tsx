@@ -64,7 +64,7 @@ export function BrandSplashScreen({
           style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
           className="text-xs sm:text-sm font-semibold text-slate-500"
         >
-          Enterprise Retail POS • ປາກຊອງ, ຈຳປາສັກ
+          Enterprise Retail POS 
         </p>
       </div>
 

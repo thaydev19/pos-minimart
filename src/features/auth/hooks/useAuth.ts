@@ -25,12 +25,10 @@ export function useAuth() {
     }
   }, [isInitialized, initAuth]);
 
-  // Subscribe to live auth changes (Token refresh, remote signout)
+  // Subscribe to live auth changes (Token refresh, remote signin)
   useEffect(() => {
     const { data: subscription } = authApi.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         if (!user && session?.user) {
           initAuth();
         }
@@ -40,7 +38,7 @@ export function useAuth() {
     return () => {
       subscription?.subscription?.unsubscribe();
     };
-  }, [setUser, initAuth, user]);
+  }, [initAuth, user]);
 
   const role = user?.role;
   const isOwner = role === "owner" || role === "super_admin";

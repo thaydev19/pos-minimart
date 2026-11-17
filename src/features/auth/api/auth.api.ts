@@ -30,6 +30,18 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
     pin_hash: "123456",
   },
+  "admin": {
+    id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01",
+    store_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    username: "admin",
+    email: "admin@laochaleun.la",
+    full_name_lo: "ຜູ້ຈັດການໃຫຍ່ (Admin)",
+    role: "owner",
+    is_active: true,
+    store_name_lo: "QuickOne",
+    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    pin_hash: "123456",
+  },
   "manager@laochaleun.la": {
     id: "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c33",
     store_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
@@ -42,7 +54,31 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
     pin_hash: "123456",
   },
+  "manager": {
+    id: "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c33",
+    store_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    username: "somphone",
+    email: "manager@laochaleun.la",
+    full_name_lo: "ສົມພອນ (Somphone)",
+    role: "store_manager",
+    is_active: true,
+    store_name_lo: "QuickOne",
+    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    pin_hash: "123456",
+  },
   "cashier@laochaleun.la": {
+    id: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b22",
+    store_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    username: "sourivanh",
+    email: "cashier@laochaleun.la",
+    full_name_lo: "ສຸລິວັນ (Sourivanh)",
+    role: "cashier",
+    is_active: true,
+    store_name_lo: "QuickOne",
+    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    pin_hash: "123456",
+  },
+  "cashier": {
     id: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b22",
     store_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
     username: "sourivanh",
@@ -115,20 +151,37 @@ export const authApi = {
     let finalProfile: any = null;
 
     try {
-      let userProfileQuery = supabase
-        .from("users")
-        .select("*, stores(*)");
-
       if (authUserId) {
-        userProfileQuery = userProfileQuery.or(`id.eq.${authUserId},email.eq.${authUserEmail}`);
+        const { data: userProfile } = await supabase
+          .from("users")
+          .select("*, stores(*)")
+          .or(`id.eq.${authUserId},email.eq.${authUserEmail}`)
+          .maybeSingle();
+        if (userProfile) finalProfile = userProfile;
       } else {
-        userProfileQuery = userProfileQuery.or(`email.ilike.${email},username.ilike.${cleanLower}`);
-      }
+        // Query by email
+        const { data: userByEmail } = await supabase
+          .from("users")
+          .select("*, stores(*)")
+          .ilike("email", email)
+          .maybeSingle();
 
-      const { data: userProfile, error: profileError } = await userProfileQuery.maybeSingle();
+        if (userByEmail) {
+          finalProfile = userByEmail;
+        } else {
+          // Query by username (clean prefix without domain)
+          const usernameQuery = cleanLower.includes("@")
+            ? cleanLower.split("@")[0]
+            : cleanLower;
 
-      if (!profileError && userProfile) {
-        finalProfile = userProfile;
+          const { data: userByName } = await supabase
+            .from("users")
+            .select("*, stores(*)")
+            .ilike("username", usernameQuery)
+            .maybeSingle();
+
+          if (userByName) finalProfile = userByName;
+        }
       }
     } catch (dbErr) {
       console.warn("[AuthApi] Direct users table lookup warning:", dbErr);
@@ -136,7 +189,17 @@ export const authApi = {
 
     // 3. Fallback to database user profile or default verified staff when Supabase Auth fails
     if (authErrorOccurred || !authUserId) {
-      const defaultStaff = DEFAULT_STAFF_ACCOUNTS[normalizedEmail];
+      const defaultStaff =
+        DEFAULT_STAFF_ACCOUNTS[normalizedEmail] ||
+        DEFAULT_STAFF_ACCOUNTS[cleanLower] ||
+        DEFAULT_STAFF_ACCOUNTS[cleanLower.split("@")[0]] ||
+        DEFAULT_STAFF_ACCOUNTS[`${cleanLower}@laochaleun.la`] ||
+        Object.values(DEFAULT_STAFF_ACCOUNTS).find(
+          (u) =>
+            (u.email && u.email.toLowerCase() === normalizedEmail) ||
+            (u.username && u.username.toLowerCase() === cleanLower) ||
+            (u.email && u.email.toLowerCase() === cleanLower)
+        );
 
       // Verify credentials against database profile or default staff
       const isPasswordValid =

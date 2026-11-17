@@ -33,12 +33,12 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeLogin = async (targetEmail: string, targetPassword: string) => {
     setErrorMessage(null);
 
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
+    const cleanEmail = targetEmail.trim();
+    const cleanPassword = targetPassword.trim();
+    if (!cleanEmail || !cleanPassword) {
       setErrorMessage("ກະລຸນາປ້ອນອີເມວ ແລະ ລະຫັດຜ່ານໃຫ້ຄົບຖ້ວນ");
       return;
     }
@@ -46,7 +46,7 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const authUser = await login({ email: cleanEmail, password });
+      await login({ email: cleanEmail, password: cleanPassword });
       
       // Always navigate directly to POS Terminal upon login
       router.push("/pos");
@@ -55,6 +55,17 @@ export function LoginForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeLogin(email, password);
+  };
+
+  const handleQuickLogin = async (targetEmail: string, targetPassword: string) => {
+    setEmail(targetEmail);
+    setPassword(targetPassword);
+    await executeLogin(targetEmail, targetPassword);
   };
 
   return (
@@ -155,12 +166,9 @@ export function LoginForm() {
           <div className="grid grid-cols-3 gap-1.5">
             <button
               type="button"
-              onClick={() => {
-                setEmail("admin@laochaleun.la");
-                setPassword("password123");
-                setErrorMessage(null);
-              }}
-              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin("admin@laochaleun.la", "password123")}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group disabled:opacity-50"
               title="admin@laochaleun.la / password123"
             >
               <div className="flex items-center gap-1 mb-0.5">
@@ -172,12 +180,9 @@ export function LoginForm() {
 
             <button
               type="button"
-              onClick={() => {
-                setEmail("manager@laochaleun.la");
-                setPassword("password123");
-                setErrorMessage(null);
-              }}
-              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin("manager@laochaleun.la", "password123")}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group disabled:opacity-50"
               title="manager@laochaleun.la / password123"
             >
               <div className="flex items-center gap-1 mb-0.5">
@@ -189,12 +194,9 @@ export function LoginForm() {
 
             <button
               type="button"
-              onClick={() => {
-                setEmail("cashier@laochaleun.la");
-                setPassword("password123");
-                setErrorMessage(null);
-              }}
-              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin("cashier@laochaleun.la", "password123")}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 transition-all text-center cursor-pointer active:scale-95 group disabled:opacity-50"
               title="cashier@laochaleun.la / password123"
             >
               <div className="flex items-center gap-1 mb-0.5">

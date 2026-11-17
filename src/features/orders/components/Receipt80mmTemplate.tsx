@@ -34,7 +34,6 @@ export function Receipt80mmTemplate({
           {DEFAULT_STORE.name_lo}
         </h2>
         <div className="text-[11px] text-slate-500 leading-snug space-y-0.5">
-          <p className="font-medium text-slate-600">{DEFAULT_STORE.name_en}</p>
           <p className="text-slate-600">{DEFAULT_STORE.branch}</p>
           <p className="font-mono text-slate-600">ໂທ: {DEFAULT_STORE.phone}</p>
           {DEFAULT_STORE.taxCode && (

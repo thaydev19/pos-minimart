@@ -213,42 +213,42 @@ export function PosHeader() {
 
   return (
     <>
-      <header className="flex h-12 w-full items-center justify-between border-b border-slate-200/90 bg-white px-2 sm:px-4 shadow-2xs select-none gap-2 shrink-0 touch-manipulation">
+      <header className="flex h-13 sm:h-14 w-full items-center justify-between border-b border-slate-200/90 bg-white px-2.5 sm:px-4 shadow-2xs select-none gap-2 shrink-0 touch-manipulation">
         {/* 1. Left: Menu Drawer Trigger + Store Identity */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={() => {
               triggerHapticFeedback(20);
               setIsMenuOpen(true);
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
+            className="flex h-9 w-9 sm:h-9.5 sm:w-9.5 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
             title="ເມນູລະບົບ (Menu)"
           >
             <Menu className="h-4 w-4" />
           </button>
 
           <div className="flex items-center">
-            {/* Desktop & Tablet: Large QuickOne logo with text, no duplicates, no clutter */}
+            {/* Desktop & Tablet: Large QuickOne logo with text */}
             <div className="hidden sm:flex items-center">
               <Image
                 src="/logo-text.svg"
                 alt="QuickOne POS"
-                width={150}
-                height={42}
-                className="h-8.5 w-auto object-contain"
+                width={175}
+                height={48}
+                className="h-9 sm:h-10 w-auto object-contain"
                 priority
               />
             </div>
 
             {/* Mobile: Clean standalone logo icon */}
-            <div className="flex sm:hidden items-center justify-center h-8.5 w-8.5">
+            <div className="flex sm:hidden items-center justify-center">
               <Image
                 src="/logo.svg"
                 alt="QuickOne"
-                width={32}
-                height={32}
-                className="h-8 w-8 object-contain"
+                width={36}
+                height={36}
+                className="h-8.5 w-8.5 object-contain"
                 priority
               />
             </div>

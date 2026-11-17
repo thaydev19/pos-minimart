@@ -248,26 +248,26 @@ export function AppSidebar({
 
   // Helper for Store Header
   const renderHeader = (collapsedState: boolean, showCloseBtn: boolean) => (
-    <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-3.5 select-none shrink-0">
+    <div className="flex h-16 items-center justify-between border-b border-zinc-200/80 px-4 select-none shrink-0">
       <div className={`flex items-center min-w-0 ${collapsedState ? "justify-center w-full" : "flex-1 justify-start"}`}>
         {collapsedState ? (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-zinc-200/90 shadow-2xs p-1">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-zinc-200/90 shadow-2xs p-1">
             <Image
               src="/logo.svg"
               alt="QuickOne"
-              width={28}
-              height={28}
+              width={32}
+              height={32}
               className="h-full w-full object-contain"
             />
           </div>
         ) : (
-          <div className="flex items-center justify-start min-w-0 py-1">
+          <div className="flex items-center justify-start min-w-0 py-0.5">
             <Image
               src="/logo-text.svg"
               alt="QuickOne POS"
-              width={160}
-              height={46}
-              className="h-9 w-auto object-contain"
+              width={200}
+              height={52}
+              className="h-10 sm:h-11 w-auto max-w-[200px] object-contain"
               priority
             />
           </div>
@@ -281,7 +281,7 @@ export function AppSidebar({
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer ml-2"
           title="ປິດເມນູ"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
       )}
     </div>

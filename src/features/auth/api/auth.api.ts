@@ -27,7 +27,7 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     role: "owner",
     is_active: true,
     store_name_lo: "QuickOne",
-    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    store_branch: "ປາກຊອງ, ຈຳປາສັກ",
     pin_hash: "123456",
   },
   "admin": {
@@ -39,7 +39,7 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     role: "owner",
     is_active: true,
     store_name_lo: "QuickOne",
-    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    store_branch: "ປາກຊອງ, ຈຳປາສັກ",
     pin_hash: "123456",
   },
   "manager@laochaleun.la": {
@@ -51,7 +51,7 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     role: "store_manager",
     is_active: true,
     store_name_lo: "QuickOne",
-    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    store_branch: "ປາກຊອງ, ຈຳປາສັກ",
     pin_hash: "123456",
   },
   "manager": {
@@ -63,7 +63,7 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     role: "store_manager",
     is_active: true,
     store_name_lo: "QuickOne",
-    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    store_branch: "ປາກຊອງ, ຈຳປາສັກ",
     pin_hash: "123456",
   },
   "cashier@laochaleun.la": {
@@ -75,7 +75,7 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     role: "cashier",
     is_active: true,
     store_name_lo: "QuickOne",
-    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    store_branch: "ປາກຊອງ, ຈຳປາສັກ",
     pin_hash: "123456",
   },
   "cashier": {
@@ -87,7 +87,7 @@ const DEFAULT_STAFF_ACCOUNTS: Record<string, AuthUser> = {
     role: "cashier",
     is_active: true,
     store_name_lo: "QuickOne",
-    store_branch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    store_branch: "ປາກຊອງ, ຈຳປາສັກ",
     pin_hash: "123456",
   },
 };
@@ -223,8 +223,8 @@ export const authApi = {
             full_name_lo: finalProfile.full_name_lo,
             role: finalProfile.role as UserRole,
             is_active: true,
-            store_name_lo: storeInfo?.name_lo || DEFAULT_STORE.name_lo,
-            store_branch: storeInfo?.address_lo || DEFAULT_STORE.branch,
+            store_name_lo: DEFAULT_STORE.name_lo,
+            store_branch: DEFAULT_STORE.branch,
             pin_hash: finalProfile.pin_hash,
           };
         }
@@ -307,8 +307,8 @@ export const authApi = {
       full_name_lo: finalProfile.full_name_lo,
       role: finalProfile.role as UserRole,
       is_active: true,
-      store_name_lo: storeInfo?.name_lo || DEFAULT_STORE.name_lo,
-      store_branch: storeInfo?.address_lo || DEFAULT_STORE.branch,
+      store_name_lo: DEFAULT_STORE.name_lo,
+      store_branch: DEFAULT_STORE.branch,
       pin_hash: finalProfile.pin_hash,
     };
 
@@ -360,8 +360,8 @@ export const authApi = {
         full_name_lo: profile.full_name_lo,
         role: profile.role as UserRole,
         is_active: profile.is_active !== false,
-        store_name_lo: storeInfo?.name_lo || DEFAULT_STORE.name_lo,
-        store_branch: storeInfo?.address_lo || DEFAULT_STORE.branch,
+        store_name_lo: DEFAULT_STORE.name_lo,
+        store_branch: DEFAULT_STORE.branch,
         pin_hash: profile.pin_hash,
       };
     } catch (err) {

@@ -7,7 +7,7 @@
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
-import { ShoppingBag, ChevronUp, X } from "lucide-react";
+import { ShoppingBag, ChevronUp, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { PosHeader } from "../components/PosHeader";
 import { CatalogControlBar } from "../components/CatalogControlBar";
@@ -145,23 +145,35 @@ export function PosTerminalPage() {
               inputRef={inputRef}
               onCameraBarcodeScanned={(barcode) => handleManualSearch(barcode)}
             />
-
-            {scanMessage && (
-              <div className="absolute top-full mt-1.5 left-0 z-20 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-md animate-in fade-in slide-in-from-top-1">
-                {scanMessage}
-              </div>
-            )}
-            {scanError && (
-              <div className="absolute top-full mt-1.5 left-0 z-20 rounded-lg bg-rose-600 px-3 py-1 text-xs font-bold text-white shadow-md animate-in fade-in slide-in-from-top-1">
-                {scanError}
-              </div>
-            )}
           </div>
 
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ProductCatalogGrid searchFilter={searchInput} />
+            <ProductCatalogGrid
+              searchFilter={searchInput}
+              onClearSearch={() => setSearchInput("")}
+            />
           </div>
         </section>
+
+        {/* Top-Centered Floating Toast Notification for Barcode Scan & Cart Actions */}
+        {(scanMessage || scanError) && (
+          <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300">
+            <div
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold tracking-tight animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 backdrop-blur-md ${
+                scanMessage
+                  ? "bg-emerald-600/95 text-white border-emerald-500/80 shadow-emerald-600/25"
+                  : "bg-rose-600/95 text-white border-rose-500/80 shadow-rose-600/30"
+              }`}
+            >
+              {scanMessage ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-100" />
+              ) : (
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-100" />
+              )}
+              <span className="leading-snug">{scanMessage || scanError}</span>
+            </div>
+          </div>
+        )}
 
         {/* Right Area: Cart & Payment Sidebar (Desktop & Tablet) */}
         <aside className="hidden md:flex w-[440px] xl:w-[480px] shrink-0 flex-col overflow-hidden">

@@ -219,7 +219,7 @@ export class HardwareService {
       cashTendered: 100000,
       changeAmount: 50000,
       storeName: "QuickOne",
-      storeBranch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+      storeBranch: "ປາກຊອງ, ຈຳປາສັກ",
       storeTel: "55257555",
     };
 

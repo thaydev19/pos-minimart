@@ -63,7 +63,7 @@ export const lo = {
   },
   receipt: {
     storeName: "QuickOne",
-    storeBranch: "ສາຂາ: ດົງໂດກ, ນະຄອນຫຼວງວຽງຈັນ",
+    storeBranch: "ປາກຊອງ, ຈຳປາສັກ",
     storeTel: "ໂທ: 55257555",
     storeTax: "ເລກປະຈຳຕົວຜູ້ເສຍພາສີ: 0102030405",
     receiptTitle: "ໃບບິນຮັບເງິນ / RECEIPT",

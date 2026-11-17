@@ -16,9 +16,13 @@ import { ProductCard } from "./ProductCard";
 
 interface ProductCatalogGridProps {
   searchFilter?: string;
+  onClearSearch?: () => void;
 }
 
-export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProps) {
+export function ProductCatalogGrid({
+  searchFilter = "",
+  onClearSearch,
+}: ProductCatalogGridProps) {
   const products = usePosStore((s) => s.products);
   const activeCategory = usePosStore((s) => s.activeCategory);
   const isLoadingCatalog = usePosStore((s) => s.isLoadingCatalog);
@@ -103,6 +107,16 @@ export function ProductCatalogGrid({ searchFilter = "" }: ProductCatalogGridProp
             ? `ບໍ່ມີສິນຄ້າກົງກັບຄຳຄົ້ນຫາ "${searchFilter}"`
             : "ຍັງບໍ່ມີສິນຄ້າໃນໝວດໝູ່ນີ້"}
         </p>
+        {searchFilter && onClearSearch && (
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="mt-3 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+          >
+            <RefreshCw className="h-3 w-3 text-slate-500" />
+            <span>ລຶບການຄົ້ນຫາ (Clear Search)</span>
+          </button>
+        )}
       </div>
     );
   }

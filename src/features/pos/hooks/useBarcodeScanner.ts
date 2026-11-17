@@ -68,7 +68,11 @@ export function useBarcodeScanner({
       onScanSuccess?.(matchedProduct.name_lo);
       setSearchInput("");
     } else {
+      // Global POS Best Practice:
+      // When a scanned barcode is not found, clear searchInput so the product catalog
+      // returns to its full list and the cashier is not stuck on a blank screen.
       onScanError?.(normalizedBarcode);
+      setSearchInput("");
     }
   };
 

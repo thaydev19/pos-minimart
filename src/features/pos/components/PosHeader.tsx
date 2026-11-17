@@ -232,10 +232,14 @@ export function PosHeader() {
           </div>
           <div className="hidden min-[400px]:block">
             <h1 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
-              {user?.store_name_lo || DEFAULT_STORE.name_lo}
+              {user?.store_name_lo && !user.store_name_lo.includes("Lao Chaleun") && !user.store_name_lo.includes("ລາວຈະເລີນ")
+                ? user.store_name_lo
+                : DEFAULT_STORE.name_lo}
             </h1>
             <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5 truncate max-w-[120px] sm:max-w-none">
-              {user?.store_branch || DEFAULT_STORE.branch}
+              {user?.store_branch && !user.store_branch.includes("ດົງໂດກ")
+                ? user.store_branch
+                : DEFAULT_STORE.branch}
             </p>
           </div>
         </div>

@@ -256,10 +256,14 @@ export function AppSidebar({
         {!collapsedState && (
           <div className="min-w-0 flex-1">
             <h2 className="text-xs font-extrabold text-slate-900 leading-snug truncate">
-              {user?.store_name_lo || DEFAULT_STORE.name_lo}
+              {user?.store_name_lo && !user.store_name_lo.includes("Lao Chaleun") && !user.store_name_lo.includes("ລາວຈະເລີນ")
+                ? user.store_name_lo
+                : DEFAULT_STORE.name_lo}
             </h2>
             <p className="text-[10px] text-slate-500 font-medium truncate leading-none mt-0.5">
-              {user?.store_branch || DEFAULT_STORE.branch}
+              {user?.store_branch && !user.store_branch.includes("ດົງໂດກ")
+                ? user.store_branch
+                : DEFAULT_STORE.branch}
             </p>
           </div>
         )}

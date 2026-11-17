@@ -9,6 +9,7 @@
 // ============================================================================
 
 import React, { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Store,
@@ -348,8 +349,14 @@ export default function CustomerDisplayPage() {
             <div className="absolute w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative mb-6">
-              <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-zinc-900/90 border-2 border-emerald-500/40 text-emerald-400 shadow-2xl shadow-emerald-950/60">
-                <Store className="h-12 w-12 sm:h-14 sm:w-14" />
+              <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-zinc-900/90 border-2 border-emerald-500/40 p-3 shadow-2xl shadow-emerald-950/60">
+                <Image
+                  src="/logo.svg"
+                  alt="QuickOne"
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-contain"
+                />
               </div>
             </div>
 
@@ -401,8 +408,14 @@ export default function CustomerDisplayPage() {
               className="h-14 sm:h-16 px-4 sm:px-6 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/60 backdrop-blur-md shrink-0 select-none"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-900/30">
-                  <Store className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 shadow-lg p-1.5">
+                  <Image
+                    src="/logo.svg"
+                    alt="QuickOne"
+                    width={32}
+                    height={32}
+                    className="h-full w-full object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold text-white tracking-wide leading-tight">

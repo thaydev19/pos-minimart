@@ -10,6 +10,7 @@
 // ============================================================================
 
 import React, { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import {
   Store,
   Clock,
@@ -227,20 +228,29 @@ export function PosHeader() {
             <Menu className="h-4 w-4" />
           </button>
 
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-2xs">
-            <Store className="h-4 w-4" />
-          </div>
-          <div className="hidden min-[400px]:block">
-            <h1 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
-              {user?.store_name_lo && !user.store_name_lo.includes("Lao Chaleun") && !user.store_name_lo.includes("ລາວຈະເລີນ")
-                ? user.store_name_lo
-                : DEFAULT_STORE.name_lo}
-            </h1>
-            <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5 truncate max-w-[120px] sm:max-w-none">
-              {user?.store_branch && !user.store_branch.includes("ດົງໂດກ")
-                ? user.store_branch
-                : DEFAULT_STORE.branch}
-            </p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200/90 shadow-2xs p-1">
+              <Image
+                src="/logo.svg"
+                alt="QuickOne"
+                width={28}
+                height={28}
+                className="h-full w-full object-contain"
+              />
+            </div>
+            <div className="hidden min-[480px]:flex flex-col">
+              <Image
+                src="/logo-text.svg"
+                alt="QuickOne"
+                width={110}
+                height={32}
+                className="h-6 w-auto object-contain"
+                priority
+              />
+              <p className="text-[9px] text-slate-400 font-medium leading-none mt-0.5 truncate pl-0.5">
+                {DEFAULT_STORE.branch}
+              </p>
+            </div>
           </div>
         </div>
 

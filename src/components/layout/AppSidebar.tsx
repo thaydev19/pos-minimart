@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ScanBarcode,
@@ -247,23 +248,30 @@ export function AppSidebar({
 
   // Helper for Store Header
   const renderHeader = (collapsedState: boolean, showCloseBtn: boolean) => (
-    <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-3.5 select-none shrink-0">
-      <div className={`flex items-center gap-2.5 min-w-0 ${collapsedState ? "justify-center w-full" : ""}`}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-          <Store className="h-5 w-5" />
-        </div>
-
-        {!collapsedState && (
-          <div className="min-w-0 flex-1">
-            <h2 className="text-xs font-extrabold text-slate-900 leading-snug truncate">
-              {user?.store_name_lo && !user.store_name_lo.includes("Lao Chaleun") && !user.store_name_lo.includes("ລາວຈະເລີນ")
-                ? user.store_name_lo
-                : DEFAULT_STORE.name_lo}
-            </h2>
-            <p className="text-[10px] text-slate-500 font-medium truncate leading-none mt-0.5">
-              {user?.store_branch && !user.store_branch.includes("ດົງໂດກ")
-                ? user.store_branch
-                : DEFAULT_STORE.branch}
+    <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-3 select-none shrink-0">
+      <div className={`flex items-center gap-2 min-w-0 ${collapsedState ? "justify-center w-full" : "flex-1"}`}>
+        {collapsedState ? (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-zinc-200/90 shadow-2xs p-1">
+            <Image
+              src="/logo.svg"
+              alt="QuickOne"
+              width={28}
+              height={28}
+              className="h-full w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col justify-center min-w-0 flex-1">
+            <Image
+              src="/logo-text.svg"
+              alt="QuickOne POS"
+              width={135}
+              height={38}
+              className="h-7 w-auto object-contain"
+              priority
+            />
+            <p className="text-[9px] text-slate-400 font-medium truncate leading-none mt-0.5 pl-0.5">
+              {DEFAULT_STORE.branch}
             </p>
           </div>
         )}

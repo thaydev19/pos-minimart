@@ -6,6 +6,7 @@
 // ============================================================================
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Store,
@@ -72,12 +73,16 @@ export function LoginForm() {
     <div className="w-full max-w-md rounded-3xl border border-zinc-200/90 bg-white p-7 sm:p-9 shadow-xl space-y-6">
       {/* Store Header & Branding */}
       <div className="text-center space-y-2">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
-          <Store className="h-7 w-7" />
+        <div className="flex justify-center pb-1">
+          <Image
+            src="/logo-text.svg"
+            alt="QuickOne POS"
+            width={200}
+            height={58}
+            className="h-12 w-auto object-contain mx-auto"
+            priority
+          />
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-          ເຂົ້າສູ່ລະບົບ QuickOne POS
-        </h2>
         <p className="text-xs text-slate-500 font-medium leading-relaxed">
           ລະບົບຂາຍໜ້າຮ້ານ & ຄຸ້ມຄອງສາງສິນຄ້າ (Cloud & Offline Sync)
         </p>

@@ -6,6 +6,10 @@ import { TauriWindowInitializer } from "@/components/TauriWindowInitializer";
 export const metadata: Metadata = {
   title: "QuickOne POS - ລະບົບຂາຍໜ້າຮ້ານ",
   description: "Enterprise Offline-First Retail POS System for Laos (ພາສາລາວ)",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export const viewport: Viewport = {

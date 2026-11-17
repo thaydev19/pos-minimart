@@ -8,8 +8,8 @@
 // ============================================================================
 
 import React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { Store } from "lucide-react";
 
 interface BrandSplashScreenProps {
   message?: string;
@@ -30,7 +30,7 @@ export function BrandSplashScreen({
       <div className="absolute w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Brand Icon Box with Smooth Rotating Spinner Ring */}
-      <div className="relative mb-6 flex items-center justify-center">
+      <div className="relative mb-5 flex items-center justify-center">
         {/* Outer glowing spinner ring */}
         <div className="absolute -inset-3 rounded-[32px] border-2 border-emerald-500/20 border-t-emerald-600 animate-spin" />
 
@@ -38,24 +38,33 @@ export function BrandSplashScreen({
         <div className="absolute -inset-1.5 rounded-[28px] border border-emerald-400/30 animate-pulse" />
 
         {/* Main Brand Logo Icon */}
-        <div className="relative flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl bg-emerald-600 text-white shadow-2xl shadow-emerald-600/35 border border-emerald-500">
-          <Store className="h-10 w-10 sm:h-12 sm:w-12" />
+        <div className="relative flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-3xl bg-white p-3.5 shadow-2xl shadow-emerald-600/20 border border-slate-200/90">
+          <Image
+            src="/logo.svg"
+            alt="QuickOne Icon"
+            width={72}
+            height={72}
+            className="h-full w-full object-contain"
+            priority
+          />
         </div>
       </div>
 
-      {/* Store Brand Typography */}
-      <div className="space-y-1.5">
-        <h1
-          style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
-          className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight"
-        >
-          QuickOne
-        </h1>
+      {/* Store Brand Typography with logo-text */}
+      <div className="flex flex-col items-center space-y-1">
+        <Image
+          src="/logo-text.svg"
+          alt="QuickOne POS"
+          width={220}
+          height={65}
+          className="h-11 sm:h-12 w-auto object-contain"
+          priority
+        />
         <p
           style={{ fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif" }}
           className="text-xs sm:text-sm font-semibold text-slate-500"
         >
-          QuickOne POS • Enterprise Terminal
+          Enterprise Retail POS • ປາກຊອງ, ຈຳປາສັກ
         </p>
       </div>
 

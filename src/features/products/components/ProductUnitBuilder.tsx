@@ -17,6 +17,10 @@ import { ProductUnitFormData } from "../types/product.types";
 import { calculateUnitSavings } from "../utils/product.util";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
+import {
+  normalizeBarcodeInput,
+  getHardwareBarcodeChar,
+} from "@/utils/normalizeBarcodeInput";
 
 interface ProductUnitBuilderProps {
   baseUnit: string;
@@ -291,7 +295,27 @@ export function ProductUnitBuilder({
               type="text"
               value={packBarcode}
               onChange={(e) => {
-                emitUnitsChange(true, packMultiplier, packSellingPrice, e.target.value);
+                emitUnitsChange(true, packMultiplier, packSellingPrice, normalizeBarcodeInput(e.target.value));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
+                  e.preventDefault();
+                  emitUnitsChange(true, packMultiplier, packSellingPrice, normalizeBarcodeInput(packBarcode));
+                  return;
+                }
+                if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                  const char = getHardwareBarcodeChar(e.nativeEvent);
+                  if (char !== null) {
+                    e.preventDefault();
+                    const input = e.currentTarget;
+                    const start = input.selectionStart ?? input.value.length;
+                    const end = input.selectionEnd ?? input.value.length;
+                    const nextVal = normalizeBarcodeInput(
+                      input.value.slice(0, start) + char + input.value.slice(end)
+                    );
+                    emitUnitsChange(true, packMultiplier, packSellingPrice, nextVal);
+                  }
+                }
               }}
               disabled={disabled}
               placeholder="ຍິງບາໂຄດເທິງແພັກ..."

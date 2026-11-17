@@ -28,6 +28,10 @@ import {
   Camera,
 } from "lucide-react";
 import { CameraBarcodeScannerModal } from "@/features/pos/components/CameraBarcodeScannerModal";
+import {
+  normalizeBarcodeInput,
+  getHardwareBarcodeChar,
+} from "@/utils/normalizeBarcodeInput";
 import { useProductStore } from "../stores/product.store";
 import {
   useCreateProduct,
@@ -222,13 +226,19 @@ export function ProductFormContent({
   };
 
   const handleBarcodeChange = (newBarcode: string) => {
+    const clean = normalizeBarcodeInput(newBarcode);
     setFormData((prev) => ({
       ...prev,
-      barcode: newBarcode,
+      barcode: clean,
       units: prev.units.map((u) =>
-        u.is_base_unit ? { ...u, barcode: newBarcode } : u
+        u.is_base_unit ? { ...u, barcode: clean } : u
       ),
     }));
+  };
+
+  const handlePackBarcodeChange = (newBarcode: string) => {
+    const clean = normalizeBarcodeInput(newBarcode);
+    setPackBarcode(clean);
   };
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -792,11 +802,27 @@ export function ProductFormContent({
                     onChange={(e) => handleBarcodeChange(e.target.value)}
                     onFocus={(e) => e.target.select()}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
                         e.preventDefault();
                         playBeep();
-                        if (formData.barcode.trim()) {
-                          toast.success(`ໄດ້ຮັບບາໂຄດສິນຄ້າ: ${formData.barcode.trim()}`);
+                        const clean = normalizeBarcodeInput(formData.barcode);
+                        if (clean) {
+                          handleBarcodeChange(clean);
+                          toast.success(`ໄດ້ຮັບບາໂຄດສິນຄ້າ: ${clean}`);
+                        }
+                        return;
+                      }
+                      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                        const char = getHardwareBarcodeChar(e.nativeEvent);
+                        if (char !== null) {
+                          e.preventDefault();
+                          const input = e.currentTarget;
+                          const start = input.selectionStart ?? input.value.length;
+                          const end = input.selectionEnd ?? input.value.length;
+                          const nextVal = normalizeBarcodeInput(
+                            input.value.slice(0, start) + char + input.value.slice(end)
+                          );
+                          handleBarcodeChange(nextVal);
                         }
                       }
                     }}
@@ -938,14 +964,30 @@ export function ProductFormContent({
                           ref={packBarcodeInputRef}
                           type="text"
                           value={packBarcode}
-                          onChange={(e) => setPackBarcode(e.target.value)}
+                          onChange={(e) => handlePackBarcodeChange(e.target.value)}
                           onFocus={(e) => e.target.select()}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                            if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
                               e.preventDefault();
                               playBeep();
-                              if (packBarcode.trim()) {
-                                toast.success(`ໄດ້ຮັບບາໂຄດແພັກ: ${packBarcode.trim()}`);
+                              const clean = normalizeBarcodeInput(packBarcode);
+                              if (clean) {
+                                handlePackBarcodeChange(clean);
+                                toast.success(`ໄດ້ຮັບບາໂຄດແພັກ: ${clean}`);
+                              }
+                              return;
+                            }
+                            if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                              const char = getHardwareBarcodeChar(e.nativeEvent);
+                              if (char !== null) {
+                                e.preventDefault();
+                                const input = e.currentTarget;
+                                const start = input.selectionStart ?? input.value.length;
+                                const end = input.selectionEnd ?? input.value.length;
+                                const nextVal = normalizeBarcodeInput(
+                                  input.value.slice(0, start) + char + input.value.slice(end)
+                                );
+                                handlePackBarcodeChange(nextVal);
                               }
                             }
                           }}

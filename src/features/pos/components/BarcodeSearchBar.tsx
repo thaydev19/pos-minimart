@@ -4,9 +4,13 @@
 // Barcode Search & Fast Scanner Bar: Compact h-9 (36px) Density
 // ============================================================================
 
-import React from "react";
+import React, { useRef } from "react";
 import { ScanBarcode, Search, X } from "lucide-react";
 import { lo } from "@/constants/locales/lo";
+import {
+  normalizeBarcodeInput,
+  getHardwareBarcodeChar,
+} from "@/utils/normalizeBarcodeInput";
 
 interface BarcodeSearchBarProps {
   value: string;
@@ -21,6 +25,37 @@ export function BarcodeSearchBar({
   onSubmit,
   inputRef,
 }: BarcodeSearchBarProps) {
+  const lastKeyTimeRef = useRef<number>(0);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const currentTime = performance.now();
+    const timeDiff = currentTime - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = currentTime;
+
+    // Intercept hardware scanner fast burst (< 55ms) to prevent OS keyboard language corruption
+    if (timeDiff < 55 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const char = getHardwareBarcodeChar(e.nativeEvent);
+      if (char !== null) {
+        e.preventDefault();
+        const input = e.currentTarget;
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
+        const nextVal = input.value.slice(0, start) + char + input.value.slice(end);
+        onChange(nextVal);
+      }
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    // Auto-normalize if string starts with shifted barcode artifacts or layout traps
+    if (/^(\*{2}|[%$^*)(!]{3,}|[๕๔๓ู]{3,}|[678໌ຼ]{4,})/.test(raw)) {
+      onChange(normalizeBarcodeInput(raw));
+    } else {
+      onChange(raw);
+    }
+  };
+
   return (
     <form onSubmit={onSubmit} className="relative w-full select-none">
       <div className="relative flex items-center">
@@ -33,7 +68,8 @@ export function BarcodeSearchBar({
           type="text"
           data-scanner-input="true"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder={lo.pos.scanOrSearchPlaceholder}
           className="h-9 w-full rounded-xl border border-slate-200/90 bg-white pl-9 pr-24 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 shadow-2xs outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 transition-all"
         />

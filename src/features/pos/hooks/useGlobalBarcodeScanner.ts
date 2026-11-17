@@ -7,7 +7,11 @@
 // ============================================================================
 
 import { useEffect, useRef } from "react";
-import { normalizeBarcodeInput, parseBarcodeMultiplier } from "@/utils/normalizeBarcodeInput";
+import {
+  normalizeBarcodeInput,
+  parseBarcodeMultiplier,
+  getHardwareBarcodeChar,
+} from "@/utils/normalizeBarcodeInput";
 import { parseEan13ScaleBarcode } from "@/utils/ean13Parser";
 import { usePosStore } from "../stores/pos.store";
 
@@ -176,11 +180,12 @@ export function useGlobalBarcodeScanner({
       lastKeyTimeRef.current = currentTime;
 
       // Handle Enter (Hardware barcode gun end burst character)
-      if (e.key === "Enter") {
+      if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
         if (bufferRef.current.length >= 2) {
           e.preventDefault();
           e.stopPropagation();
-          processScannedBarcode(bufferRef.current);
+          const clean = normalizeBarcodeInput(bufferRef.current);
+          processScannedBarcode(clean);
           bufferRef.current = "";
           return;
         }
@@ -188,17 +193,23 @@ export function useGlobalBarcodeScanner({
         return;
       }
 
-      // Ignore special modifier keys
-      if (e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1) {
+      // Ignore modifier combinations (Ctrl/Alt/Meta)
+      if (e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
+
+      // Decode physical key position (immune to keyboard language, Shift or CapsLock)
+      const char = getHardwareBarcodeChar(e);
+      if (char === null) {
         return;
       }
 
       // Hardware Barcode Scanner burst detection: interval between keystrokes < 55ms (supports wireless 2.4G / Bluetooth)
       if (timeDiff < 55) {
-        bufferRef.current += e.key;
+        bufferRef.current += char;
       } else if (!isOtherInput) {
         // Start new scan burst if outside input fields
-        bufferRef.current = e.key;
+        bufferRef.current = char;
       }
 
       // Safety reset: if delay > 100ms and buffer has more than 1 char, it was slow human typing -> clear buffer

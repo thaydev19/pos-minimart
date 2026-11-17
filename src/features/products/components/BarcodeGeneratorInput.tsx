@@ -7,6 +7,10 @@
 import React from "react";
 import { ScanBarcode, Sparkles, Scale, X } from "lucide-react";
 import { generateInternalBarcode } from "../utils/product.util";
+import {
+  normalizeBarcodeInput,
+  getHardwareBarcodeChar,
+} from "@/utils/normalizeBarcodeInput";
 
 interface BarcodeGeneratorInputProps {
   value: string;
@@ -68,7 +72,27 @@ export function BarcodeGeneratorInput({
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(normalizeBarcodeInput(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
+              e.preventDefault();
+              onChange(normalizeBarcodeInput(value));
+              return;
+            }
+            if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+              const char = getHardwareBarcodeChar(e.nativeEvent);
+              if (char !== null) {
+                e.preventDefault();
+                const input = e.currentTarget;
+                const start = input.selectionStart ?? input.value.length;
+                const end = input.selectionEnd ?? input.value.length;
+                const nextVal = normalizeBarcodeInput(
+                  input.value.slice(0, start) + char + input.value.slice(end)
+                );
+                onChange(nextVal);
+              }
+            }
+          }}
           disabled={disabled}
           placeholder={placeholder}
           className={`h-9 w-full rounded-xl border bg-white pl-9 pr-8 text-xs font-mono font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:ring-2 ${

@@ -5,7 +5,11 @@
 // ============================================================================
 
 import { useEffect, useRef, useState } from "react";
-import { normalizeBarcodeInput, parseBarcodeMultiplier } from "@/utils/normalizeBarcodeInput";
+import {
+  normalizeBarcodeInput,
+  parseBarcodeMultiplier,
+  getHardwareBarcodeChar,
+} from "@/utils/normalizeBarcodeInput";
 import { parseEan13ScaleBarcode } from "@/utils/ean13Parser";
 import { usePosStore } from "../stores/pos.store";
 
@@ -90,29 +94,35 @@ export function useBarcodeScanner({
       lastKeyTimeRef.current = currentTime;
 
       // Enter key marks end of barcode burst
-      if (e.key === "Enter") {
-        if (bufferRef.current.length >= 3) {
+      if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
+        if (bufferRef.current.length >= 2) {
           e.preventDefault();
-          processBarcode(bufferRef.current);
+          processBarcode(normalizeBarcodeInput(bufferRef.current));
           bufferRef.current = "";
           return;
         }
         // If Enter pressed inside search input
         if (target === inputRef.current && searchInput.trim().length > 0) {
           e.preventDefault();
-          processBarcode(searchInput);
+          processBarcode(normalizeBarcodeInput(searchInput));
           return;
         }
         bufferRef.current = "";
         return;
       }
 
-      // Hardware barcode scanner keystrokes arrive with inter-keystroke timing < 50ms
-      if (e.key.length === 1) {
-        if (timeDiff < 50 || bufferRef.current.length > 0) {
-          bufferRef.current += e.key;
+      // Ignore modifier combinations (Ctrl/Alt/Meta)
+      if (e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
+
+      // Decode physical key position (immune to keyboard language, Shift or CapsLock)
+      const char = getHardwareBarcodeChar(e);
+      if (char !== null) {
+        if (timeDiff < 55 || bufferRef.current.length > 0) {
+          bufferRef.current += char;
         } else if (!isInputActive) {
-          bufferRef.current = e.key;
+          bufferRef.current = char;
         }
       }
 

@@ -2,7 +2,8 @@
 
 // ============================================================================
 // CloseShiftBlindDialog: Blind Cash Drawer Count & Reconciliation Report
-// Denomination Counter (100k - 1k Kip) + 80mm Shift Closing Summary Print
+// 2-Column Denominations (100k - 500 Kip) + Direct Cash Entry Mode
+// Compact UI for 1366x768 POS Displays + 80mm Z-Report Thermal Slip Print
 // ============================================================================
 
 import React, { useState } from "react";
@@ -17,11 +18,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   QrCode,
+  TrendingUp,
   FileCheck,
+  RotateCcw,
 } from "lucide-react";
 import { useShiftStore } from "../stores/shift.store";
 import { useShiftMutations } from "../hooks/useShiftMutations";
-import { LAO_KIP_DENOMINATIONS } from "../constants/shift.constants";
 import {
   CashDenominationCount,
   ShiftClosingSummary,
@@ -32,18 +34,23 @@ import {
 } from "../utils/shift.util";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
-import { DEFAULT_STORE, DEFAULT_CASHIER } from "@/features/pos/constants/pos.constants";
-import { useAuth } from "@/features/auth";
+import { ShiftZReport80mmTemplate } from "./ShiftZReport80mmTemplate";
+
+const LEFT_DENOMINATIONS = [100000, 50000, 20000, 10000] as const;
+const RIGHT_DENOMINATIONS = [5000, 2000, 1000, 500] as const;
+
+type EntryMode = "denominations" | "direct";
 
 export function CloseShiftBlindDialog() {
-  const { user } = useAuth();
   const isCloseShiftModalOpen = useShiftStore((s) => s.isCloseShiftModalOpen);
   const closeCloseShiftModal = useShiftStore((s) => s.closeCloseShiftModal);
   const activeShift = useShiftStore((s) => s.activeShift);
-  const lastClosingSummary = useShiftStore((s) => s.lastClosingSummary);
   const setLastClosingSummary = useShiftStore((s) => s.setLastClosingSummary);
 
   const { closeShiftBlind, isSubmitting, errorMessage } = useShiftMutations();
+
+  // Mode: counting by bills vs direct total
+  const [entryMode, setEntryMode] = useState<EntryMode>("denominations");
 
   // Denominations count
   const [counts, setCounts] = useState<CashDenominationCount>(
@@ -61,7 +68,9 @@ export function CloseShiftBlindDialog() {
 
   const totalCountedCash = calculateDenominationsTotal(counts);
   const effectiveActualCash =
-    manualCashTotal !== null ? manualCashTotal : totalCountedCash;
+    entryMode === "direct"
+      ? (manualCashTotal ?? 0)
+      : totalCountedCash;
 
   const handleCountChange = (denom: number, value: string) => {
     const qty = Math.max(0, parseInt(value, 10) || 0);
@@ -73,6 +82,10 @@ export function CloseShiftBlindDialog() {
       ...prev,
       [denom]: Math.max(0, (prev[denom] || 0) + delta),
     }));
+  };
+
+  const handleResetCounts = () => {
+    setCounts(getInitialDenominationCounts());
   };
 
   const handleSubmitClose = async (e: React.FormEvent) => {
@@ -107,8 +120,55 @@ export function CloseShiftBlindDialog() {
     closeCloseShiftModal();
   };
 
+  const renderDenomRow = (denom: number) => {
+    const qty = counts[denom] || 0;
+    const lineTotal = denom * qty;
+
+    return (
+      <div
+        key={denom}
+        className="flex items-center justify-between gap-1.5 px-2 py-1 bg-slate-50/70 hover:bg-slate-100/70 rounded-xl border border-slate-200/60 transition-colors"
+      >
+        <div className="w-18 shrink-0 font-bold text-slate-800 text-xs">
+          {formatLak(denom, false)} ₭
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => handleQuickAdd(denom, -1)}
+            className="flex h-6 w-6 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-2xs"
+          >
+            -
+          </button>
+
+          <input
+            type="number"
+            min="0"
+            value={qty || ""}
+            onChange={(e) => handleCountChange(denom, e.target.value)}
+            placeholder="0"
+            className="h-6.5 w-12 rounded-lg border border-slate-200 bg-white text-center font-extrabold text-xs text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
+          />
+
+          <button
+            type="button"
+            onClick={() => handleQuickAdd(denom, 1)}
+            className="flex h-6 w-6 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-2xs"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="w-20 text-right font-bold text-slate-900 tabular-nums text-xs">
+          {formatLak(lineTotal)}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 receipt-modal-backdrop">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
@@ -116,22 +176,22 @@ export function CloseShiftBlindDialog() {
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200 receipt-modal-card">
         {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-5 shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex h-13 items-center justify-between border-b border-zinc-200/80 px-4 sm:px-5 shrink-0 bg-white">
+          <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
               <Lock className="h-4 w-4" />
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 leading-tight">
                 {summaryResult
-                  ? "ໃບສະຫຼຸບປິດກະຂາຍເຄື່ອງ (Shift Report)"
+                  ? "ໃບສະຫຼຸບປິດກະຂາຍເຄື່ອງ (Z-Report / Shift Closing)"
                   : "ປິດກະຂາຍເຄື່ອງ (Blind Close Reconciliation)"}
               </h3>
               <p className="text-[10px] text-slate-500">
                 {summaryResult
-                  ? "ກວດສອບ ແລະ ພິມໃບສະຫຼຸບກະ"
+                  ? "ກວດສອບຜົນການປິດກະ ແລະ ພິມໃບສະຫຼຸບມອບເງິນ"
                   : "ນັບເງິນສົດຕົວຈິງໃນເກ໊ະ (ເຊື່ອງຍອດຂາຍເພື່ອຄວາມໂປ່ງໃສ)"}
               </p>
             </div>
@@ -150,12 +210,12 @@ export function CloseShiftBlindDialog() {
         {/* Content Body */}
         {summaryResult ? (
           // ==================================================================
-          // VIEW 2: POST-CLOSING RECONCILIATION SUMMARY & PRINT
+          // VIEW 2: POST-CLOSING RECONCILIATION SUMMARY & 80MM PRINT
           // ==================================================================
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 receipt-modal-body">
             {/* Reconciliation Banner */}
             <div
-              className={`rounded-2xl border p-4 text-center ${
+              className={`rounded-2xl border p-3.5 text-center ${
                 summaryResult.discrepancy === 0
                   ? "bg-emerald-50 border-emerald-300 text-emerald-950"
                   : summaryResult.discrepancy > 0
@@ -167,23 +227,23 @@ export function CloseShiftBlindDialog() {
                 {summaryResult.discrepancy === 0 ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <span>ຍອດເງິນສົດກົງກັນພໍດີ (Balanced)</span>
+                    <span>ຍອດເງິນສົດກົງກັນພໍດີ (Balanced - ບໍ່ມີສ່ວນຕ່າງ)</span>
                   </>
                 ) : summaryResult.discrepancy > 0 ? (
                   <>
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <span>ຍອດເງິນສົດເກີນ (Cash Surplus)</span>
+                    <TrendingUp className="h-4 w-4 text-amber-600" />
+                    <span>ຍອດເງິນສົດເກີນ (Cash Surplus - ເງິນເກີນໃນເກ໊ະ)</span>
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4 text-rose-600" />
-                    <span>ຍອດເງິນສົດຂາດ (Cash Shortage)</span>
+                    <span>ຍອດເງິນສົດຂາດ (Cash Shortage - ເງິນຂາດໃນເກ໊ະ)</span>
                   </>
                 )}
               </div>
 
               <div
-                className={`text-2xl font-extrabold tabular-nums ${
+                className={`text-2xl font-black tabular-nums tracking-tight ${
                   summaryResult.discrepancy === 0
                     ? "text-emerald-700"
                     : summaryResult.discrepancy > 0
@@ -199,113 +259,86 @@ export function CloseShiftBlindDialog() {
               </p>
             </div>
 
-            {/* Reconciliation Breakdown Card */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 space-y-2.5 text-xs">
-              <div className="flex justify-between items-center text-slate-600 pb-1.5 border-b border-zinc-100">
-                <span>ເງິນທອນເລີ່ມຕົ້ນ (Opening Cash):</span>
-                <span className="font-extrabold text-slate-800 tabular-nums">
+            {/* Reconciliation Breakdown Metric Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="rounded-xl border border-zinc-200 bg-slate-50/60 p-2.5">
+                <span className="text-[10px] text-slate-500 block">ເງິນເລີ່ມຕົ້ນ</span>
+                <span className="font-extrabold text-slate-900 tabular-nums text-sm">
                   {formatLak(summaryResult.opening_cash)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center text-slate-600 pb-1.5 border-b border-zinc-100">
-                <span>ຍອດຂາຍເງິນສົດໃນກະ (Cash Sales):</span>
-                <span className="font-extrabold text-emerald-700 tabular-nums">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-2.5">
+                <span className="text-[10px] text-emerald-700 block">ຍອດຂາຍເງິນສົດ</span>
+                <span className="font-extrabold text-emerald-800 tabular-nums text-sm">
                   +{formatLak(summaryResult.cash_sales)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center font-bold text-slate-900 bg-slate-50 p-2 rounded-xl">
-                <span>ເງິນສົດທີ່ຄວນມີໃນເກ໊ະ (Expected Cash):</span>
-                <span className="font-extrabold tabular-nums text-sm">
+              <div className="rounded-xl border border-zinc-200 bg-slate-50/60 p-2.5">
+                <span className="text-[10px] text-slate-600 block">ເງິນຄວນມີ (Expected)</span>
+                <span className="font-extrabold text-slate-900 tabular-nums text-sm">
                   {formatLak(summaryResult.expected_cash)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center font-bold text-slate-900 bg-emerald-50/50 p-2 rounded-xl border border-emerald-200/60">
-                <span>ເງິນສົດຕົວຈິງທີ່ນັບໄດ້ (Actual Counted):</span>
-                <span className="font-extrabold tabular-nums text-sm text-emerald-900">
+              <div className="rounded-xl border border-zinc-300 bg-zinc-100/70 p-2.5">
+                <span className="text-[10px] text-slate-700 font-bold block">ເງິນນັບໄດ້ (Actual)</span>
+                <span className="font-black text-slate-950 tabular-nums text-sm">
                   {formatLak(summaryResult.actual_cash)}
                 </span>
               </div>
+            </div>
 
-              <div className="flex justify-between items-center text-slate-500 pt-1">
+            {/* Non-cash & order count summary */}
+            <div className="rounded-xl border border-zinc-200/80 bg-white p-3 space-y-1.5 text-xs">
+              <div className="flex justify-between items-center text-slate-600">
                 <span>ຍອດໂອນ LAO QR (Transfer Sales):</span>
-                <span className="font-bold text-slate-700 tabular-nums">
+                <span className="font-extrabold text-indigo-700 tabular-nums">
                   {formatLak(summaryResult.transfer_sales)}
                 </span>
               </div>
-
-              <div className="flex justify-between items-center text-slate-500">
+              <div className="flex justify-between items-center text-slate-600">
+                <span>ລວມຍອດຂາຍທັງໝົດໃນກະ (Cash + Transfer):</span>
+                <span className="font-extrabold text-slate-900 tabular-nums">
+                  {formatLak(summaryResult.cash_sales + summaryResult.transfer_sales)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-500 pt-1 border-t border-zinc-100">
                 <span>ຈຳນວນບິນທີ່ຂາຍໄດ້ທັງໝົດ:</span>
-                <span className="font-bold text-slate-700 tabular-nums">
+                <span className="font-bold text-slate-800 tabular-nums">
                   {summaryResult.order_count} ບິນ
                 </span>
               </div>
+              {summaryResult.shift.notes && (
+                <div className="flex justify-between items-center text-slate-500">
+                  <span>ໝາຍເຫດປິດກະ:</span>
+                  <span className="font-medium text-slate-700">{summaryResult.shift.notes}</span>
+                </div>
+              )}
             </div>
 
-            {/* 80mm Printable Receipt Container (Hidden on screen, rendered on print) */}
-            <div className="hidden print:block font-sans text-slate-900 text-xs space-y-1">
-              <div className="text-center pb-2 border-b border-black">
-                <div className="font-bold text-sm">{user?.store_name_lo || DEFAULT_STORE.name_lo}</div>
-                <div>{user?.store_branch || DEFAULT_STORE.branch}</div>
-                <div className="font-bold mt-1">ໃບສະຫຼຸບປິດກະຂາຍເຄື່ອງ (SHIFT REPORT)</div>
-                <div>ພະນັກງານ: {user?.full_name_lo || activeShift?.cashier_name || DEFAULT_CASHIER.name}</div>
-                <div>ວັນທີ: {new Date(summaryResult.closed_at).toLocaleString()}</div>
-              </div>
-
-              <div className="py-2 border-b border-black space-y-1">
-                <div className="flex justify-between">
-                  <span>ເງິນເລີ່ມຕົ້ນ:</span>
-                  <span>{formatLak(summaryResult.opening_cash)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>ຍອດຂາຍເງິນສົດ:</span>
-                  <span>{formatLak(summaryResult.cash_sales)}</span>
-                </div>
-                <div className="flex justify-between font-bold">
-                  <span>ເງິນຄວນມີ:</span>
-                  <span>{formatLak(summaryResult.expected_cash)}</span>
-                </div>
-                <div className="flex justify-between font-bold">
-                  <span>ເງິນນັບໄດ້:</span>
-                  <span>{formatLak(summaryResult.actual_cash)}</span>
-                </div>
-                <div className="flex justify-between font-bold">
-                  <span>ສ່ວນຕ່າງ:</span>
-                  <span>{formatLak(summaryResult.discrepancy)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>ຍອດໂອນ QR:</span>
-                  <span>{formatLak(summaryResult.transfer_sales)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>ຈຳນວນບິນ:</span>
-                  <span>{summaryResult.order_count}</span>
-                </div>
-              </div>
-
-              <div className="text-center pt-2">
-                <div>ລາຍເຊັນພະນັກງານ: ........................</div>
-                <div>ລາຍເຊັນຜູ້ຈັດການ: ........................</div>
-              </div>
-            </div>
+            {/* Printable 80mm Z-Report Container (Rendered during window.print()) */}
+            <ShiftZReport80mmTemplate
+              summary={summaryResult}
+              className="hidden print:block"
+            />
 
             {/* Action buttons */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 no-print">
               <button
                 type="button"
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer shadow-2xs"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs"
               >
-                <Printer className="h-4 w-4" />
-                <span>ພິມໃບສະຫຼຸບກະ (80mm)</span>
+                <Printer className="h-4 w-4 text-slate-600" />
+                <span>ພິມໃບສະຫຼຸບປິດກະ (80mm)</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleFinish}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer shadow-xs"
               >
                 <CheckCircle2 className="h-4 w-4" />
                 <span>ສຳເລັດ</span>
@@ -314,16 +347,28 @@ export function CloseShiftBlindDialog() {
           </div>
         ) : (
           // ==================================================================
-          // VIEW 1: BLIND COUNTING ENTRY FORM
+          // VIEW 1: COMPACT BLIND COUNTING ENTRY FORM (1366x768 OPTIMIZED)
           // ==================================================================
-          <form onSubmit={handleSubmitClose} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-            {/* Notice */}
-            <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 border border-slate-200/90 p-3 text-xs text-slate-600">
-              <Calculator className="h-4 w-4 shrink-0 text-slate-500 mt-0.5" />
-              <div className="leading-snug">
-                <strong>ກົດລະບຽບ Blind Close:</strong> ກະລຸນານັບຈຳນວນໃບເງິນແຕ່ລະໃບໃນເກ໊ະຕົວຈິງ.
-                ລະບົບຈະເຊື່ອງຍອດຂາຍຈົນກວ່າທ່ານຈະກົດຢືນຢັນເພື່ອປ້ອງກັນການດັດແປງຕົວເລກ.
+          <form onSubmit={handleSubmitClose} className="flex-1 overflow-y-auto p-4 space-y-3 receipt-modal-body">
+            {/* Rule notice */}
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/90 px-3 py-2 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 shrink-0 text-slate-500" />
+                <span className="text-[11px] leading-tight">
+                  <strong>ກົດລະບຽບ Blind Close:</strong> ນັບເງິນສົດຕົວຈິງໃນເກ໊ະ (ເຊື່ອງຍອດຂາຍຈົນກວ່າຈະກົດຢືນຢັນ)
+                </span>
               </div>
+              {entryMode === "denominations" && (
+                <button
+                  type="button"
+                  onClick={handleResetCounts}
+                  className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                  title="ລ້າງຄ່ານັບເງິນທັງໝົດເປັນ 0"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>ຣີເຊັດ</span>
+                </button>
+              )}
             </div>
 
             {(formError || errorMessage) && (
@@ -333,139 +378,117 @@ export function CloseShiftBlindDialog() {
               </div>
             )}
 
-            {/* Denomination Counter Table */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white overflow-hidden shadow-2xs">
-              <div className="bg-slate-50/80 px-3.5 py-2 border-b border-zinc-200/80 flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
-                <span>ໃບເງິນກີບ (Denomination)</span>
-                <span>ຈຳນວນໃບ</span>
-                <span className="text-right">ມູນຄ່າລວມ (₭)</span>
-              </div>
-
-              <div className="divide-y divide-zinc-100 p-1">
-                {LAO_KIP_DENOMINATIONS.map((denom) => {
-                  const qty = counts[denom] || 0;
-                  const lineTotal = denom * qty;
-
-                  return (
-                    <div
-                      key={denom}
-                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 hover:bg-slate-50/60 rounded-lg transition-colors"
-                    >
-                      {/* Face value */}
-                      <div className="w-24 shrink-0 font-bold text-slate-800 text-xs">
-                        {formatLak(denom, false)} ₭
-                      </div>
-
-                      {/* Quantity counter input */}
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleQuickAdd(denom, -1)}
-                          className="flex h-6 w-6 items-center justify-center rounded border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-bold"
-                        >
-                          -
-                        </button>
-
-                        <input
-                          type="number"
-                          min="0"
-                          value={qty || ""}
-                          onChange={(e) => handleCountChange(denom, e.target.value)}
-                          placeholder="0"
-                          className="h-7 w-16 rounded-md border border-slate-200 text-center font-extrabold text-xs text-slate-900 outline-none focus:border-emerald-600"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => handleQuickAdd(denom, 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-bold"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      {/* Subtotal */}
-                      <div className="w-28 text-right font-extrabold text-slate-900 tabular-nums text-xs">
-                        {formatLak(lineTotal)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Segmented Mode Toggle: 2 Choices */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold gap-1">
+              <button
+                type="button"
+                onClick={() => setEntryMode("denominations")}
+                className={`py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  entryMode === "denominations"
+                    ? "bg-white text-emerald-800 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Calculator className="h-3.5 w-3.5" />
+                <span>ນັບຕາມໃບເງິນ (ແຍກຕາມມູນຄ່າ)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntryMode("direct")}
+                className={`py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  entryMode === "direct"
+                    ? "bg-white text-emerald-800 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Coins className="h-3.5 w-3.5" />
+                <span>ປ້ອນຍອດລວມໂດຍກົງ (ນັບລວມແລ້ວ)</span>
+              </button>
             </div>
 
-            {/* Total Physical Cash Count Banner & Direct Entry */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5">
-                <div className="flex items-center gap-2">
-                  <Coins className="h-5 w-5 text-emerald-700" />
-                  <span className="text-xs font-extrabold text-emerald-950">
-                    ຍອດເງິນສົດນັບໄດ້ຕົວຈິງ (Actual Cash):
-                  </span>
+            {/* Mode 1: Denominations 2-Column Grid */}
+            {entryMode === "denominations" && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                  {/* Left Column: 100k, 50k, 20k, 10k */}
+                  <div className="space-y-1.5">
+                    {LEFT_DENOMINATIONS.map((d) => renderDenomRow(d))}
+                  </div>
+
+                  {/* Right Column: 5k, 2k, 1k, 500 */}
+                  <div className="space-y-1.5">
+                    {RIGHT_DENOMINATIONS.map((d) => renderDenomRow(d))}
+                  </div>
                 </div>
-                <div className="text-lg font-extrabold text-emerald-900 tabular-nums">
-                  {formatLak(effectiveActualCash)}
+
+                {/* Counted Total Banner */}
+                <div className="flex items-center justify-between rounded-xl bg-emerald-50/80 border border-emerald-200 px-3.5 py-2">
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="h-4 w-4 text-emerald-700" />
+                    <span className="text-xs font-bold text-emerald-950">
+                      ຍອດເງິນສົດນັບໄດ້ຕົວຈິງ (Actual Counted):
+                    </span>
+                  </div>
+                  <div className="text-base font-black text-emerald-900 tabular-nums">
+                    {formatLak(totalCountedCash)}
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* Direct Cash Input Override */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700">
-                    ຫຼື ປ້ອນຍອດເງິນສົດລວມໂດຍກົງ (Direct Entry):
-                  </label>
-                  {manualCashTotal !== null && (
-                    <button
-                      type="button"
-                      onClick={() => setManualCashTotal(null)}
-                      className="text-[10px] font-bold text-emerald-600 hover:underline cursor-pointer"
-                    >
-                      ໃຊ້ຍອດນັບຕາມໃບເງິນ
-                    </button>
-                  )}
-                </div>
+            {/* Mode 2: Direct Cash Total Input */}
+            {entryMode === "direct" && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-1.5">
+                <label className="text-xs font-bold text-emerald-950 flex items-center justify-between">
+                  <span>ປ້ອນຍອດເງິນສົດລວມຕົວຈິງໃນເກ໊ະ (Total Cash):</span>
+                  <span className="text-[10px] text-emerald-700 font-normal">ປ້ອນຍອດທີ່ນັບໄດ້ຈາກພາຍນອກ</span>
+                </label>
                 <KipCurrencyInput
-                  value={effectiveActualCash}
+                  value={manualCashTotal ?? 0}
                   onValueChange={(val) => setManualCashTotal(val)}
                   placeholder="0"
-                  className="h-9 text-xs font-bold text-slate-900"
+                  className="h-10 text-base font-extrabold text-slate-900 bg-white"
+                  autoFocus
                 />
               </div>
-            </div>
+            )}
 
-            {/* Transfer check input */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <QrCode className="h-3.5 w-3.5 text-slate-500" />
-                <span>ຍອດໂອນ LAO QR ທີ່ກວດສອບໃນແອັບທະນາຄານ (₭ - ທາງເລືອກ):</span>
-              </label>
-              <KipCurrencyInput
-                value={transferSales}
-                onValueChange={(val) => setTransferSales(val)}
-                placeholder="0"
-                className="h-9 text-xs font-bold text-slate-900"
-              />
-            </div>
+            {/* Horizontal Row: QR Transfer + Notes side-by-side */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Transfer Sales */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                  <QrCode className="h-3 w-3 text-indigo-600" />
+                  <span>ຍອດໂອນ LAO QR (ແອັບທະນາຄານ):</span>
+                </label>
+                <KipCurrencyInput
+                  value={transferSales}
+                  onValueChange={(val) => setTransferSales(val)}
+                  placeholder="0"
+                  className="h-8.5 text-xs font-bold text-slate-900"
+                />
+              </div>
 
-            {/* Notes */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">
-                ໝາຍເຫດປິດກະ (Audit Notes)
-              </label>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="ເຊັ່ນ: ເງິນທອນພໍດີ, ມອບເງິນສົດໃຫ້ຜູ້ຈັດການ..."
-                className="h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-600"
-              />
+              {/* Notes */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  ໝາຍເຫດປິດກະ (Audit Notes)
+                </label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="ເຊັ່ນ: ເງິນທອນຄົບ, ມອບໃຫ້ເຈົ້າຂອງຮ້ານ..."
+                  className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-600"
+                />
+              </div>
             </div>
 
             {/* Footer Buttons */}
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100">
               <button
                 type="button"
-                onClick={closeCloseShiftModal}
+                onClick={handleFinish}
                 disabled={isSubmitting}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >

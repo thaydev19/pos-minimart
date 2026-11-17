@@ -4,12 +4,14 @@
 // ShiftHistoryTable: Audit History of Cashier Shifts & Cash Variances
 // ============================================================================
 
-import React from "react";
-import { Clock, User, AlertCircle, CheckCircle2, History } from "lucide-react";
+import React, { useState } from "react";
+import { Clock, User, AlertCircle, CheckCircle2, History, LogOut, AlertTriangle, Loader2 } from "lucide-react";
 import { ShiftItem } from "../types/shift.types";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { formatShiftDuration } from "../utils/shift.util";
 import { SHIFT_STATUS_LABELS } from "../constants/shift.constants";
+import { useShiftStore } from "../stores/shift.store";
+import { useShiftMutations } from "../hooks/useShiftMutations";
 
 interface ShiftHistoryTableProps {
   shifts: ShiftItem[];
@@ -17,6 +19,21 @@ interface ShiftHistoryTableProps {
 }
 
 export function ShiftHistoryTable({ shifts, isLoading }: ShiftHistoryTableProps) {
+  const activeShift = useShiftStore((s) => s.activeShift);
+  const openCloseShiftModal = useShiftStore((s) => s.openCloseShiftModal);
+  const { forceCloseShift } = useShiftMutations();
+  const [closingId, setClosingId] = useState<string | null>(null);
+
+  const handleForceClose = async (shiftId: string) => {
+    if (window.confirm("ທ່ານຕ້ອງການປິດກະເກົ່າທີ່ຄ້າງນີ້ແທ້ຫຼືບໍ່?")) {
+      setClosingId(shiftId);
+      try {
+        await forceCloseShift(shiftId, "ປິດກະເກົ່າທີ່ຄ້າງໂດຍຜູ້ໃຊ້");
+      } finally {
+        setClosingId(null);
+      }
+    }
+  };
   if (isLoading && shifts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-zinc-200/80">
@@ -96,21 +113,27 @@ export function ShiftHistoryTable({ shifts, isLoading }: ShiftHistoryTableProps)
 
                   {/* Expected Cash */}
                   <td className="py-2.5 px-3 text-right font-extrabold text-slate-700 tabular-nums">
-                    {s.expected_closing_cash !== null && s.expected_closing_cash !== undefined
+                    {s.status === "open"
+                      ? "-"
+                      : typeof s.expected_closing_cash === "number"
                       ? formatLak(s.expected_closing_cash)
-                      : "-"}
+                      : "0 ₭"}
                   </td>
 
                   {/* Actual Cash */}
                   <td className="py-2.5 px-3 text-right font-extrabold text-slate-900 tabular-nums">
-                    {s.actual_closing_cash !== null && s.actual_closing_cash !== undefined
+                    {s.status === "open"
+                      ? "-"
+                      : typeof s.actual_closing_cash === "number"
                       ? formatLak(s.actual_closing_cash)
-                      : "-"}
+                      : "0 ₭"}
                   </td>
 
                   {/* Discrepancy Variance */}
                   <td className="py-2.5 px-3 text-right font-extrabold tabular-nums">
-                    {discrepancy !== null ? (
+                    {s.status === "open" ? (
+                      <span className="text-slate-400">-</span>
+                    ) : typeof discrepancy === "number" ? (
                       <span
                         className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] ${
                           discrepancy === 0
@@ -127,16 +150,47 @@ export function ShiftHistoryTable({ shifts, isLoading }: ShiftHistoryTableProps)
                     )}
                   </td>
 
-                  {/* Status */}
+                  {/* Status & Actions */}
                   <td className="py-2.5 px-4 text-center">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bgClass}`}
-                    >
+                    <div className="flex flex-col items-center gap-1">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bgClass}`}
+                      >
+                        {s.status === "open" && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping mr-0.5" />
+                        )}
+                        <span>{statusCfg.label_lo}</span>
+                      </span>
+
+                      {/* If open: allow closing */}
                       {s.status === "open" && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping mr-0.5" />
+                        s.id === activeShift?.id ? (
+                          <button
+                            type="button"
+                            onClick={openCloseShiftModal}
+                            className="inline-flex items-center gap-1 rounded-lg bg-rose-600 hover:bg-rose-700 px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs transition-all cursor-pointer"
+                          >
+                            <LogOut className="h-2.5 w-2.5" />
+                            <span>ປິດກະ & ນັບເງິນ</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleForceClose(s.id)}
+                            disabled={closingId === s.id}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 transition-all cursor-pointer disabled:opacity-50"
+                            title="ປິດກະເກົ່າທີ່ຕົກຄ້າງໃນລະບົບ"
+                          >
+                            {closingId === s.id ? (
+                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                            ) : (
+                              <AlertTriangle className="h-2.5 w-2.5 text-rose-600" />
+                            )}
+                            <span>ປິດກະຄ້າງ</span>
+                          </button>
+                        )
                       )}
-                      <span>{statusCfg.label_lo}</span>
-                    </span>
+                    </div>
                   </td>
                 </tr>
               );

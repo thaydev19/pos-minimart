@@ -136,8 +136,19 @@ export const shiftsApi = {
 
   /**
    * Opens a new shift with the given starting cash float.
+   * Ensures STRICTLY only 1 shift can be active/open at any time.
    */
   async openShift(openingCash: number, notes?: string): Promise<ShiftItem> {
+    // 0. Ensure no open shift exists
+    const existingActive = await this.getActiveShift();
+    if (existingActive) {
+      throw new Error(
+        "ມີກະຂາຍເຄື່ອງກຳລັງເປີດຢູ່ແລ້ວ (" +
+          new Date(existingActive.opening_time).toLocaleTimeString() +
+          "). ກະລຸນາປິດກະເກົ່າກ່ອນເປີດກະໃໝ່."
+      );
+    }
+
     const shiftId = crypto.randomUUID();
     const timestamp = new Date().toISOString();
     const currentUser = useAuthStore.getState().user;
@@ -409,5 +420,62 @@ export const shiftsApi = {
         (a, b) =>
           new Date(b.opening_time).getTime() - new Date(a.opening_time).getTime()
       );
+  },
+
+  /**
+   * Forces close an abandoned/stranded open shift from the history table.
+   */
+  async forceCloseAbandonedShift(shiftId: string, notes?: string): Promise<void> {
+    const timestamp = new Date().toISOString();
+
+    // Fetch shift to calculate expected cash
+    let openingCash = 0;
+    let cashSales = 0;
+    try {
+      const { data: shiftData } = await supabase
+        .from("shifts")
+        .select("*")
+        .eq("id", shiftId)
+        .maybeSingle();
+
+      if (shiftData) {
+        openingCash = Number(shiftData.opening_cash) || 0;
+        const { data: ordersData } = await supabase
+          .from("orders")
+          .select("payment_method, final_total, status")
+          .eq("shift_id", shiftId)
+          .eq("status", "completed");
+
+        if (ordersData) {
+          for (const o of ordersData) {
+            if (o.payment_method === "cash") {
+              cashSales += Number(o.final_total) || 0;
+            }
+          }
+        }
+      }
+    } catch {}
+
+    const expectedCash = openingCash + cashSales;
+    const updatePayload = {
+      closing_time: timestamp,
+      expected_closing_cash: expectedCash,
+      actual_closing_cash: expectedCash,
+      discrepancy: 0,
+      status: "closed" as const,
+      notes: notes?.trim() || "ປິດກະຄ້າງ (Abandoned Shift Force Closed)",
+    };
+
+    try {
+      await supabase.from("shifts").update(updatePayload).eq("id", shiftId);
+    } catch (err) {
+      console.warn("[ShiftsApi] forceCloseAbandonedShift Supabase error:", err);
+    }
+
+    try {
+      await offlineDb.shifts.update(shiftId, updatePayload as any);
+    } catch (err) {
+      console.warn("[ShiftsApi] forceCloseAbandonedShift Dexie error:", err);
+    }
   },
 };

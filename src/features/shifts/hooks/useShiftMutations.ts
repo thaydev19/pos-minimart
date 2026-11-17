@@ -49,11 +49,30 @@ export function useShiftMutations() {
       setLastClosingSummary(summary);
       await loadActiveShift();
       await loadShiftHistory();
-      closeCloseShiftModal();
+      // Keep modal open so the cashier can review the Z-Report and print 80mm slip
       return summary;
     } catch (err: any) {
       setErrorMessage(err.message || "ປິດກະບໍ່ສຳເລັດ");
       return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const forceCloseShift = async (
+    shiftId: string,
+    notes?: string
+  ): Promise<boolean> => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      await shiftsApi.forceCloseAbandonedShift(shiftId, notes);
+      await loadActiveShift();
+      await loadShiftHistory();
+      return true;
+    } catch (err: any) {
+      setErrorMessage(err.message || "ປິດກະຄ້າງບໍ່ສຳເລັດ");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -64,6 +83,7 @@ export function useShiftMutations() {
     errorMessage,
     openShift,
     closeShiftBlind,
+    forceCloseShift,
     clearError: () => setErrorMessage(null),
   };
 }

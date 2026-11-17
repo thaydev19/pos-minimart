@@ -63,7 +63,7 @@ export function ShiftsPage() {
             <span>ໂຫຼດຂໍ້ມູນໃໝ່</span>
           </button>
 
-          {!activeShift ? (
+          {!activeShift && (
             <button
               type="button"
               onClick={openOpenShiftModal}
@@ -71,15 +71,6 @@ export function ShiftsPage() {
             >
               <PlusCircle className="h-4 w-4" />
               <span>ເປີດກະຂາຍເຄື່ອງໃໝ່</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={openCloseShiftModal}
-              className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-700 active:scale-95 transition-all cursor-pointer"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>ປິດກະ (Blind Close)</span>
             </button>
           )}
         </div>

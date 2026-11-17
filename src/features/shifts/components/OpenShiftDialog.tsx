@@ -15,6 +15,7 @@ import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
 export function OpenShiftDialog() {
   const isOpenShiftModalOpen = useShiftStore((s) => s.isOpenShiftModalOpen);
   const closeOpenShiftModal = useShiftStore((s) => s.closeOpenShiftModal);
+  const activeShift = useShiftStore((s) => s.activeShift);
   const { openShift, isSubmitting, errorMessage, clearError } = useShiftMutations();
 
   const [openingCash, setOpeningCash] = useState<number>(500000);
@@ -26,6 +27,11 @@ export function OpenShiftDialog() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    if (activeShift) {
+      setFormError("ມີກະຂາຍເຄື່ອງກຳລັງເປີດຢູ່ແລ້ວ. ບໍ່ສາມາດເປີດກະຊ້ອນກັນໄດ້.");
+      return;
+    }
 
     if (openingCash < 0) {
       setFormError("ເງິນທອນເລີ່ມຕົ້ນບໍ່ສາມາດຕິດລົບໄດ້");

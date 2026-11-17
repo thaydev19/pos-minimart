@@ -12,7 +12,8 @@ export interface CashDenominationCount {
   5000: number;
   2000: number;
   1000: number;
-  [key: number]: number;
+  500?: number;
+  [key: number]: number | undefined;
 }
 
 export interface ShiftItem {

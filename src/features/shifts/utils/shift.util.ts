@@ -14,6 +14,7 @@ export function getInitialDenominationCounts(): CashDenominationCount {
     5000: 0,
     2000: 0,
     1000: 0,
+    500: 0,
   };
 }
 

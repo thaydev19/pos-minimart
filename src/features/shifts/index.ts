@@ -12,6 +12,7 @@ export * from "./hooks/useShiftMutations";
 export * from "./components/ActiveShiftBadge";
 export * from "./components/OpenShiftDialog";
 export * from "./components/CloseShiftBlindDialog";
+export * from "./components/ShiftZReport80mmTemplate";
 export * from "./components/ShiftHistoryTable";
 export * from "./pages/shifts-page";
 

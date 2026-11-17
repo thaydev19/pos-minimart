@@ -193,16 +193,16 @@ export function useGlobalBarcodeScanner({
         return;
       }
 
-      // Hardware Barcode Scanner burst detection: interval between keystrokes < 35ms
-      if (timeDiff < 35) {
+      // Hardware Barcode Scanner burst detection: interval between keystrokes < 55ms (supports wireless 2.4G / Bluetooth)
+      if (timeDiff < 55) {
         bufferRef.current += e.key;
       } else if (!isOtherInput) {
         // Start new scan burst if outside input fields
         bufferRef.current = e.key;
       }
 
-      // Safety reset: if delay > 65ms and buffer has more than 1 char, it was human typing -> clear buffer
-      if (timeDiff > 65 && bufferRef.current.length > 1) {
+      // Safety reset: if delay > 100ms and buffer has more than 1 char, it was slow human typing -> clear buffer
+      if (timeDiff > 100 && bufferRef.current.length > 1) {
         bufferRef.current = "";
       }
     };

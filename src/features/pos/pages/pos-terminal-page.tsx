@@ -64,21 +64,7 @@ export function PosTerminalPage() {
     };
   }, []);
 
-  // 1. Global Hardware Barcode Gun Listener (Works from anywhere on screen)
-  useGlobalBarcodeScanner({
-    onScanSuccess: (prodName, qty) => {
-      setScanMessage(`+ ໄດ້ເພີ່ມ (${qty}): ${prodName}`);
-      setScanError(null);
-      setTimeout(() => setScanMessage(null), 2500);
-    },
-    onScanError: (barcode) => {
-      setScanError(`ບໍ່ພົບສິນຄ້າບາໂຄດ: ${barcode}`);
-      setScanMessage(null);
-      setTimeout(() => setScanError(null), 3500);
-    },
-  });
-
-  // 2. Focused Input Barcode Search Handler
+  // 1. Focused Input Barcode Search Handler
   const {
     searchInput,
     setSearchInput,
@@ -89,11 +75,41 @@ export function PosTerminalPage() {
     onScanSuccess: (prodName) => {
       setScanMessage(`+ ໄດ້ເພີ່ມ: ${prodName}`);
       setScanError(null);
+      setSearchInput("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
       setTimeout(() => setScanMessage(null), 2500);
     },
     onScanError: (barcode) => {
       setScanError(`ບໍ່ພົບສິນຄ້າບາໂຄດ: ${barcode}`);
       setScanMessage(null);
+      setSearchInput("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+      setTimeout(() => setScanError(null), 3500);
+    },
+  });
+
+  // 2. Global Hardware Barcode Gun Listener (Works from anywhere on screen)
+  useGlobalBarcodeScanner({
+    onScanSuccess: (prodName, qty) => {
+      setScanMessage(`+ ໄດ້ເພີ່ມ (${qty}): ${prodName}`);
+      setScanError(null);
+      setSearchInput("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+      setTimeout(() => setScanMessage(null), 2500);
+    },
+    onScanError: (barcode) => {
+      setScanError(`ບໍ່ພົບສິນຄ້າບາໂຄດ: ${barcode}`);
+      setScanMessage(null);
+      setSearchInput("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
       setTimeout(() => setScanError(null), 3500);
     },
   });

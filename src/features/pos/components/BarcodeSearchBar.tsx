@@ -4,7 +4,7 @@
 // Barcode Search & Fast Scanner Bar: Compact h-9 (36px) Density
 // ============================================================================
 
-import React, { useRef } from "react";
+import React from "react";
 import { ScanBarcode, Search, X } from "lucide-react";
 import { lo } from "@/constants/locales/lo";
 import {
@@ -25,15 +25,20 @@ export function BarcodeSearchBar({
   onSubmit,
   inputRef,
 }: BarcodeSearchBarProps) {
-  const lastKeyTimeRef = useRef<number>(0);
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const currentTime = performance.now();
-    const timeDiff = currentTime - lastKeyTimeRef.current;
-    lastKeyTimeRef.current = currentTime;
+    // 1. Enter key: Let form submit / barcode handler take over
+    if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") {
+      return;
+    }
 
-    // Intercept hardware scanner fast burst (< 55ms) to prevent OS keyboard language corruption
-    if (timeDiff < 55 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    // 2. Ignore modifier combinations
+    if (e.ctrlKey || e.altKey || e.metaKey) {
+      return;
+    }
+
+    // 3. Number keys (Digit0-Digit9 or Numpad0-Numpad9):
+    // Force them to always type clean digits '0'-'9', preventing Shift / CapsLock / Thai / Lao traps
+    if (e.code.startsWith("Digit") || e.code.startsWith("Numpad")) {
       const char = getHardwareBarcodeChar(e.nativeEvent);
       if (char !== null) {
         e.preventDefault();
@@ -48,8 +53,8 @@ export function BarcodeSearchBar({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    // Auto-normalize if string starts with shifted barcode artifacts or layout traps
-    if (/^(\*{2}|[%$^*)(!]{3,}|[๕๔๓ู]{3,}|[678໌ຼ]{4,})/.test(raw)) {
+    // Auto-normalize if string contains shifted barcode artifacts or layout traps
+    if (/[!@#$%^&*()_+~`|\\/[\]{}<>]/.test(raw) || /[ู฿๕๔๓๖๗]/.test(raw) || /[໌ຼ]/.test(raw)) {
       onChange(normalizeBarcodeInput(raw));
     } else {
       onChange(raw);

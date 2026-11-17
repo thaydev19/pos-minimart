@@ -248,8 +248,8 @@ export function AppSidebar({
 
   // Helper for Store Header
   const renderHeader = (collapsedState: boolean, showCloseBtn: boolean) => (
-    <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-3 select-none shrink-0">
-      <div className={`flex items-center gap-2 min-w-0 ${collapsedState ? "justify-center w-full" : "flex-1"}`}>
+    <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-3.5 select-none shrink-0">
+      <div className={`flex items-center min-w-0 ${collapsedState ? "justify-center w-full" : "flex-1 justify-start"}`}>
         {collapsedState ? (
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-zinc-200/90 shadow-2xs p-1">
             <Image
@@ -261,18 +261,15 @@ export function AppSidebar({
             />
           </div>
         ) : (
-          <div className="flex flex-col justify-center min-w-0 flex-1">
+          <div className="flex items-center justify-start min-w-0 py-1">
             <Image
               src="/logo-text.svg"
               alt="QuickOne POS"
-              width={135}
-              height={38}
-              className="h-7 w-auto object-contain"
+              width={160}
+              height={46}
+              className="h-9 w-auto object-contain"
               priority
             />
-            <p className="text-[9px] text-slate-400 font-medium truncate leading-none mt-0.5 pl-0.5">
-              {DEFAULT_STORE.branch}
-            </p>
           </div>
         )}
       </div>
@@ -281,7 +278,7 @@ export function AppSidebar({
         <button
           type="button"
           onClick={onClose}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer ml-2"
           title="ປິດເມນູ"
         >
           <X className="h-4 w-4" />

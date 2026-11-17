@@ -215,41 +215,42 @@ export function PosHeader() {
     <>
       <header className="flex h-12 w-full items-center justify-between border-b border-slate-200/90 bg-white px-2 sm:px-4 shadow-2xs select-none gap-2 shrink-0 touch-manipulation">
         {/* 1. Left: Menu Drawer Trigger + Store Identity */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => {
               triggerHapticFeedback(20);
               setIsMenuOpen(true);
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
             title="ເມນູລະບົບ (Menu)"
           >
             <Menu className="h-4 w-4" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200/90 shadow-2xs p-1">
+          <div className="flex items-center">
+            {/* Desktop & Tablet: Large QuickOne logo with text, no duplicates, no clutter */}
+            <div className="hidden sm:flex items-center">
+              <Image
+                src="/logo-text.svg"
+                alt="QuickOne POS"
+                width={150}
+                height={42}
+                className="h-8.5 w-auto object-contain"
+                priority
+              />
+            </div>
+
+            {/* Mobile: Clean standalone logo icon */}
+            <div className="flex sm:hidden items-center justify-center h-8.5 w-8.5">
               <Image
                 src="/logo.svg"
                 alt="QuickOne"
-                width={28}
-                height={28}
-                className="h-full w-full object-contain"
-              />
-            </div>
-            <div className="hidden min-[480px]:flex flex-col">
-              <Image
-                src="/logo-text.svg"
-                alt="QuickOne"
-                width={110}
+                width={32}
                 height={32}
-                className="h-6 w-auto object-contain"
+                className="h-8 w-8 object-contain"
                 priority
               />
-              <p className="text-[9px] text-slate-400 font-medium leading-none mt-0.5 truncate pl-0.5">
-                {DEFAULT_STORE.branch}
-              </p>
             </div>
           </div>
         </div>

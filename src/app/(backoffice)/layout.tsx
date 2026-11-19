@@ -5,12 +5,13 @@
 // Protected by 100% Real Supabase RBAC AuthGuard
 // ============================================================================
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, ScanBarcode } from "lucide-react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { NetworkSyncBadge } from "@/components/NetworkSyncBadge";
 import { AuthGuard, UserProfileMenu } from "@/features/auth";
+import { ImageCleanupService } from "@/features/products/services/image-cleanup.service";
 
 export default function BackofficeLayout({
   children,
@@ -19,6 +20,11 @@ export default function BackofficeLayout({
 }) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    // Passive background cleanup: checks once a week during idle browser time
+    ImageCleanupService.schedulePassiveCleanup(7);
+  }, []);
 
   return (
     <AuthGuard requireBackoffice={true}>

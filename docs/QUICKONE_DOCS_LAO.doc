@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>ຄູ່ມືການນຳໃຊ້ລະບົບ QUICKONE POS</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  body {
+    font-family: 'Noto Sans Lao', 'Saysettha OT', 'Segoe UI', Tahoma, Arial, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    line-height: 1.6;
+    font-size: 11pt;
+    margin: 0;
+    padding: 0;
+  }
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  h1 {
+    font-size: 22pt;
+    color: #059669;
+    border-bottom: 3px solid #10b981;
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 16pt;
+    color: #0f766e;
+    background-color: #f0fdf4;
+    border-left: 5px solid #10b981;
+    padding: 8px 12px;
+    margin-top: 25px;
+    margin-bottom: 15px;
+  }
+  h3 {
+    font-size: 13pt;
+    color: #1e293b;
+    border-bottom: 1px dashed #cbd5e1;
+    padding-bottom: 4px;
+    margin-top: 18px;
+  }
+  p, li {
+    font-size: 10.5pt;
+    color: #334155;
+  }
+  .header-box {
+    text-align: center;
+    background: #064e3b;
+    color: #ffffff;
+    padding: 24px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+  }
+  .header-box h1 {
+    color: #ffffff;
+    border-bottom: none;
+    margin: 0 0 10px 0;
+    font-size: 24pt;
+  }
+  .header-box p {
+    color: #a7f3d0;
+    font-size: 12pt;
+    margin: 5px 0;
+  }
+  .badge {
+    display: inline-block;
+    background-color: #10b981;
+    color: white;
+    font-size: 9pt;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-right: 5px;
+  }
+  .badge-orange { background-color: #f97316; }
+  .badge-blue { background-color: #0284c7; }
+  .badge-purple { background-color: #8b5cf6; }
+
+  /* UI Screen Mockup Containers */
+  .ui-mockup {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    margin: 15px 0 25px 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  .ui-mockup-header {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 8px 14px;
+    font-size: 10pt;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #334155;
+  }
+  .ui-mockup-body {
+    padding: 16px;
+    background-color: #f8fafc;
+  }
+
+  /* Custom table for word */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 10pt;
+  }
+  table.data-table th {
+    background-color: #0f766e;
+    color: #ffffff;
+    padding: 8px 10px;
+    text-align: left;
+    border: 1px solid #0d9488;
+  }
+  table.data-table td {
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+  }
+  table.data-table tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  /* Alert / Tip Callout Boxes */
+  .callout-box {
+    border-left: 4px solid #10b981;
+    background-color: #ecfdf5;
+    padding: 12px 16px;
+    margin: 15px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-box.warning {
+    border-left-color: #f59e0b;
+    background-color: #fffbeb;
+  }
+  .callout-box.info {
+    border-left-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+  .callout-title {
+    font-weight: bold;
+    color: #065f46;
+    margin-bottom: 4px;
+  }
+  .callout-box.warning .callout-title { color: #92400e; }
+  .callout-box.info .callout-title { color: #1e40af; }
+
+  /* Step by Step Indicator */
+  .step-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #059669;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+  }
+  .step-number {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: #059669;
+    color: #ffffff;
+    text-align: center;
+    line-height: 24px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 10pt;
+    margin-right: 8px;
+  }
+
+  /* Simulated Receipt */
+  .receipt-mockup {
+    font-family: 'Courier New', Courier, monospace;
+    background: #ffffff;
+    border: 1px dashed #94a3b8;
+    padding: 14px;
+    width: 320px;
+    margin: 10px auto;
+    font-size: 9pt;
+    color: #000000;
+    line-height: 1.3;
+  }
+  .receipt-divider {
+    border-bottom: 1px dashed #64748b;
+    margin: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER / HEADER -->
+<div class="header-box">
+  <h1>ຄູ່ມືການນຳໃຊ້ລະບົບ QUICKONE POS</h1>
+  <p><strong>ລະບົບຄຸ້ມຄອງການຂາຍໜ້າຮ້ານ & ຈຸດຂາຍສິນຄ້າດ່ວນ ສຳລັບ ຮ້ານມິນິມາດ ແລະ ຮ້ານສະດວກຊື້</strong></p>
+  <p style="font-size: 10pt; margin-top: 10px;">
+    <span class="badge">ສະກຸນເງິນກີບ LAK (₭)</span>
+    <span class="badge badge-orange">ໜ້າຈໍ POS 1366x768</span>
+    <span class="badge badge-blue">ຮອງຮັບ Offline-First</span>
+    <span class="badge badge-purple">ເຄື່ອງພິມຄວາມຮ້ອນ 80mm</span>
+  </p>
+</div>
+
+<p><em>ເອກະສານນີ້ຖືກຈັດທຳຂຶ້ນເພື່ອເປັນຄູ່ມືຝຶກອົບຮົມ ແລະ ແນະນຳການນຳໃຊ້ລະບົບ QuickOne POS ໃຫ້ແກ່ເຈົ້າຂອງຮ້ານ ແລະ ພະນັກງານແຄັດເຊຍ (Cashier) ປະຈຳໜ້າຮ້ານ ເພື່ອໃຫ້ສາມາດປະຕິບັດງານໄດ້ຢ່າງຖືກຕ້ອງ, ວ່ອງໄວ ແລະ ປ້ອງກັນຂໍ້ຜິດພາດ.</em></p>
+
+<!-- SECTION 1 -->
+<h2>ໝວດທີ 1: ພາບລວມລະບົບ & ອຸປະກອນໜ້າຮ້ານ</h2>
+<p>ລະບົບ QuickOne POS ຖືກອອກແບບໃຫ້ໃຊ້ງານງ່າຍດ້ວຍພາສາລາວ 100% ໂດຍເຊື່ອມຕໍ່ກັບອຸປະກອນຫຼັກ 4 ຢ່າງ:</p>
+<ul>
+  <li><strong>ຄອມພິວເຕີ ຫຼື ຈໍ POS ສຳຜັດ:</strong> ຄວາມລະອຽດໜ້າຈໍ 1366x768 ພິກເຊວ, ເຮັດວຽກໄດ້ທັງລະບົບອອນລາຍ ແລະ ອອບລາຍ.</li>
+  <li><strong>ເຄື່ອງຍິງບາໂຄດ (Barcode Scanner):</strong> ຮອງຮັບທັງສາຍ USB ແລະ Wireless 2.4GHz ພ້ອມລະບົບຖອດລະຫັດຮາດແວອັດສະລິຍະ.</li>
+  <li><strong>ເຄື່ອງພິມໃບບິນຄວາມຮ້ອນ (Thermal Printer):</strong> ຂະໜາດເຈ້ຍ 80mm ພິມໄວ ບໍ່ຕ້ອງໃຊ້ໝຶກ.</li>
+  <li><strong>ລີ້ນຊັກເກັບເງິນ (Cash Drawer):</strong> ເຊື່ອມຕໍ່ຜ່ານສາຍ RJ11 ຫຼັງເຄື່ອງພິມ, ເດັ້ງເປີດອັດຕະໂນມັດເມື່ອຈົບການຂາຍ.</li>
+</ul>
+
+<!-- SECTION 2: BARCODE WORKFLOWS (KEY FOCUS) -->
+<h2>ໝວດທີ 2: ຂັ້ນຕອນການຍິງບາໂຄດໜ້າຮ້ານ POS (POS Barcode Workflows)</h2>
+<p>ນີ້ແມ່ນສ່ວນສຳຄັນທີ່ສຸດໃນການຂາຍເຄື່ອງປະຈຳວັນ. ລະບົບ QuickOne POS ມີລະບົບດັກຈັບສັນຍານບາໂຄດລະດັບສູງ ເຮັດໃຫ້ການຂາຍວ່ອງໄວທີ່ສຸດ.</p>
+
+<h3>2.1. ວິທີຍິງບາໂຄດອິດສະຫຼະ (Global Scanner - ບໍ່ຕ້ອງຄລິກເມົ້າ)</h3>
+<div class="callout-box">
+  <div class="callout-title">ຫຼັກການ: ຍິງໄດ້ທັນທີ ບໍ່ຕ້ອງແຕະຕ້ອງເມົ້າ ຫຼື ຄລິກໃສ່ຊ່ອງຄົ້ນຫາ!</div>
+  ພະນັກງານແຄັດເຊຍພຽງແຕ່ຖືເຄື່ອງຍິງບາໂຄດ ບີບໄກໃສ່ສິນຄ້າຢູ່ຈຸດໃດກໍໄດ້ໃນໜ້າຈໍ, ລະບົບຈະກວດພົບ ແລະ ເພີ່ມລົງໃນກະຕ່າທັນທີພາຍໃນ 0.05 ວິນາທີ!
+</div>
+
+<div class="step-card">
+  <span class="step-number">1</span> <strong>ຈັບສິນຄ້າ ແລະ ເຄື່ອງຍິງບາໂຄດ:</strong> ຫັນຫົວເລເຊີຂອງເຄື່ອງຍິງໄປຫາກາບາໂຄດຂອງສິນຄ້າ (ໄລຍະຫ່າງປະມານ 5-15 ຊັງຕີແມັດ).
+</div>
+<div class="step-card">
+  <span class="step-number">2</span> <strong>ບີບໄກຍິງ 1 ເທື່ອ:</strong> ຈະມີສຽງດັງ <strong>"ຕິ໊ດ!" (Beep)</strong> ຈາກເຄື່ອງຍິງ.
+</div>
+<div class="step-card">
+  <span class="step-number">3</span> <strong>ລະບົບຕອບສະໜອງທັນທີ:</strong> 
+  <ul>
+    <li>ຖ້າພົບສິນຄ້າ: ສຽງ <em>"ຕິ໊ດ"</em> ສູງ, ໜ້າຈໍຂຶ້ນແຖບສີຂຽວ <strong>"+ ໄດ້ເພີ່ມ (1): ຊາຂຽວ ໂອອິຊິ 500ml"</strong> ແລະ ສິນຄ້າຈະປະກົດໃນລາຍການກະຕ່າເບື້ອງຂວາ.</li>
+    <li>ຖ້າບໍ່ພົບສິນຄ້າ: ສຽງ <em>"ຕື໊ດ"</em> ຕ່ຳ, ໜ້າຈໍແຈ້ງເຕືອນສີແດງ <strong>"ບໍ່ພົບສິນຄ້າທີ່ມີບາໂຄດນີ້"</strong>.</li>
+  </ul>
+</div>
+
+<!-- MOCKUP OF POS SCREEN -->
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <span>ໜ້າຕ່າງຂາຍໜ້າຮ້ານ (POS Terminal) - ຂະໜາດ 1366x768</span>
+    <span>[ ບິນ #1 ] [ + ພັກບິນ (F2) ]</span>
+  </div>
+  <div class="ui-mockup-body">
+    <!-- Green Notification Banner -->
+    <div style="background-color: #059669; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; margin-bottom: 12px; text-align: center;">
+      (✓) + ໄດ້ເພີ່ມ (1): ຊາຂຽວ ໂອອິຊິ ສີຂຽວ 500ml [12.000 ₭]
+    </div>
+
+    <!-- Layout 2 cols -->
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="width: 65%; vertical-align: top; padding-right: 15px;">
+          <!-- Search Bar -->
+          <div style="border: 2px solid #10b981; background: white; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #059669; font-weight: bold;">[|||||] ຍິງບາໂຄດ ຫຼື ຄົ້ນຫາສິນຄ້າ (F1)...</span>
+            <span style="background: #059669; color: white; padding: 4px 12px; border-radius: 4px; font-size: 9pt;">ຄົ້ນຫາ</span>
+          </div>
+
+          <!-- Product Categories -->
+          <div style="margin: 12px 0;">
+            <span class="badge">ທັງໝົດ</span>
+            <span class="badge" style="background:#64748b;">ເຄື່ອງດື່ມ & ເບຍ</span>
+            <span class="badge" style="background:#64748b;">ເຂົ້າໜົມ</span>
+            <span class="badge" style="background:#64748b;">ຢາສູບ</span>
+            <span class="badge" style="background:#64748b;">ສິນຄ້າສົດ</span>
+          </div>
+
+          <!-- Product Grid Mockup -->
+          <table style="width: 100%; border-collapse: separate; border-spacing: 8px;">
+            <tr>
+              <td style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; width: 33%; text-align: center;">
+                <div style="background: #e2e8f0; height: 70px; border-radius: 4px; line-height: 70px; color: #64748b;">[ ຮູບສິນຄ້າ ]</div>
+                <div style="font-weight: bold; margin-top: 6px; font-size: 10pt;">ຊາຂຽວ ໂອອິຊິ 500ml</div>
+                <div style="color: #059669; font-weight: bold;">12.000 ₭</div>
+                <div style="font-size: 8pt; color: #64748b;">ບາໂຄດ: 8854698005050</div>
+              </td>
+              <td style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; width: 33%; text-align: center;">
+                <div style="background: #e2e8f0; height: 70px; border-radius: 4px; line-height: 70px; color: #64748b;">[ ຮູບສິນຄ້າ ]</div>
+                <div style="font-weight: bold; margin-top: 6px; font-size: 10pt;">ເບຍລາວ ຂວດໃຫຍ່ 640ml</div>
+                <div style="color: #059669; font-weight: bold;">15.000 ₭</div>
+                <div style="font-size: 8pt; color: #64748b;">ບາໂຄດ: 8850029010212</div>
+              </td>
+              <td style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; width: 33%; text-align: center;">
+                <div style="background: #e2e8f0; height: 70px; border-radius: 4px; line-height: 70px; color: #64748b;">[ ຮູບສິນຄ້າ ]</div>
+                <div style="font-weight: bold; margin-top: 6px; font-size: 10pt;">ນ້ຳດື່ມ ຫົວເສືອ 600ml</div>
+                <div style="color: #059669; font-weight: bold;">5.000 ₭</div>
+                <div style="font-size: 8pt; color: #64748b;">ບາໂຄດ: 8850124001099</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+
+        <!-- Right Cart -->
+        <td style="width: 35%; vertical-align: top; background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: bold; font-size: 11pt; border-bottom: 2px solid #059669; padding-bottom: 6px; margin-bottom: 10px;">
+            ລາຍການໃນກະຕ່າ (1 ລາຍການ)
+          </div>
+          <!-- Cart Item -->
+          <div style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; margin-bottom: 8px;">
+            <div style="font-weight: bold; font-size: 10pt;">1. ຊາຂຽວ ໂອອິຊິ ສີຂຽວ 500ml</div>
+            <div style="display: flex; justify-content: space-between; font-size: 9.5pt; color: #64748b; margin-top: 4px;">
+              <span>1 ອັນ x 12.000 ₭</span>
+              <span style="font-weight: bold; color: #0f172a;">12.000 ₭</span>
+            </div>
+          </div>
+          <!-- Cart Total -->
+          <div style="margin-top: 30px; border-top: 2px solid #0f172a; padding-top: 8px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12pt; font-weight: bold;">
+              <span>ຍອດລວມ:</span>
+              <span style="color: #059669;">12.000 ₭</span>
+            </div>
+          </div>
+          <div style="background: #059669; color: white; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 11pt; margin-top: 10px;">
+            ຊຳລະເງິນ (F4)
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+---
+
+### 2.2. ວິທີຍິງບາໂຄດເມື່ອເຄີເຊີຢູ່ໃນຊ່ອງຄົ້ນຫາ (Auto Clear Input)
+ເມື່ອພະນັກງານກົດປຸ່ມ **F1** ຫຼື ເອົາເມົ້າຄລິກໃສ່ຊ່ອງຄົ້ນຫາ:
+1. ພະນັກງານສາມາດຍິງບາໂຄດໃສ່ໄດ້ທັນທີ.
+2. ລະບົບຈະສະແດງຕົວເລກບາໂຄດ `8854698005050` ຢ່າງຊັດເຈນ.
+3. ເມື່ອເຄື່ອງຍິງສົ່ງສັນຍານຈົບ, ລະບົບຈະເພີ່ມສິນຄ້າລົງກະຕ່າ ແລະ **ລຶບຕົວເລກໃນຊ່ອງຄົ້ນຫາໃຫ້ວ່າງເປົ່າອັດຕະໂນມັດ** ທັນທີ! ພະນັກງານບໍ່ຕ້ອງກົດ Backspace ລຶບເອງ.
+
+---
+
+### 2.3. ລະບົບແກ້ໄຂພາສາຄີບອດຕີກັນ (Anti-Keyboard Layout Corruptions)
+<div class="callout-box info">
+  <div class="callout-title">ຈຸດເດັ່ນພິເສດຂອງ QUICKONE POS: ບໍ່ຕ້ອງປ່ຽນພາສາຄີບອດ!</div>
+  ໃນຮ້ານຄ້າທົ່ວໄປ ຖ້າຄອມພິວເຕີເປີດພາສາລາວ, ໄທ, ຫວຽດ ຫຼື ຄ້າງ Shift ໄວ້ ເວລາຍິງບາໂຄດຈະອອກມາເປັນຕົວອັກສອນຜິດປົກກະຕິ. ແຕ່ລະບົບ QuickOne POS ໄດ້ແກ້ໄຂບັນຫານີ້ຢ່າງສົມບູນ:
+</div>
+
+<table class="data-table">
+  <tr>
+    <th style="width: 30%;">ສະພາບຄີບອດຂອງເຄື່ອງ</th>
+    <th style="width: 35%;">ລະບົບອື່ນ (ເກີດຂໍ້ຜິດພາດ)</th>
+    <th style="width: 35%;">QuickOne POS (ແກ້ໄຂອັດຕະໂນມັດ)</th>
+  </tr>
+  <tr>
+    <td><strong>ຄີບອດພາສາລາວ</strong></td>
+    <td><span style="color:red; font-family:monospace;">66໌4ຼ7688໌8໌8</span></td>
+    <td><span style="color:#059669; font-weight:bold; font-family:monospace;">8854698005050</span> (ຖືກຕ້ອງ 100%)</td>
+  </tr>
+  <tr>
+    <td><strong>ຄີບອດພາສາໄທ (Kedmanee)</strong></td>
+    <td><span style="color:red; font-family:monospace;">๕๕๔๓ู๖๕๗๗๔๗</span></td>
+    <td><span style="color:#059669; font-weight:bold; font-family:monospace;">8854698005050</span> (ຖືກຕ້ອງ 100%)</td>
+  </tr>
+  <tr>
+    <td><strong>ຄີບອດພາສາຫວຽດ / ຄ້າງ Shift</strong></td>
+    <td><span style="color:red; font-family:monospace;">**%$^(*))%)%)</span></td>
+    <td><span style="color:#059669; font-weight:bold; font-family:monospace;">8854698005050</span> (ຖືກຕ້ອງ 100%)</td>
+  </tr>
+</table>
+
+---
+
+### 2.4. ເທັກນິກຍິງຄູນຈຳນວນຫຼາຍຊິ້ນແບບດ່ວນ (`ຈຳນວນ*ບາໂຄດ`)
+ເມື່ອລູກຄ້າຊື້ສິນຄ້າຊະນິດດຽວກັນເປັນຈຳນວນຫຼາຍ (ຕົວຢ່າງ: ເບຍລາວ 12 ຂວດ ຫຼື ນ້ຳດື່ມ 6 ຕຸກ):
+- **ຂັ້ນຕອນ:**
+  1. ກົດປຸ່ມ **`F1`** ເທິງຄີບອດ.
+  2. ພິມຕົວເລກຈຳນວນ ຕາມດ້ວຍເຄື່ອງໝາຍດາວ `*` (ຕົວຢ່າງ: **`12*`** ຫຼື **`6*`**).
+  3. ບີບໄກຍິງບາໂຄດໃສ່ສິນຄ້າ **1 ເທື່ອ**.
+  4. ສິນຄ້າຈະຖືກເພີ່ມເຂົ້າກະຕ່າ **12 ຊິ້ນ** ພ້ອມກັນໃນທັນທີ ໂດຍບໍ່ຕ້ອງມານັ່ງຍິງ 12 ເທື່ອ!
+
+---
+
+### 2.5. ການຍິງບາໂຄດແຍກຕາມຫົວໜ່ວຍ (ແກັດ / ແພັກ / ອັນ)
+- ສິນຄ້າ 1 ຊະນິດສາມາດມີຫຼາຍບາໂຄດຕາມການຫຸ້ມຫໍ່:
+  - **ຍິງບາໂຄດເທິງຕຸກ (ອັນ):** ຂາຍລາຄາຍ່ອຍ `12.000 ₭`
+  - **ຍິງບາໂຄດເທິງສາຍແພັກ (ແພັກ 6):** ຂາຍລາຄາແພັກ `68.000 ₭`
+  - **ຍິງບາໂຄດເທິງກ່ອງໃຫຍ່ (ແກັດ 24):** ຂາຍລາຄາແກັດ `260.000 ₭`
+- ລະບົບຈະຄິດໄລ່ລາຄາ ແລະ ຕັດສະຕັອກຫົວໜ່ວຍຍ່ອຍໃຫ້ອັດຕະໂນມັດ.
+
+---
+
+### 2.6. ການຍິງບາໂຄດຕາຊັ່ງໄຟຟ້າສິນຄ້າສົດ (PLU Weight Scale EAN-13)
+- ຮອງຮັບບາໂຄດມາດຕະຖານສາກົນຈາກຕາຊັ່ງ (ລະຫັດຂຶ້ນຕົ້ນດ້ວຍ `20` ຫາ `29`):
+- ຕົວຢ່າງບາໂຄດຕາຊັ່ງ: **`2000105014508`**
+  - `20`: ລະຫັດບາໂຄດຕາຊັ່ງ
+  - `00105`: ລະຫັດສິນຄ້າ (PLU ໝາກກ້ຽງຫວານ)
+  - `01450`: ນ້ຳໜັກ `1.450 Kg` (1450 g)
+  - `8`: ຕົວເລກກວດສອບ
+- ເມື່ອຍິງບາໂຄດນີ້, ລະບົບ POS ຈະເພີ່ມ: **ໝາກກ້ຽງຫວານ ຈຳນວນ 1.45 Kg** ລົງກະຕ່າພ້ອມຄິດໄລ່ເງິນຕາມນ້ຳໜັກຕົວຈິງທັນທີ.
+
+---
+
+<!-- SECTION 3: PRODUCT REGISTRATION & BARCODES -->
+<h2>ໝວດທີ 3: ວິທີການເພີ່ມບາໂຄດ & ສ້າງສິນຄ້າໃໝ່</h2>
+<p>ເມື່ອມີສິນຄ້າໃໝ່ເຂົ້າມາໃນຮ້ານ, ເຈົ້າຂອງຮ້ານສາມາດລົງທະບຽນບາໂຄດໄດ້ 2 ຮູບແບບ:</p>
+
+<div class="step-card">
+  <span class="step-number">1</span> <strong>ເຂົ້າໄປທີ່ເມນູ:</strong> ຄລິກໃສ່ແຖບເມນູເບື້ອງຊ້າຍ <strong>`ສິນຄ້າ & ຫົວໜ່ວຍ`</strong> -> ກົດປຸ່ມສີຂຽວ <strong>`+ ເພີ່ມສິນຄ້າໃໝ່`</strong>.
+</div>
+
+<!-- PRODUCT SHEET MOCKUP -->
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <span>ໜ້າຕ່າງເພີ່ມສິນຄ້າໃໝ່ (Product Form Sheet)</span>
+    <span>[X] ປິດ</span>
+  </div>
+  <div class="ui-mockup-body">
+    <table style="width: 100%; border-collapse: separate; border-spacing: 10px;">
+      <tr>
+        <td style="width: 50%;">
+          <label style="font-size: 9.5pt; font-weight: bold; color: #475569;">ຊື່ສິນຄ້າ (ພາສາລາວ) *</label>
+          <div style="background: white; border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px; margin-top: 4px;">
+            ຊາຂຽວ ໂອອິຊິ ລົດຕົ້ນຕຳຮັບ 500ml
+          </div>
+        </td>
+        <td style="width: 50%;">
+          <label style="font-size: 9.5pt; font-weight: bold; color: #475569;">ໝວດໝູ່ສິນຄ້າ *</label>
+          <div style="background: white; border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px; margin-top: 4px;">
+            ເຄື່ອງດື່ມ & ເບຍ [v]
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <label style="font-size: 9.5pt; font-weight: bold; color: #059669;">ບາໂຄດສິນຄ້າຫຼັກ (Base Barcode) *</label>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
+            <tr>
+              <td style="padding: 0;">
+                <div style="background: white; border: 2px solid #10b981; padding: 8px 12px; border-radius: 4px 0 0 4px; font-family: monospace; font-size: 11pt; font-weight: bold;">
+                  [|||||] 8854698005050
+                </div>
+              </td>
+              <td style="width: 180px; padding: 0;">
+                <button style="width: 100%; background: #0f766e; color: white; border: none; padding: 10px; border-radius: 0 4px 4px 0; font-weight: bold; cursor: pointer;">
+                  ສ້າງບາໂຄດ EAN-13
+                </button>
+              </td>
+            </tr>
+          </table>
+          <div style="font-size: 8.5pt; color: #64748b; margin-top: 4px;">
+            * ຄຳແນະນຳ: ເອົາເມົ້າຄລິກໃສ່ຊ່ອງແລ້ວ <strong>ຍິງບາໂຄດຈາກຕຸກສິນຄ້າ</strong> ຫຼື ກົດປຸ່ມ <strong>"ສ້າງບາໂຄດ EAN-13"</strong> ຖ້າສິນຄ້າບໍ່ມີບາໂຄດມານຳ.
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td style="width: 50%;">
+          <label style="font-size: 9.5pt; font-weight: bold; color: #475569;">ຫົວໜ່ວຍພື້ນຖານ (Base Unit)</label>
+          <div style="background: white; border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px; margin-top: 4px;">
+            ອັນ / ຕຸກ
+          </div>
+        </td>
+        <td style="width: 50%;">
+          <label style="font-size: 9.5pt; font-weight: bold; color: #475569;">ລາຄາຂາຍຍ່ອຍ (₭)</label>
+          <div style="background: white; border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px; margin-top: 4px; font-weight: bold; color: #059669;">
+            12.000 ₭
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Packaging Unit Section -->
+    <div style="margin-top: 15px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+      <div style="font-weight: bold; color: #0f172a; margin-bottom: 8px;">
+        ຫົວໜ່ວຍຂາຍສົ່ງ & ແພັກ (Packaging Units)
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 9pt;">
+        <tr style="background: #f1f5f9;">
+          <th style="padding: 6px; border: 1px solid #cbd5e1;">ຊື່ຫົວໜ່ວຍ</th>
+          <th style="padding: 6px; border: 1px solid #cbd5e1;">ຈຳນວນຄູນ</th>
+          <th style="padding: 6px; border: 1px solid #cbd5e1;">ລາຄາຂາຍ</th>
+          <th style="padding: 6px; border: 1px solid #cbd5e1;">ບາໂຄດຫົວໜ່ວຍ</th>
+        </tr>
+        <tr>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;">ແພັກ 6</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">6</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;">68.000 ₭</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; font-family: monospace;">8854698005067 [ຍິງບາໂຄດ]</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Save Buttons -->
+    <div style="margin-top: 15px; text-align: right;">
+      <span style="background: #e2e8f0; color: #334155; padding: 8px 16px; border-radius: 4px; margin-right: 8px; font-weight: bold;">ຍົກເລີກ</span>
+      <span style="background: #059669; color: white; padding: 8px 20px; border-radius: 4px; font-weight: bold;">ບັນທຶກສິນຄ້າ (Save)</span>
+    </div>
+  </div>
+</div>
+
+---
+
+<!-- SECTION 4: SHIFT MANAGEMENT -->
+<h2>ໝວດທີ 4: ຂັ້ນຕອນການຄຸ້ມຄອງກະຂາຍເຄື່ອງ (Cashier Shifts)</h2>
+<p>ລະບົບ QuickOne POS ໃຊ້ລະບົບ <strong>Blind Close (ປິດກະແບບບໍ່ບອກຍອດຂາຍ)</strong> ເພື່ອຄວາມໂປ່ງໃສ ແລະ ປ້ອງກັນເງິນສົດຮົ່ວໄຫຼ.</p>
+
+<h3>4.1. ການເປີດກະຂາຍເຄື່ອງໃໝ່ (Open Shift)</h3>
+<ul>
+  <li>ກົດປຸ່ມ <strong>`ເປີດກະຂາຍເຄື່ອງໃໝ່`</strong>.</li>
+  <li>ໃສ່ຈຳນວນເງິນທອນເລີ່ມຕົ້ນ (Opening Cash Float) ເຊັ່ນ: `500.000 ₭`.</li>
+  <li>ກົດ <strong>`ຢືນຢັນເປີດກະ`</strong> ເພື່ອເລີ່ມຕົ້ນການຂາຍ.</li>
+</ul>
+
+<h3>4.2. ການປິດກະ & ນັບເງິນ (Blind Close Dialog)</h3>
+<p>ໜ້າຕ່າງປິດກະຖືກອອກແບບໃຫ້ກະທັດຮັດ ພໍດີກັບໜ້າຈໍ 1366x768 ດ້ວຍຕາຕະລາງນັບໃບເງິນກີບ 2 ຖັນ:</p>
+
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <span>ປິດກະຂາຍເຄື່ອງ - Blind Close Reconciliation</span>
+    <span>[X]</span>
+  </div>
+  <div class="ui-mockup-body">
+    <!-- Mode Toggle -->
+    <div style="text-align: center; margin-bottom: 12px;">
+      <span style="background: #059669; color: white; padding: 4px 12px; border-radius: 4px 0 0 4px; font-weight: bold; font-size: 9pt;">[✓] ນັບຕາມໃບເງິນ (2 ຖັນ)</span>
+      <span style="background: #e2e8f0; color: #475569; padding: 4px 12px; border-radius: 0 4px 4px 0; font-size: 9pt;">ປ້ອນຍອດລວມໂດຍກົງ</span>
+    </div>
+
+    <!-- 2 Column Denomination Grid -->
+    <table style="width: 100%; border-collapse: separate; border-spacing: 12px;">
+      <tr>
+        <!-- Left Column: Large Bills -->
+        <td style="width: 50%; vertical-align: top; background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+          <div style="font-weight: bold; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+            ໃບເງິນໃຫຍ່ (10k - 100k)
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>ໃບ 100.000 ₭:</span>
+            <input type="text" value="15 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>ໃບ 50.000 ₭:</span>
+            <input type="text" value="20 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>ໃບ 20.000 ₭:</span>
+            <input type="text" value="30 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>ໃບ 10.000 ₭:</span>
+            <input type="text" value="45 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+        </td>
+
+        <!-- Right Column: Small Bills -->
+        <td style="width: 50%; vertical-align: top; background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+          <div style="font-weight: bold; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+            ໃບເງິນຍ່ອຍ (500 - 5k)
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>ໃບ 5.000 ₭:</span>
+            <input type="text" value="50 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>ໃບ 2.000 ₭:</span>
+            <input type="text" value="40 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>ໃບ 1.000 ₭:</span>
+            <input type="text" value="80 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>ໃບ 500 ₭:</span>
+            <input type="text" value="0 ໃບ" style="width: 70px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px;">
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Total Row & Confirm -->
+    <div style="margin-top: 10px; background: #ecfdf5; border: 1px solid #10b981; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: bold; color: #065f46;">ລວມເງິນສົດທີ່ນັບໄດ້:</span>
+      <span style="font-size: 14pt; font-weight: bold; color: #059669;">4.110.000 ₭</span>
+    </div>
+
+    <div style="margin-top: 12px; text-align: right;">
+      <button style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+        ຢືນຢັນປິດກະ ແລະ ເບິ່ງຜົນ (Z-Report)
+      </button>
+    </div>
+  </div>
+</div>
+
+---
+
+### 4.3. ໃບສະຫຼຸບປິດກະ Z-Report 80mm
+ເມື່ອປິດກະແລ້ວ ລະບົບສາມາດພິມໃບສະຫຼຸບປິດກະອອກເຄື່ອງພິມຄວາມຮ້ອນ 80mm ເພື່ອໃຫ້ແຄັດເຊຍ ແລະ ຜູ້ຈັດການຮ້ານເຊັນມອບເງິນ:
+
+<div class="receipt-mockup">
+  <div style="text-align: center; font-weight: bold; font-size: 11pt;">QUICKONE MINIMART</div>
+  <div style="text-align: center; font-size: 8.5pt;">ໃບສະຫຼຸບປິດກະຂາຍເຄື່ອງ (Z-REPORT)</div>
+  <div class="receipt-divider"></div>
+  <div>ກະເລກທີ: #SHIFT-20261119-01</div>
+  <div>ພະນັກງານ: ສົມພອນ (Cashier 01)</div>
+  <div>ເວລາເປີດ: 19/11/2026 07:00:00</div>
+  <div>ເວລາປິດ: 19/11/2026 19:30:00</div>
+  <div class="receipt-divider"></div>
+  <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+    <tr><td>ເງິນຕົ້ນກະ:</td><td style="text-align: right;">500.000 ₭</td></tr>
+    <tr><td>ຍອດຂາຍເງິນສົດ:</td><td style="text-align: right;">3.610.000 ₭</td></tr>
+    <tr style="font-weight: bold;"><td>ເງິນທີ່ຄວນມີ:</td><td style="text-align: right;">4.110.000 ₭</td></tr>
+    <tr><td colspan="2" class="receipt-divider"></td></tr>
+    <tr style="font-weight: bold;"><td>ເງິນນັບໄດ້ຕົວຈິງ:</td><td style="text-align: right;">4.110.000 ₭</td></tr>
+    <tr style="font-weight: bold; color: green;"><td>ຜົນຕ່າງ (Variance):</td><td style="text-align: right;">0 ₭ (ພໍດີ 100%)</td></tr>
+  </table>
+  <div class="receipt-divider"></div>
+  <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+    <tr><td>ຍອດໂອນ LAO QR:</td><td style="text-align: right;">1.250.000 ₭</td></tr>
+    <tr style="font-weight: bold;"><td>ລວມຍອດຂາຍທັງໝົດ:</td><td style="text-align: right;">4.860.000 ₭</td></tr>
+  </table>
+  <div class="receipt-divider"></div>
+  <table style="width: 100%; margin-top: 15px; text-align: center; font-size: 8pt;">
+    <tr>
+      <td style="width: 50%;">ຜູ້ມອບ (ແຄັດເຊຍ)<br><br>...............</td>
+      <td style="width: 50%;">ຜູ້ຮັບ (ຫົວໜ້າຮ້ານ)<br><br>...............</td>
+    </tr>
+  </table>
+</div>
+
+---
+
+<!-- SECTION 5: SHORTCUTS -->
+<h2>ໝວດທີ 5: ຕາຕະລາງປຸ່ມລັດເທິງຄີບອດ (Keyboard Shortcuts)</h2>
+<table class="data-table">
+  <tr>
+    <th style="width: 25%;">ປຸ່ມລັດ</th>
+    <th style="width: 45%;">ໜ້າທີ່ການເຮັດວຽກ</th>
+    <th style="width: 30%;">ຄຳແນະນຳ</th>
+  </tr>
+  <tr>
+    <td><strong style="color: #059669; font-size: 11pt;">F1</strong></td>
+    <td>ໂຟກັສໄປທີ່ຊ່ອງຄົ້ນຫາ ແລະ ຍິງບາໂຄດ</td>
+    <td>ກົດເມື່ອຕ້ອງການພິມຊື່ສິນຄ້າ</td>
+  </tr>
+  <tr>
+    <td><strong style="color: #059669; font-size: 11pt;">F2</strong></td>
+    <td>ພັກບິນປະຈຸບັນຊົ່ວຄາວ (Hold Order)</td>
+    <td>ໃຊ້ເມື່ອລູກຄ້າໄປເອົາເຄື່ອງເພີ່ມ</td>
+  </tr>
+  <tr>
+    <td><strong style="color: #059669; font-size: 11pt;">F4</strong></td>
+    <td>ເປີດໜ້າຕ່າງຊຳລະເງິນ (Checkout)</td>
+    <td>ກົດເມື່ອຍິງສິນຄ້າຄົບໝົດແລ້ວ</td>
+  </tr>
+  <tr>
+    <td><strong style="color: #059669; font-size: 11pt;">Esc</strong></td>
+    <td>ປິດໜ້າຕ່າງ Modal / ຍົກເລີກ</td>
+    <td>ກົດເພື່ອອອກຈາກໜ້າຕ່າງຍ່ອຍ</td>
+  </tr>
+  <tr>
+    <td><strong style="color: #059669; font-size: 11pt;">[ຈຳນວນ]*</strong></td>
+    <td>ຄູນຈຳນວນສິນຄ້າດ່ວນ (ເຊັ່ນ: 12*)</td>
+    <td>ພິມ 12* ແລ້ວຍິງບາໂຄດ 1 ເທື່ອ</td>
+  </tr>
+</table>
+
+</body>
+</html>

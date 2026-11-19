@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ຄູ່ມືການນຳໃຊ້ລະບົບ QUICKONE POS (Lao User Guide)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans Lao', system-ui, -apple-system, sans-serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-break { page-break-before: always; }
+      body { background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+  <!-- Top Navigation Bar -->
+  <header class="no-print sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-500/20">
+        Q1
+      </div>
+      <div>
+        <div class="font-extrabold text-lg tracking-tight text-slate-900 flex items-center gap-2">
+          <span>QuickOne</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">POS DOCS</span>
+        </div>
+        <div class="text-xs text-slate-500 font-medium">ຄູ່ມືການນຳໃຊ້ລະບົບຂາຍໜ້າຮ້ານ & ຍິງບາໂຄດ</div>
+      </div>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center space-x-3">
+      <button onclick="window.print()" class="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center space-x-2 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        <span>ພິມຄູ່ມື (Print / Save PDF)</span>
+      </button>
+      <a href="QUICKONE_DOCS_LAO.doc" download class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center space-x-2 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <span>ດາວໂຫຼດໄຟລ໌ Word (.doc)</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
+    
+    <!-- Left Sticky Sidebar -->
+    <aside class="no-print md:w-64 flex-shrink-0">
+      <div class="sticky top-20 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 py-2">ສາລະບານ (Contents)</div>
+        <a href="#overview" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">1. ພາບລວມລະບົບ</a>
+        <a href="#barcode-pos" class="block px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 transition">2. ວິທີຍິງບາໂຄດໜ້າຮ້ານ POS</a>
+        <a href="#product-barcode" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">3. ການເພີ່ມບາໂຄດສິນຄ້າ</a>
+        <a href="#cashier-shifts" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">4. ການຄຸ້ມຄອງກະຂາຍເຄື່ອງ</a>
+        <a href="#payments" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">5. ການຊຳລະເງິນ & ໃບບິນ</a>
+        <a href="#troubleshooting" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">6. ປຸ່ມລັດ & ແກ້ໄຂບັນຫາ</a>
+
+        <div class="pt-4 border-t border-slate-100">
+          <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800">
+            <span class="font-bold block mb-1">ສະກຸນເງິນ: ກີບ (₭)</span>
+            ຮອງຮັບອອບລາຍ 100% ບໍ່ມີເນັດກໍ່ຂາຍໄດ້.
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 space-y-12">
+
+      <!-- HERO BANNER -->
+      <section class="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-8 text-white shadow-xl">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">QUICKONE POS 2026</span>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-200">ພາສາລາວ 100%</span>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-200">Hardware Barcode Decoder</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
+          ຄູ່ມືການນຳໃຊ້ລະບົບ QuickOne POS
+        </h1>
+        <p class="text-emerald-100 text-base max-w-2xl leading-relaxed">
+          ຄູ່ມືປະຕິບັດງານສະບັບສົມບູນ ສຳລັບເຈົ້າຂອງຮ້ານ ແລະ ພະນັກງານແຄັດເຊຍ. ແນະນຳຂັ້ນຕອນການຍິງບາໂຄດ, ການເພີ່ມສິນຄ້າ, ການຄຸ້ມຄອງກະ ແລະ ການຊຳລະເງິນຢ່າງລະອຽດ.
+        </p>
+      </section>
+
+      <!-- SECTION 1: OVERVIEW -->
+      <section id="overview" class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">1</span>
+          <span>ພາບລວມລະບົບ ແລະ ອຸປະກອນໜ້າຮ້ານ</span>
+        </h2>
+        <p class="text-slate-600 leading-relaxed">
+          QuickOne POS ເປັນລະບົບຈຸດຂາຍສິນຄ້າດ່ວນທີ່ພັດທະນາຂຶ້ນມາສະເພາະຮ້ານມິນິມາດ, ຮ້ານສະດວກຊື້ ແລະ ຮ້ານຂາຍເຄື່ອງຍ່ອຍໃນ ສປປ ລາວ. ລະບົບເຊື່ອມຕໍ່ກັບ 4 ອຸປະກອນຫຼັກ:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start space-x-3">
+            <div class="p-2.5 rounded-lg bg-emerald-600 text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+              <div class="font-bold text-slate-800 text-sm">ຈໍ POS / ຄອມພິວເຕີ (1366x768)</div>
+              <div class="text-xs text-slate-500 mt-1">ຮອງຮັບຈໍສຳຜັດ, ຈັດໜ້າຈໍກະທັດຮັດ ບໍ່ຕົກຂອບ, ໃຊ້ງານແບບ Offline-First ບໍ່ມີເນັດກໍ່ຂາຍໄດ້.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start space-x-3">
+            <div class="p-2.5 rounded-lg bg-emerald-600 text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+            </div>
+            <div>
+              <div class="font-bold text-slate-800 text-sm">ເຄື່ອງຍິງບາໂຄດ (Hardware Scanner)</div>
+              <div class="text-xs text-slate-500 mt-1">ຍິງອິດສະຫຼະໂດຍບໍ່ຕ້ອງຄລິກເມົ້າ, ພ້ອມລະບົບແກ້ໄຂບັນຫາພາສາຄີບອດຕີກັນ 100%.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start space-x-3">
+            <div class="p-2.5 rounded-lg bg-emerald-600 text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            </div>
+            <div>
+              <div class="font-bold text-slate-800 text-sm">ເຄື່ອງພິມຄວາມຮ້ອນ (Thermal Printer 80mm)</div>
+              <div class="text-xs text-slate-500 mt-1">ພິມໃບບິນໄວ 0.5 ວິນາທີ ບໍ່ຕ້ອງໃຊ້ໝຶກ, ຮອງຮັບການພິມໃບສະຫຼຸບປິດກະ Z-Report.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start space-x-3">
+            <div class="p-2.5 rounded-lg bg-emerald-600 text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+            </div>
+            <div>
+              <div class="font-bold text-slate-800 text-sm">ລີ້ນຊັກເກັບເງິນ (Cash Drawer)</div>
+              <div class="text-xs text-slate-500 mt-1">ເຊື່ອມຕໍ່ສາຍ RJ11 ກັບເຄື່ອງພິມ, ເດັ້ງເປີດອັດຕະໂນມັດທຸກຄັ້ງທີ່ຈົບການຂາຍເງິນສົດ.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: BARCODE SCANNING WORKFLOWS (THE CRUCIAL REQUEST) -->
+      <section id="barcode-pos" class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">2</span>
+          <span>ຂັ້ນຕອນການຍິງບາໂຄດໜ້າຮ້ານ POS (Barcode Workflows)</span>
+        </h2>
+        <p class="text-slate-600">
+          ລະບົບ QuickOne POS ຖືກພັດທະນາໃຫ້ພະນັກງານສາມາດຍິງບາໂຄດຂາຍເຄື່ອງໄດ້ຢ່າງຄ່ອງແຄ້ວທີ່ສຸດ ໂດຍມີ 4 ຈຸດເດັ່ນຫຼັກ:
+        </p>
+
+        <!-- Substep 2.1: Free Scanning -->
+        <div class="border border-slate-200 rounded-xl p-5 bg-slate-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold">2.1</span>
+              <span>ວິທີຍິງບາໂຄດອິດສະຫຼະ (Global Scanner - ບໍ່ຕ້ອງຄລິກເມົ້າ)</span>
+            </h3>
+            <span class="px-2.5 py-1 text-xs font-bold rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">ຈຸດເດັ່ນຫຼັກ</span>
+          </div>
+          <p class="text-sm text-slate-600">
+            <strong>ຫຼັກການ:</strong> ພະນັກງານແຄັດເຊຍ <strong>ບໍ່ຈຳເປັນຕ້ອງເອົາເມົ້າໄປຄລິກໃສ່ຊ່ອງຄົ້ນຫາ</strong>. ເຄີເຊີຈະຢູ່ບ່ອນໃດກໍຕາມ, ພຽງແຕ່ຖືເຄື່ອງຍິງບີບໃສ່ສິນຄ້າ, ລະບົບຈະກວດພົບ ແລະ ເພີ່ມລົງໃນກະຕ່າທັນທີ!
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs space-y-1">
+              <div class="font-bold text-slate-700">ຂັ້ນຕອນທີ 1</div>
+              <div>ຈັບເຄື່ອງຍິງບາໂຄດ ຫັນໄປຫາກາບາໂຄດເທິງຕຸກ ຫຼື ກ່ອງສິນຄ້າ.</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs space-y-1">
+              <div class="font-bold text-slate-700">ຂັ້ນຕອນທີ 2</div>
+              <div>ບີບໄກຍິງ 1 ເທື່ອ (ມີສຽງ "ຕິ໊ດ" ຈາກເຄື່ອງຍິງ).</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs space-y-1">
+              <div class="font-bold text-emerald-700">ຂັ້ນຕອນທີ 3 (ສຳເລັດ)</div>
+              <div>ລະບົບສົ່ງສຽງ "ຕິ໊ດ" ສູງ + ສິນຄ້າໂດດລົງກະຕ່າທັນທີໃນ 0.05 ວິນາທີ!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISUAL MOCKUP OF POS SCREEN -->
+        <div class="border border-slate-300 rounded-2xl overflow-hidden shadow-md bg-slate-900 text-white">
+          <div class="bg-slate-800 px-4 py-2.5 flex items-center justify-between border-b border-slate-700 text-xs">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+              <span class="font-semibold text-slate-300 ml-2">ຈຳລອງໜ້າຈໍ POS (Screen Simulation - 1366x768)</span>
+            </div>
+            <div class="text-emerald-400 font-mono-code font-bold">POS ACTIVE</div>
+          </div>
+
+          <div class="p-6 bg-slate-900 space-y-4">
+            <!-- Toast notification when barcode is scanned -->
+            <div class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center justify-between border border-emerald-400/40 animate-pulse">
+              <div class="flex items-center space-x-2 font-medium text-sm">
+                <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>+ ໄດ້ເພີ່ມ (1): <strong>ຊາຂຽວ ໂອອິຊິ ສີຂຽວ 500ml</strong></span>
+              </div>
+              <span class="text-xs bg-emerald-700 px-2.5 py-1 rounded-md font-mono-code font-bold">12.000 ₭</span>
+            </div>
+
+            <!-- Barcode Input and Scanner Mockup -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <!-- Left: Search and scanning box -->
+              <div class="md:col-span-8 bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span>ຊ່ອງຄົ້ນຫາ & ຍິງບາໂຄດ (F1)</span>
+                  <span class="text-emerald-400">ພ້ອມຮັບສັນຍານບາໂຄດ</span>
+                </div>
+                <div class="relative">
+                  <input type="text" readonly value="8854698005050" class="w-full bg-slate-950 border-2 border-emerald-500 rounded-xl px-4 py-3 text-emerald-400 font-mono-code font-bold text-base focus:outline-none">
+                  <div class="absolute right-3 top-3 text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-1 rounded">
+                    Auto-Clear On Add
+                  </div>
+                </div>
+                <div class="text-xs text-slate-400">
+                  * ເມື່ອຍິງບາໂຄດສຳເລັດ ລະບົບຈະ <strong>ລຶບຕົວເລກອອກຈາກຊ່ອງຄົ້ນຫາໃຫ້ອັດຕະໂນມັດ</strong> ເພື່ອໃຫ້ພ້ອມຍິງສິນຄ້າຊິ້ນຕໍ່ໄປທັນທີ!
+                </div>
+              </div>
+
+              <!-- Right: Cart Item Preview -->
+              <div class="md:col-span-4 bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">ກະຕ່າສິນຄ້າ (1)</div>
+                  <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-700 flex items-center justify-between text-xs">
+                    <div>
+                      <div class="font-bold text-white">ຊາຂຽວ ໂອອິຊິ 500ml</div>
+                      <div class="text-slate-400">1 ອັນ x 12.000 ₭</div>
+                    </div>
+                    <div class="font-bold text-emerald-400 font-mono-code text-sm">12.000 ₭</div>
+                  </div>
+                </div>
+                <div class="pt-3 border-t border-slate-700 flex items-center justify-between text-sm font-bold">
+                  <span>ຍອດລວມ:</span>
+                  <span class="text-emerald-400 text-base">12.000 ₭</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Substep 2.2: Anti Keyboard Corruption -->
+        <div class="border border-slate-200 rounded-xl p-5 bg-slate-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold">2.2</span>
+              <span>ລະບົບແກ້ໄຂບັນຫາພາສາຄີບອດຕີກັນ (Anti-Keyboard Layout Corruptions)</span>
+            </h3>
+            <span class="px-2.5 py-1 text-xs font-bold rounded-md bg-blue-100 text-blue-800 border border-blue-200">ປອດໄພ 100%</span>
+          </div>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            ໃນຄອມພິວເຕີທົ່ວໄປ, ຖ້າພະນັກງານເປີດພາສາລາວ, ພາສາໄທ, ຫວຽດ ຫຼື ຄ້າງປຸ່ມ Shift/Caps Lock, ເວລາຍິງບາໂຄດຕົວເລກຈະກາຍເປັນຕົວອັກສອນຜິດປົກກະຕິ. <strong>QuickOne POS ແກ້ໄຂເລື່ອງນີ້ອັດຕະໂນມັດ ໂດຍບໍ່ຕ້ອງປ່ຽນພາສາຄີບອດ:</strong>
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+              <div class="text-xs font-bold text-slate-500 uppercase">ຄີບອດພາສາລາວ</div>
+              <div class="text-xs text-red-500 line-through font-mono-code bg-red-50 p-1.5 rounded">66໌4ຼ7688໌8໌8</div>
+              <div class="text-sm font-bold text-emerald-600 font-mono-code bg-emerald-50 p-1.5 rounded border border-emerald-200 flex items-center justify-between">
+                <span>8854698005050</span>
+                <span class="text-[10px] text-emerald-700 bg-emerald-200 px-1.5 py-0.5 rounded font-sans">ແກ້ໄຂແລ້ວ</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+              <div class="text-xs font-bold text-slate-500 uppercase">ຄີບອດພາສາໄທ (Kedmanee)</div>
+              <div class="text-xs text-red-500 line-through font-mono-code bg-red-50 p-1.5 rounded">๕๕๔๓ู๖๕๗๗๔๗</div>
+              <div class="text-sm font-bold text-emerald-600 font-mono-code bg-emerald-50 p-1.5 rounded border border-emerald-200 flex items-center justify-between">
+                <span>8854698005050</span>
+                <span class="text-[10px] text-emerald-700 bg-emerald-200 px-1.5 py-0.5 rounded font-sans">ແກ້ໄຂແລ້ວ</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+              <div class="text-xs font-bold text-slate-500 uppercase">ຄ້າງປຸ່ມ Shift ຫຼື Caps Lock</div>
+              <div class="text-xs text-red-500 line-through font-mono-code bg-red-50 p-1.5 rounded">**%$^(*))%)%)</div>
+              <div class="text-sm font-bold text-emerald-600 font-mono-code bg-emerald-50 p-1.5 rounded border border-emerald-200 flex items-center justify-between">
+                <span>8854698005050</span>
+                <span class="text-[10px] text-emerald-700 bg-emerald-200 px-1.5 py-0.5 rounded font-sans">ແກ້ໄຂແລ້ວ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Substep 2.3: Multiplier Syntax -->
+        <div class="border border-slate-200 rounded-xl p-5 bg-slate-50 space-y-3">
+          <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold">2.3</span>
+            <span>ເທັກນິກຍິງຄູນຈຳນວນຫຼາຍຊິ້ນແບບດ່ວນ (<code class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-sm font-mono-code">ຈຳນວນ*ບາໂຄດ</code>)</span>
+          </h3>
+          <p class="text-sm text-slate-600">
+            ເມື່ອລູກຄ້າຊື້ສິນຄ້າຊະນິດດຽວກັນເປັນຈຳນວນຫຼາຍ (ເຊັ່ນ: ນ້ຳດື່ມ 12 ຕຸກ ຫຼື ປາກກາ 20 ກ້ານ):
+          </p>
+          <div class="flex flex-col md:flex-row items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+            <div class="flex-1 text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+              <div class="text-xs text-slate-500 mb-1">ຂັ້ນຕອນ 1</div>
+              <div class="font-bold text-slate-800 text-sm">ກົດປຸ່ມ <kbd class="px-2 py-1 bg-slate-200 rounded text-xs font-mono-code">F1</kbd></div>
+            </div>
+            <div class="text-slate-400 font-bold">➔</div>
+            <div class="flex-1 text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+              <div class="text-xs text-slate-500 mb-1">ຂັ້ນຕອນ 2</div>
+              <div class="font-bold text-emerald-700 text-sm font-mono-code">ພິມ: 12*</div>
+            </div>
+            <div class="text-slate-400 font-bold">➔</div>
+            <div class="flex-1 text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+              <div class="text-xs text-slate-500 mb-1">ຂັ້ນຕອນ 3</div>
+              <div class="font-bold text-slate-800 text-sm">ຍິງບາໂຄດ 1 ເທື່ອ</div>
+            </div>
+            <div class="text-slate-400 font-bold">➔</div>
+            <div class="flex-1 text-center p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+              <div class="text-xs text-emerald-700 mb-1">ຜົນໄດ້ຮັບ</div>
+              <div class="font-bold text-emerald-800 text-sm">ໄດ້ 12 ຊິ້ນໃນກະຕ່າທັນທີ!</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SECTION 3: ADDING PRODUCT BARCODES -->
+      <section id="product-barcode" class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">3</span>
+          <span>ວິທີການເພີ່ມບາໂຄດ & ສ້າງສິນຄ້າໃໝ່ (Adding Product Barcodes)</span>
+        </h2>
+        <p class="text-slate-600 leading-relaxed">
+          ເສັ້ນທາງເຂົ້າໜ້າຕ່າງ: ເມນູເບື້ອງຊ້າຍ <strong>`ສິນຄ້າ & ຫົວໜ່ວຍ`</strong> ➔ ກົດປຸ່ມສີຂຽວ <strong>`+ ເພີ່ມສິນຄ້າໃໝ່`</strong>.
+        </p>
+
+        <!-- Product Form Mockup -->
+        <div class="border border-slate-300 rounded-2xl overflow-hidden shadow-sm bg-white">
+          <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+            <span class="font-bold text-sm text-slate-700">ຟອມສ້າງສິນຄ້າໃໝ່ (Product Form Sheet)</span>
+            <span class="text-xs text-slate-400">[X] ປິດ</span>
+          </div>
+
+          <div class="p-6 space-y-5">
+            <!-- Name & Category -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ຊື່ສິນຄ້າ (ພາສາລາວ) *</label>
+                <input type="text" readonly value="ຊາຂຽວ ໂອອິຊິ ລົດຕົ້ນຕຳຮັບ 500ml" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ໝວດໝູ່ສິນຄ້າ *</label>
+                <div class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 flex justify-between">
+                  <span>ເຄື່ອງດື່ມ & ເບຍ</span>
+                  <span>▼</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barcode Field Deep Dive -->
+            <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+              <label class="block text-xs font-bold text-emerald-900">
+                ບາໂຄດສິນຄ້າຫຼັກ (Base Barcode) *
+              </label>
+              <div class="flex">
+                <input type="text" readonly value="8854698005050" class="flex-1 bg-white border-2 border-emerald-500 rounded-l-xl px-4 py-2.5 font-mono-code font-bold text-slate-800 text-sm">
+                <button class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 rounded-r-xl border border-emerald-700 flex items-center space-x-1">
+                  <span>ສ້າງບາໂຄດ EAN-13</span>
+                </button>
+              </div>
+              <div class="text-xs text-emerald-800 flex items-center gap-1.5 pt-1">
+                <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span><strong>ຄຳແນະນຳ:</strong> ເອົາເຄີເຊີຄລິກໃສ່ຊ່ອງແລ້ວ <strong>ຍິງບາໂຄດຈາກສິນຄ້າ</strong> ຫຼື ກົດປຸ່ມ <strong>"ສ້າງບາໂຄດ EAN-13"</strong> ຖ້າສິນຄ້າບໍ່ມີບາໂຄດ.</span>
+              </div>
+            </div>
+
+            <!-- Base Price -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ຫົວໜ່ວຍພື້ນຖານ (Base Unit)</label>
+                <input type="text" readonly value="ອັນ / ຕຸກ" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ລາຄາຂາຍຍ່ອຍ (₭)</label>
+                <input type="text" readonly value="12.000 ₭" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-emerald-700 font-mono-code">
+              </div>
+            </div>
+
+            <!-- Packaging Units Builder -->
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">ຫົວໜ່ວຍຂາຍສົ່ງ & ແພັກ (Packaging Units)</span>
+                <span class="text-xs text-emerald-700 font-bold">+ ເພີ່ມຫົວໜ່ວຍ</span>
+              </div>
+
+              <div class="bg-white rounded-lg border border-slate-200 p-3 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span class="text-slate-500 block mb-1">ຊື່ຫົວໜ່ວຍ:</span>
+                  <input type="text" readonly value="ແພັກ 6" class="w-full bg-slate-50 border border-slate-300 rounded p-1.5 font-bold">
+                </div>
+                <div>
+                  <span class="text-slate-500 block mb-1">ຈຳນວນຄູນ:</span>
+                  <input type="text" readonly value="6" class="w-full bg-slate-50 border border-slate-300 rounded p-1.5 font-bold text-center">
+                </div>
+                <div>
+                  <span class="text-slate-500 block mb-1">ລາຄາຂາຍແພັກ:</span>
+                  <input type="text" readonly value="68.000 ₭" class="w-full bg-slate-50 border border-slate-300 rounded p-1.5 font-bold text-emerald-700">
+                </div>
+                <div>
+                  <span class="text-slate-500 block mb-1">ບາໂຄດແພັກ:</span>
+                  <input type="text" readonly value="8854698005067" class="w-full bg-slate-50 border border-slate-300 rounded p-1.5 font-mono-code">
+                </div>
+              </div>
+            </div>
+
+            <!-- Save Action -->
+            <div class="flex justify-end space-x-3 pt-2">
+              <button class="px-5 py-2 text-xs font-bold rounded-lg border border-slate-300 text-slate-600 bg-white">ຍົກເລີກ</button>
+              <button class="px-6 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white shadow-sm">ບັນທຶກສິນຄ້າ (Save)</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: SHIFT MANAGEMENT -->
+      <section id="cashier-shifts" class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">4</span>
+          <span>ການຄຸ້ມຄອງກະຂາຍເຄື່ອງ (Cashier Shifts & Blind Close)</span>
+        </h2>
+        <p class="text-slate-600 leading-relaxed">
+          ລະບົບ QuickOne POS ໃຊ້ລະບົບ <strong>Blind Close (ປິດກະແບບລັບ)</strong>: ເຊື່ອງຍອດຂາຍໄວ້ເພື່ອໃຫ້ແຄັດເຊຍນັບເງິນຕົວຈິງໃນລີ້ນຊັກຢ່າງໂປ່ງໃສ ບໍ່ສາມາດແຕ່ງຕົວເລກໄດ້.
+        </p>
+
+        <!-- 2 Column Denomination Grid Mockup -->
+        <div class="border border-slate-300 rounded-2xl overflow-hidden shadow-sm bg-white">
+          <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between text-sm font-bold">
+            <span>ໜ້າຕ່າງປິດກະຂາຍເຄື່ອງ - Blind Close Reconciliation</span>
+            <span class="text-xs text-slate-400">[X]</span>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <!-- Mode Toggle -->
+            <div class="flex justify-center">
+              <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-bold">
+                <span class="bg-emerald-600 text-white px-3 py-1.5 rounded-md shadow-sm">✓ ນັບຕາມໃບເງິນ (2 ຖັນ)</span>
+                <span class="text-slate-600 px-3 py-1.5">ປ້ອນຍອດລວມໂດຍກົງ</span>
+              </div>
+            </div>
+
+            <!-- 2 Column Denomination Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Left: Big Bills -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5">
+                <div class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-2">ໃບເງິນໃຫຍ່ (10.000 ₭ - 100.000 ₭)</div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 100.000 ₭:</span>
+                  <input type="text" readonly value="15 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 50.000 ₭:</span>
+                  <input type="text" readonly value="20 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 20.000 ₭:</span>
+                  <input type="text" readonly value="30 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 10.000 ₭:</span>
+                  <input type="text" readonly value="45 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+              </div>
+
+              <!-- Right: Small Bills -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5">
+                <div class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-2">ໃບເງິນຍ່ອຍ (500 ₭ - 5.000 ₭)</div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 5.000 ₭:</span>
+                  <input type="text" readonly value="50 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 2.000 ₭:</span>
+                  <input type="text" readonly value="40 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 1.000 ₭:</span>
+                  <input type="text" readonly value="80 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">ໃບ 500 ₭:</span>
+                  <input type="text" readonly value="0 ໃບ" class="w-20 text-center bg-white border border-slate-300 rounded p-1 font-bold">
+                </div>
+              </div>
+            </div>
+
+            <!-- Actual Counted Total -->
+            <div class="bg-emerald-50 border border-emerald-300 rounded-xl p-4 flex items-center justify-between">
+              <span class="text-sm font-bold text-emerald-900">ລວມເງິນສົດທີ່ນັບໄດ້:</span>
+              <span class="text-xl font-extrabold text-emerald-700 font-mono-code">4.110.000 ₭</span>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-2.5 rounded-lg shadow-sm">
+                ຢືນຢັນປິດກະ ແລະ ເບິ່ງຜົນ (Z-Report)
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5: PAYMENTS & RECEIPT -->
+      <section id="payments" class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">5</span>
+          <span>ການຊຳລະເງິນ & ໃບບິນຄວາມຮ້ອນ (Payments & Receipts)</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+            <div class="font-bold text-slate-800 text-sm">1. ເງິນສົດ (Cash - F4)</div>
+            <div class="text-xs text-slate-500 leading-relaxed">
+              ໃສ່ຈຳນວນເງິນຮັບ, ລະບົບຄິດໄລ່ເງິນທອນໃຫ້ອັດຕະໂນມັດ ພ້ອມສົ່ງສັນຍານເປີດລີ້ນຊັກເກັບເງິນທັນທີ.
+            </div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+            <div class="font-bold text-slate-800 text-sm">2. ໂອນເງິນ (LAO QR / OnePay)</div>
+            <div class="text-xs text-slate-500 leading-relaxed">
+              ໜ້າຈໍສະແດງຮູບ QR Code ມາດຕະຖານແຫ່ງຊາດ ພ້ອມຍອດເງິນທີ່ແນ່ນອນ ໃຫ້ລູກຄ້າໃຊ້ແອັບທະນາຄານສະແກນຈ່າຍ.
+            </div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+            <div class="font-bold text-slate-800 text-sm">3. ຈ່າຍປະສົມ (Split Payment)</div>
+            <div class="text-xs text-slate-500 leading-relaxed">
+              ຮອງຮັບການຈ່າຍເງິນສົດບາງສ່ວນ ແລະ ໂອນບາງສ່ວນ ໂດຍລະບົບຈະຄິດໄລ່ຍອດເຫຼືອໃຫ້ອັດຕະໂນມັດ.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 6: SHORTCUTS -->
+      <section id="troubleshooting" class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">6</span>
+          <span>ຕາຕະລາງປຸ່ມລັດເທິງຄີບອດ (Keyboard Shortcuts)</span>
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="p-3 font-bold">ປຸ່ມລັດ</th>
+                <th class="p-3 font-bold">ໜ້າທີ່ການເຮັດວຽກ</th>
+                <th class="p-3 font-bold">ຄຳແນະນຳການນຳໃຊ້</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 text-xs">
+              <tr>
+                <td class="p-3 font-bold font-mono-code text-emerald-700 text-sm">F1</td>
+                <td class="p-3 font-medium text-slate-800">ໂຟກັສໄປທີ່ຊ່ອງຄົ້ນຫາ ແລະ ຍິງບາໂຄດ</td>
+                <td class="p-3 text-slate-500">ໃຊ້ເມື່ອຕ້ອງການພິມຄົ້ນຫາຊື່ສິນຄ້າ</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold font-mono-code text-emerald-700 text-sm">F2</td>
+                <td class="p-3 font-medium text-slate-800">ພັກບິນປະຈຸບັນຊົ່ວຄາວ (Hold Order)</td>
+                <td class="p-3 text-slate-500">ໃຊ້ເມື່ອລູກຄ້າຂໍໄປເອົາເຄື່ອງເພີ່ມ ເພື່ອບໍ່ໃຫ້ແຖວຕິດຂັດ</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold font-mono-code text-emerald-700 text-sm">F4</td>
+                <td class="p-3 font-medium text-slate-800">ເປີດໜ້າຕ່າງຊຳລະເງິນ (Checkout Dialog)</td>
+                <td class="p-3 text-slate-500">ກົດເມື່ອຍິງສິນຄ້າຄົບທຸກຢ່າງແລ້ວ</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold font-mono-code text-emerald-700 text-sm">Esc</td>
+                <td class="p-3 font-medium text-slate-800">ປິດໜ້າຕ່າງ Modal / ຍົກເລີກການເລືອກ</td>
+                <td class="p-3 text-slate-500">ກົດເພື່ອອອກຈາກໜ້າຕ່າງຍ່ອຍ</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold font-mono-code text-emerald-700 text-sm">[ຈຳນວນ]*</td>
+                <td class="p-3 font-medium text-slate-800">ຄູນຈຳນວນສິນຄ້າດ່ວນ (ເຊັ່ນ: 12*)</td>
+                <td class="p-3 text-slate-500">ພິມ 12* ແລ້ວຍິງບາໂຄດ 1 ເທື່ອ ໄດ້ 12 ຊິ້ນທັນທີ</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200">
+        <div>QuickOne POS System • ລະບົບຄຸ້ມຄອງການຂາຍໜ້າຮ້ານສຳລັບຮ້ານມິນິມາດ • 2026</div>
+      </footer>
+
+    </main>
+  </div>
+
+</body>
+</html>

@@ -52,6 +52,7 @@ import { CategoryItem } from "@/features/categories/types/category.types";
 import { ProductImageUploader } from "./ProductImageUploader";
 import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
 import { formatLak } from "@/utils/formatLakCurrency";
+import { productsApi } from "../api/products.api";
 
 export interface ProductFormSheetProps {
   product?: ProductListItem | null;
@@ -163,6 +164,7 @@ export function ProductFormContent({
   const [initialQuantity, setInitialQuantity] = useState<number>(0);
   const [initialUnitName, setInitialUnitName] = useState<string>("");
   const [initialExpiryDate, setInitialExpiryDate] = useState<string>("");
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
 
   const allAvailableUnits = [
     {
@@ -339,6 +341,16 @@ export function ProductFormContent({
       return;
     }
 
+    // 5. Deferred image upload: Only upload to Supabase Storage if user selected a new file
+    let finalImageUrl = formData.image_url;
+    if (pendingImageFile) {
+      try {
+        finalImageUrl = await productsApi.uploadProductImage(pendingImageFile);
+      } catch (uploadErr) {
+        console.warn("[ProductFormSheet] Supabase Storage upload error, using fallback preview url:", uploadErr);
+      }
+    }
+
     const payload: ProductFormData = {
       ...formData,
       name_lo: formData.name_lo.trim(),
@@ -347,7 +359,7 @@ export function ProductFormContent({
       base_unit: formData.base_unit.trim() || "ອັນ",
       barcode: formData.barcode.trim(),
       sku: formData.sku?.trim() || undefined,
-      image_url: formData.image_url?.trim() || undefined,
+      image_url: finalImageUrl?.trim() || undefined,
       units: finalizedUnits,
       ...(!product && initialQuantity > 0
         ? {
@@ -519,6 +531,8 @@ export function ProductFormContent({
                   onChange={(url) =>
                     setFormData((p) => ({ ...p, image_url: url }))
                   }
+                  onFileSelect={(file) => setPendingImageFile(file)}
+                  disabled={isSubmitting}
                 />
               </div>
 

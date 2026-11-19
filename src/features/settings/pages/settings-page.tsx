@@ -8,6 +8,7 @@
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Store,
   Printer,
@@ -33,6 +34,7 @@ import {
   Phone,
   Receipt,
   FileSpreadsheet,
+  ArrowRight,
 } from "lucide-react";
 import { DEFAULT_STORE } from "@/features/pos/constants/pos.constants";
 import {
@@ -264,10 +266,10 @@ export function SettingsPage() {
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
-              ຕັ້ງຄ່າລະບົບ & ພະນັກງານ (Settings & Users)
+              ຕັ້ງຄ່າລະບົບ (System Settings)
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              ກຳນົດຄ່າເຄື່ອງພິມຄວາມຮ້ອນ, ລິ້ນຊັກເງິນ, ອັດຕາອາກອນ (VAT) ແລະ ບັນຊີພະນັກງານ
+              ກຳນົດຄ່າເຄື່ອງພິມຄວາມຮ້ອນ, ລິ້ນຊັກເງິນ, ອັດຕາອາກອນ (VAT) ແລະ ບັນຊີ LAO QR
             </p>
           </div>
         </div>
@@ -828,197 +830,29 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* SECTION 3: Staff Management & Touch PIN Override */}
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-800">
-                ຈັດການພະນັກງານ & ລະຫັດ PIN (Staff & Manager PIN)
-              </h3>
-              <p className="text-xs text-slate-500">
-                ກຳນົດລະຫັດ PIN 6 ຫຼັກ ສຳລັບການຢືນຢັນສິດທິຜູ້ຈັດການ (Manager Override) ຢູ່ໜ້າຂາຍ
-              </p>
-            </div>
+      {/* SECTION 3: Dedicated Staff & Permissions Navigation Card */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-slate-50 border border-emerald-200/90 shadow-2xs">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
+            <Users className="h-6 w-6" />
           </div>
-        </div>
-
-        <div className="space-y-3">
-          {staffList.map((staff) => (
-            <div
-              key={staff.id}
-              className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
-                  <Shield className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-slate-900">{staff.name}</p>
-                    <span
-                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                        staff.role === "owner"
-                          ? "bg-purple-100 text-purple-800 border border-purple-200"
-                          : staff.role === "store_manager"
-                          ? "bg-blue-100 text-blue-800 border border-blue-200"
-                          : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                      }`}
-                    >
-                      {staff.roleLabelLo}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">{staff.username}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-center">
-                <div className="font-mono text-xs px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold">
-                  PIN: ••••••
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHapticFeedback(30);
-                    setEditingStaffPin(staff);
-                    setNewPinValue("");
-                  }}
-                  className="min-h-[44px] h-11 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold text-xs flex items-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer"
-                >
-                  <KeyRound className="h-4 w-4 text-emerald-600" />
-                  <span>ປ່ຽນ PIN (Touch)</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* MODAL: Touch PIN Editor with Large On-Screen Numpad */}
-      {editingStaffPin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5 text-emerald-600" />
-                <h3 className="text-base font-black text-slate-900">
-                  ປ່ຽນລະຫັດ PIN: {editingStaffPin.name}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingStaffPin(null)}
-                className="h-9 w-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 text-center">
-              ກະລຸນາປ້ອນລະຫັດ PIN ໃໝ່ 6 ຕົວເລກ ສຳລັບ {editingStaffPin.roleLabelLo}
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              ຈັດການພະນັກງານ & ສິດການໃຊ້ງານ (Staff & Permissions)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ເພີ່ມບັນຊີພະນັກງານ, ກຳນົດສິດ (Owner, Manager, Cashier), ປ່ຽນລະຫັດ PIN 6 ຫຼັກ ແລະ ຈັດການສະຖານະການເຂົ້າໃຊ້ງານ
             </p>
-
-            {/* PIN Display Dots */}
-            <div className="flex justify-center gap-2.5 py-2">
-              {[0, 1, 2, 3, 4, 5].map((index) => {
-                const filled = index < newPinValue.length;
-                return (
-                  <div
-                    key={index}
-                    className={`h-4 w-4 rounded-full border-2 transition-all ${
-                      filled
-                        ? "border-emerald-600 bg-emerald-600 scale-110 shadow-xs"
-                        : "border-slate-300 bg-slate-100"
-                    }`}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Large On-Screen Numeric Keypad (48x48px - 56x56px touch targets) */}
-            <div className="grid grid-cols-3 gap-2.5 pt-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                <button
-                  key={digit}
-                  type="button"
-                  onClick={() => {
-                    triggerHapticFeedback(20);
-                    if (newPinValue.length < 6) {
-                      setNewPinValue((prev) => prev + String(digit));
-                    }
-                  }}
-                  className="min-h-[52px] h-13 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xl flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-2xs"
-                >
-                  {digit}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHapticFeedback(20);
-                  setNewPinValue("");
-                }}
-                className="min-h-[52px] h-13 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-2xs"
-              >
-                ລຶບໝົດ
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHapticFeedback(20);
-                  if (newPinValue.length < 6) {
-                    setNewPinValue((prev) => prev + "0");
-                  }
-                }}
-                className="min-h-[52px] h-13 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xl flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-2xs"
-              >
-                0
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHapticFeedback(20);
-                  setNewPinValue((prev) => prev.slice(0, -1));
-                }}
-                className="min-h-[52px] h-13 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-2xs"
-              >
-                ລຶບ
-              </button>
-            </div>
-
-            {/* Confirm & Cancel buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setEditingStaffPin(null)}
-                className="min-h-[48px] h-12 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-sm hover:bg-slate-50 active:scale-95 cursor-pointer"
-              >
-                ຍົກເລີກ
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSavePin}
-                disabled={newPinValue.length !== 6}
-                className={`min-h-[48px] h-12 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
-                  newPinValue.length === 6
-                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-xs"
-                    : "bg-slate-300 text-slate-500 cursor-not-allowed"
-                }`}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                <span>ຢືນຢັນ PIN</span>
-              </button>
-            </div>
           </div>
         </div>
-      )}
+        <Link
+          href="/staff"
+          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+        >
+          <span>ເປີດໜ້າຈັດການພະນັກງານ</span>
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
     </div>
   );
 }

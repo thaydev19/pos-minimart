@@ -75,8 +75,22 @@ export function StockAdjustmentDialog() {
       return;
     }
     const clean = raw.replace(/[^\d]/g, "");
-    setQtyInput(clean);
+    if (clean.length > 1 && clean.startsWith("0")) {
+      setQtyInput(String(parseInt(clean, 10) || 0));
+    } else {
+      setQtyInput(clean);
+    }
     setFormError(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      handleStep(1);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      handleStep(-1);
+    }
   };
 
   const handleBlur = () => {
@@ -230,6 +244,7 @@ export function StockAdjustmentDialog() {
                 required
                 value={qtyInput}
                 onChange={handleQtyChange}
+                onKeyDown={handleKeyDown}
                 onBlur={handleBlur}
                 onFocus={(e) => e.target.select()}
                 placeholder="0"

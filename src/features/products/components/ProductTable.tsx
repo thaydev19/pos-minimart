@@ -14,7 +14,6 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle2,
-  Boxes,
   Plus,
   ClipboardList,
 } from "lucide-react";
@@ -132,8 +131,7 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                       <ProductThumbnail
                         src={prod.image_url}
                         alt={prod.name_lo}
-                        name={prod.name_lo}
-                        className="h-10 w-10 rounded-lg shrink-0 border border-zinc-200/70 overflow-hidden"
+                        className="h-10 w-10 rounded-xl shrink-0 border border-slate-200/80 shadow-2xs overflow-hidden"
                       />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -242,36 +240,58 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     </div>
                   </td>
 
-                  {/* 6. Stock Count with Quick Adjust & Stock-In Shortcuts */}
+                  {/* 6. Stock Count - Unified Split Pill (Stock Info & Quick Stock-In) */}
                   <td className="py-2.5 px-3 text-center">
-                    <div className="inline-flex items-center gap-1">
-                      {/* Click Badge to Quick Adjust Stock */}
+                    <div
+                      className={`inline-flex items-center rounded-xl border bg-white shadow-2xs overflow-hidden transition-all hover:shadow-xs ${
+                        prod.total_stock <= 0
+                          ? "border-rose-200/90 bg-rose-50/30"
+                          : prod.total_stock <= 10
+                          ? "border-amber-200/90 bg-amber-50/30"
+                          : "border-slate-200/90 hover:border-slate-300"
+                      }`}
+                    >
+                      {/* Left: Click Badge to Quick Adjust Stock */}
                       <button
                         type="button"
                         onClick={() => useInventoryStore.getState().openAdjustmentForProduct(prod.id)}
-                        className={`group inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs border ${
-                          prod.total_stock <= 0
-                            ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300"
-                            : prod.total_stock <= 10
-                            ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300"
-                            : "bg-zinc-100 text-zinc-800 border-zinc-200/90 hover:bg-zinc-200/80 hover:text-zinc-900"
-                        }`}
+                        className="group flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold tabular-nums hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer"
                         title="ກົດເພື່ອປັບຍອດສະຕັອກ (Adjust Stock)"
                       >
-                        <Boxes className="h-3.5 w-3.5 shrink-0 text-zinc-500 group-hover:text-zinc-700" />
-                        <span>
+                        {/* Status Indicator Dot */}
+                        <span
+                          className={`h-2 w-2 rounded-full shrink-0 ${
+                            prod.total_stock <= 0
+                              ? "bg-rose-500 animate-pulse"
+                              : prod.total_stock <= 10
+                              ? "bg-amber-500"
+                              : "bg-emerald-500"
+                          }`}
+                        />
+                        <span
+                          className={
+                            prod.total_stock <= 0
+                              ? "text-rose-700 font-extrabold"
+                              : prod.total_stock <= 10
+                              ? "text-amber-800"
+                              : "text-slate-800"
+                          }
+                        >
                           {prod.total_stock} {prod.base_unit}
                         </span>
                       </button>
 
-                      {/* Plus Button for Quick Stock-In */}
+                      {/* Subtle Divider */}
+                      <span className="h-4 w-px bg-slate-200 shrink-0" />
+
+                      {/* Right: Quick Stock-In Shortcut Button */}
                       <button
                         type="button"
                         onClick={() => useInventoryStore.getState().openStockIn(prod.id)}
-                        className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all shadow-2xs cursor-pointer"
+                        className="flex h-7 w-7 items-center justify-center text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 active:bg-emerald-100 transition-colors cursor-pointer"
                         title="ນຳເຂົ້າສະຕັອກດ່ວນ (Quick Stock In)"
                       >
-                        <Plus className="h-3 w-3 stroke-[3]" />
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </button>
                     </div>
                   </td>

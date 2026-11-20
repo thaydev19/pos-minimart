@@ -169,7 +169,10 @@ export const posApi = {
             is_perishable: Boolean(raw.is_perishable),
             warning_days_before_expiry: raw.warning_days_before_expiry || 30,
             is_weighing: Boolean(raw.is_weighing),
-            image_url: raw.image_url || getFallbackImageUrl(raw.barcode, raw.name_lo),
+            image_url:
+              (raw.image_url && !raw.image_url.includes("1544816155-12df9643f363")
+                ? raw.image_url
+                : null) || getFallbackImageUrl(raw.barcode, raw.name_lo) || null,
             is_active: Boolean(raw.is_active),
             created_at: raw.created_at,
             updated_at: raw.updated_at,
@@ -327,7 +330,7 @@ export const posApi = {
 /**
  * Intelligent Image Resolver for Lao Minimart Products
  */
-function getFallbackImageUrl(barcode?: string, name?: string): string {
+function getFallbackImageUrl(barcode?: string, name?: string): string | null {
   const b = (barcode || "").trim();
   const n = (name || "").toLowerCase();
 
@@ -358,9 +361,7 @@ function getFallbackImageUrl(barcode?: string, name?: string): string {
   if (b === "QUICK_ICE" || n.includes("ນ້ຳກ້ອນ") || n.includes("ice")) {
     return "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80";
   }
-  if (b === "QUICK_BAG" || n.includes("ຖົງ") || n.includes("bag")) {
-    return "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80";
-  }
 
-  return "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80";
+  // If no specific image match, return null to show clean modern product icon
+  return null;
 }

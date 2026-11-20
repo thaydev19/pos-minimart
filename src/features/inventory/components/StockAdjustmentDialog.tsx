@@ -14,7 +14,11 @@ import {
   Save,
   Loader2,
   HelpCircle,
+  Minus,
+  Plus,
+  RotateCcw,
 } from "lucide-react";
+import { triggerHapticFeedback } from "@/utils/haptics";
 import { useInventoryStore } from "../stores/inventory.store";
 import { useStockMutations } from "../hooks/useStockMutations";
 import { ADJUSTMENT_REASONS } from "../constants/inventory.constants";
@@ -29,38 +33,71 @@ export function StockAdjustmentDialog() {
   const { adjustStock, isSubmitting, errorMessage, clearError } =
     useStockMutations();
 
-  const [adjustedQty, setAdjustedQty] = useState<number>(0);
+  const [qtyInput, setQtyInput] = useState<string>("0");
   const [selectedReason, setSelectedReason] = useState<string>(
     ADJUSTMENT_REASONS[0].label_lo
   );
   const [notes, setNotes] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
 
+  const currentBatchId = selectedBatchForAdjustment?.batch?.id;
+  const currentBatchQty = selectedBatchForAdjustment?.batch?.quantity_on_hand;
+
   useEffect(() => {
-    if (selectedBatchForAdjustment) {
-      setAdjustedQty(selectedBatchForAdjustment.batch.quantity_on_hand);
+    if (currentBatchId !== undefined && currentBatchQty !== undefined) {
+      setQtyInput(String(currentBatchQty));
       setSelectedReason(ADJUSTMENT_REASONS[0].label_lo);
       setNotes("");
       setFormError(null);
       clearError();
     }
-  }, [selectedBatchForAdjustment, clearError]);
+  }, [currentBatchId, currentBatchQty, clearError]);
 
   if (!selectedBatchForAdjustment) return null;
 
   const { product, batch } = selectedBatchForAdjustment;
-  const difference = adjustedQty - batch.quantity_on_hand;
+  const parsedQty = qtyInput === "" ? 0 : Math.max(0, parseInt(qtyInput, 10) || 0);
+  const difference = parsedQty - batch.quantity_on_hand;
+
+  const handleStep = (delta: number) => {
+    triggerHapticFeedback(15);
+    const current = qtyInput === "" ? 0 : parseInt(qtyInput, 10) || 0;
+    const next = Math.max(0, current + delta);
+    setQtyInput(String(next));
+    setFormError(null);
+  };
+
+  const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (raw === "") {
+      setQtyInput("");
+      setFormError(null);
+      return;
+    }
+    const clean = raw.replace(/[^\d]/g, "");
+    setQtyInput(clean);
+    setFormError(null);
+  };
+
+  const handleBlur = () => {
+    if (qtyInput === "" || isNaN(Number(qtyInput))) {
+      setQtyInput("0");
+    } else {
+      setQtyInput(String(Math.max(0, parseInt(qtyInput, 10))));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    if (adjustedQty < 0) {
-      setFormError("ຈຳນວນສະຕັອກຕົວຈິງບໍ່ສາມາດຕິດລົບໄດ້");
+    const finalQty = qtyInput === "" ? 0 : parseInt(qtyInput, 10);
+    if (isNaN(finalQty) || finalQty < 0) {
+      setFormError("ຈຳນວນສະຕັອກຕົວຈິງຕ້ອງເປັນຕົວເລກ ແລະ ບໍ່ສາມາດຕິດລົບໄດ້");
       return;
     }
 
-    if (difference === 0) {
+    if (finalQty === batch.quantity_on_hand) {
       setFormError("ຈຳນວນຕົວຈິງເທົ່າກັບຈຳນວນປັດຈຸບັນ (ບໍ່ມີການປ່ຽນແປງ)");
       return;
     }
@@ -71,8 +108,8 @@ export function StockAdjustmentDialog() {
       product_name: product.name_lo,
       batch_number: batch.batch_number,
       current_quantity: batch.quantity_on_hand,
-      adjusted_quantity: adjustedQty,
-      difference,
+      adjusted_quantity: finalQty,
+      difference: finalQty - batch.quantity_on_hand,
       reason: selectedReason,
       notes: notes.trim() || undefined,
     };
@@ -143,7 +180,7 @@ export function StockAdjustmentDialog() {
                 ຍອດຕົວຈິງຫຼັງປັບ
               </span>
               <span className="text-sm font-extrabold text-emerald-800 tabular-nums">
-                {adjustedQty} {product.base_unit}
+                {parsedQty} {product.base_unit}
               </span>
             </div>
 
@@ -166,22 +203,105 @@ export function StockAdjustmentDialog() {
             </div>
           </div>
 
-          {/* Adjusted Quantity Input */}
-          <div className="space-y-1">
+          {/* Adjusted Quantity Input with Quick Stepper & Shortcuts */}
+          <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
               <span>ຈຳນວນຕົວຈິງທີ່ກວດນັບໄດ້ ({product.base_unit})</span>
               <span className="text-[10px] text-slate-400">
                 ວັນໝົດອາຍຸ: {batch.expiry_date}
               </span>
             </label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={adjustedQty}
-              onChange={(e) => setAdjustedQty(Math.max(0, Number(e.target.value)))}
-              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm font-extrabold text-slate-900 text-center outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
-            />
+
+            {/* Stepper Input Row */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleStep(-1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                title="ຫຼຸດລົງ 1"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                required
+                value={qtyInput}
+                onChange={handleQtyChange}
+                onBlur={handleBlur}
+                onFocus={(e) => e.target.select()}
+                placeholder="0"
+                className="h-11 flex-1 rounded-xl border border-slate-200 px-3 text-lg font-black text-slate-900 text-center outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 transition-all font-mono shadow-2xs"
+              />
+
+              <button
+                type="button"
+                onClick={() => handleStep(1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                title="ເພີ່ມຂຶ້ນ 1"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Quick Presets / Shortcuts */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <button
+                type="button"
+                onClick={() => handleStep(-10)}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 active:scale-95 transition-all cursor-pointer shadow-2xs"
+              >
+                -10
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStep(-1)}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 active:scale-95 transition-all cursor-pointer shadow-2xs"
+              >
+                -1
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStep(1)}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 active:scale-95 transition-all cursor-pointer shadow-2xs"
+              >
+                +1
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStep(10)}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 active:scale-95 transition-all cursor-pointer shadow-2xs"
+              >
+                +10
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHapticFeedback(15);
+                  setQtyInput("0");
+                  setFormError(null);
+                }}
+                className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-bold text-rose-700 active:scale-95 transition-all cursor-pointer shadow-2xs ml-auto"
+                title="ຕັ້ງເປັນ 0 (ສິນຄ້າໝົດ/ຂາດສາງ)"
+              >
+                ຕັ້ງເປັນ 0
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHapticFeedback(15);
+                  setQtyInput(String(batch.quantity_on_hand));
+                  setFormError(null);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-600 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                title="ຄືນຄ່າເດີມ"
+              >
+                <RotateCcw className="h-3 w-3 text-slate-400" />
+                <span>ຄືນຄ່າເດີມ</span>
+              </button>
+            </div>
           </div>
 
           {/* Adjustment Reason Selection */}

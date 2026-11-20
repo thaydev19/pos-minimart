@@ -4,7 +4,7 @@
 // Stock Mutations Hook: Stock In Receipts & Physical Count Adjustments
 // ============================================================================
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useInventoryStore } from "../stores/inventory.store";
@@ -82,13 +82,15 @@ export function useStockMutations() {
     }
   };
 
+  const clearError = useCallback(() => setErrorMessage(null), []);
+
   return {
     isSubmitting,
     errorMessage,
     createStockIn,
     adjustStock,
     toggleClearance,
-    clearError: () => setErrorMessage(null),
+    clearError,
   };
 }
 

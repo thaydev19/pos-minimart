@@ -21,7 +21,8 @@ import { useProductStore } from "../stores/product.store";
 import { useCategories } from "@/features/categories";
 import { ProductTable } from "../components/ProductTable";
 import { ProductFormModal } from "../components/ProductFormModal";
-import { StockInSheet } from "@/features/inventory";
+import { StockInSheet, StockAdjustmentDialog } from "@/features/inventory";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 
 export function ProductsPage() {
   const { products, totalCount, isLoading, refresh } = useProducts();
@@ -60,16 +61,7 @@ export function ProductsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => refresh()}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-            title="ດຶງຂໍ້ມູນລ່າສຸດຈາກ Supabase"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
-            <span>ໂຫຼດຂໍ້ມູນໃໝ່</span>
-          </button>
+          <HeaderRefreshButton />
 
           <button
             type="button"
@@ -82,62 +74,58 @@ export function ProductsPage() {
         </div>
       </div>
 
-      {/* 2. Top Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* 2. Top Summary KPI Cards (Compact 2-Line Design) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {/* Total Products */}
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">ສິນຄ້າທັງໝົດ</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-              <Package className="h-4 w-4" />
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ສິນຄ້າທັງໝົດ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 shrink-0">
+              <Package className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="text-xl font-extrabold text-slate-900 tabular-nums mt-1.5">
-            {totalCount}
+          <div className="text-lg sm:text-xl font-extrabold text-slate-900 tabular-nums mt-1 leading-tight">
+            {totalCount} <span className="text-[11px] font-normal text-slate-400">ລາຍການ</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">ລາຍການໃນຖານຂໍ້ມູນ</p>
         </div>
 
         {/* Categories */}
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">ໝວດໝູ່ສິນຄ້າ</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
-              <Layers className="h-4 w-4" />
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ໝວດໝູ່ສິນຄ້າ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-50 text-indigo-700 shrink-0">
+              <Layers className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="text-xl font-extrabold text-slate-900 tabular-nums mt-1.5">
-            {categories.length}
+          <div className="text-lg sm:text-xl font-extrabold text-slate-900 tabular-nums mt-1 leading-tight">
+            {categories.length} <span className="text-[11px] font-normal text-slate-400">ໝວດ</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">ໝວດໝູ່ທີ່ເປີດໃຊ້</p>
         </div>
 
         {/* Weighing items */}
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">ສິນຄ້າຊັ່ງກິໂລ</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
-              <Scale className="h-4 w-4" />
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ສິນຄ້າຊັ່ງກິໂລ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-700 shrink-0">
+              <Scale className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="text-xl font-extrabold text-slate-900 tabular-nums mt-1.5">
-            {weighingCount}
+          <div className="text-lg sm:text-xl font-extrabold text-slate-900 tabular-nums mt-1 leading-tight">
+            {weighingCount} <span className="text-[11px] font-normal text-slate-400">ລາຍການ</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">ບາໂຄດຕາຊັ່ງ (PLU)</p>
         </div>
 
         {/* Low Stock Warning */}
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">ໃກ້ໝົດສະຕັອກ</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-700">
-              <AlertTriangle className="h-4 w-4" />
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ໃກ້ໝົດສະຕັອກ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-rose-50 text-rose-700 shrink-0">
+              <AlertTriangle className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="text-xl font-extrabold text-rose-600 tabular-nums mt-1.5">
-            {lowStockCount}
+          <div className="text-lg sm:text-xl font-extrabold text-rose-600 tabular-nums mt-1 leading-tight">
+            {lowStockCount} <span className="text-[11px] font-normal text-slate-400">ລາຍການ</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">ສະຕັອກເຫຼືອ ≤ 10 ອັນ</p>
         </div>
       </div>
 
@@ -220,6 +208,9 @@ export function ProductsPage() {
 
       {/* 6. Quick Stock-In Drawer */}
       <StockInSheet />
+
+      {/* 7. Quick Stock Adjustment Dialog */}
+      <StockAdjustmentDialog />
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { StockOverviewTable } from "../components/StockOverviewTable";
 import { StockInSheet } from "../components/StockInSheet";
 import { BatchDetailDrawer } from "../components/BatchDetailDrawer";
 import { StockAdjustmentDialog } from "../components/StockAdjustmentDialog";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 
 function QuickStockInListener() {
   const searchParams = useSearchParams();
@@ -77,18 +78,7 @@ export function InventoryPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => refresh()}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-            title="ດຶງຂໍ້ມູນລ່າສຸດຈາກ Supabase"
-          >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-emerald-600" : ""}`}
-            />
-            <span>ໂຫຼດຂໍ້ມູນໃໝ່</span>
-          </button>
+          <HeaderRefreshButton />
 
           <button
             type="button"

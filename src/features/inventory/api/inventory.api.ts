@@ -486,4 +486,41 @@ export const inventoryApi = {
 
     usePosStore.getState().loadCatalog(true).catch(console.error);
   },
+
+  /**
+   * Ensures an initial batch exists for a product so stock adjustment can be performed.
+   */
+  async createInitialBatchIfEmpty(
+    productId: string,
+    costPrice: number = 0
+  ): Promise<any> {
+    const existing = await offlineDb.product_batches
+      .where("product_id")
+      .equals(productId)
+      .first();
+    if (existing) return existing;
+
+    const newBatch = {
+      id: crypto.randomUUID(),
+      store_id: DEFAULT_STORE.id,
+      product_id: productId,
+      batch_number: `LOT-INIT-${Date.now().toString().slice(-6)}`,
+      expiry_date: new Date(Date.now() + 180 * 86400000)
+        .toISOString()
+        .split("T")[0],
+      quantity_on_hand: 0,
+      cost_price: Number(costPrice) || 0,
+      is_clearance: false,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      await supabase.from("product_batches").insert([newBatch]);
+    } catch (err) {
+      console.warn("[InventoryApi] Failed to insert initial batch remotely:", err);
+    }
+
+    await offlineDb.product_batches.put(newBatch);
+    return newBatch;
+  },
 };

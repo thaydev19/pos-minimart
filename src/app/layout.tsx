@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { TauriWindowInitializer } from "@/components/TauriWindowInitializer";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "QuickOne POS - ລະບົບຂາຍໜ້າຮ້ານ",
@@ -51,6 +52,17 @@ export default function RootLayout({
         style={{ backgroundColor: "#F8FAFC" }}
       >
         <TauriWindowInitializer />
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          toastOptions={{
+            className: "font-sans",
+            style: {
+              fontFamily: "'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif",
+            },
+          }}
+        />
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

@@ -32,21 +32,70 @@ const DEFAULT_CATEGORY_ALL: LocalCategory = {
 
 export const posApi = {
   /**
+   * Fast offline catalog resolver directly from Dexie IndexedDB
+   */
+  async fetchCatalogFromDexie(): Promise<CatalogLoadResult> {
+    try {
+      const localProducts = await offlineDb.products.toArray();
+      const localCats = await offlineDb.categories.toArray();
+
+      if (localProducts.length > 0) {
+        const localUnits = await offlineDb.product_units.toArray();
+        const localBatches = await offlineDb.product_batches.toArray();
+
+        const assembled: ProductWithDetails[] = localProducts.map((p) => ({
+          ...p,
+          units: localUnits.filter((u) => u.product_id === p.id),
+          batches: localBatches.filter((b) => b.product_id === p.id),
+        }));
+
+        const categories = localCats.length > 0 ? localCats : [DEFAULT_CATEGORY_ALL];
+
+        return {
+          products: assembled,
+          categories,
+          source: "offline-dexie",
+        };
+      }
+    } catch (dexieErr) {
+      console.warn("Dexie read failed:", dexieErr);
+    }
+
+    return {
+      products: [],
+      categories: [DEFAULT_CATEGORY_ALL],
+      source: "offline-dexie",
+    };
+  },
+
+  /**
    * Loads catalog directly from Supabase with automatic caching to Dexie.js (Offline-First).
-   * Reads from local Dexie database if offline. Zero mock data.
+   * Reads from local Dexie database if offline or on network timeout. Zero mock data.
    */
   async fetchCatalog(): Promise<CatalogLoadResult> {
+    // 0. Immediate local-first bypass if navigator is offline
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return this.fetchCatalogFromDexie();
+    }
+
     try {
-      // 1. Attempt fetching live catalog from Supabase
-      const [categoriesRes, productsRes] = await Promise.all([
-        supabase
-          .from("categories")
-          .select("*")
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("products")
-          .select("*, product_units(*), product_batches(*)")
-          .eq("is_active", true),
+      // 1. Attempt fetching live catalog from Supabase with 3.5s timeout
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Supabase catalog timeout")), 3500)
+      );
+
+      const [categoriesRes, productsRes] = await Promise.race([
+        Promise.all([
+          supabase
+            .from("categories")
+            .select("*")
+            .order("sort_order", { ascending: true }),
+          supabase
+            .from("products")
+            .select("*, product_units(*), product_batches(*)")
+            .eq("is_active", true),
+        ]),
+        timeoutPromise,
       ]);
 
       if (
@@ -243,6 +292,9 @@ export const posApi = {
 
         if (!rpcErr) {
           rpcSucceeded = true;
+          await offlineDb.orders.update(orderPayload.id, {
+            client_synced_at: new Date().toISOString(),
+          });
         } else {
           console.warn("[PosApi] process_pos_order RPC warning:", rpcErr);
         }

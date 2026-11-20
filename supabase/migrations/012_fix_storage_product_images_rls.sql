@@ -17,8 +17,8 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = 52428800,
   allowed_mime_types = ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/svg+xml'];
 
--- 2. Enable Row Level Security (RLS) on storage.objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- 2. Note: RLS is already enabled on storage.objects by default in Supabase.
+-- (Do NOT run 'ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;' because storage.objects is owned by supabase_storage_admin).
 
 -- 3. Drop any conflicting existing policies on 'product-images'
 DROP POLICY IF EXISTS "Public Access product-images" ON storage.objects;

@@ -15,6 +15,7 @@ export function useAuth() {
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const initAuth = useAuthStore((s) => s.initAuth);
   const login = useAuthStore((s) => s.login);
+  const loginWithPin = useAuthStore((s) => s.loginWithPin);
   const logout = useAuthStore((s) => s.logout);
   const setUser = useAuthStore((s) => s.setUser);
   const requireManagerPin = useAuthStore((s) => s.requireManagerPin);
@@ -55,6 +56,7 @@ export function useAuth() {
     isCashier,
     canAccessBackoffice: canAccessBackoffice(role),
     login,
+    loginWithPin,
     logout,
     requireManagerPin,
   };

@@ -7,8 +7,19 @@
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
-import { ShoppingBag, ChevronUp, X, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  ShoppingBag,
+  ChevronUp,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  WifiOff,
+  Database,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { syncEngine } from "@/apis/sync-engine";
 import { PosHeader } from "../components/PosHeader";
 import { CatalogControlBar } from "../components/CatalogControlBar";
 import { ProductCatalogGrid } from "../components/ProductCatalogGrid";
@@ -27,6 +38,7 @@ export function PosTerminalPage() {
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const { isOnline, pendingCount } = useOnlineStatus();
 
   const cart = usePosStore((s) => s.cart);
   const totals = usePosStore((s) => s.totals);
@@ -149,6 +161,55 @@ export function PosTerminalPage() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#F8F9FA] select-none text-slate-900 font-sans">
       <PosHeader />
+
+      {/* Network Offline / Pending Sync Status Bar */}
+      {!isOnline && (
+        <div className="shrink-0 mx-2.5 sm:mx-3 mt-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-1.5 text-xs text-amber-900 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-200/90 text-amber-800 shrink-0">
+              <WifiOff className="h-3 w-3" />
+            </div>
+            <div className="truncate">
+              <span className="font-extrabold text-amber-950">ໂໝດຂາຍອອບລາຍ (Offline):</span>{" "}
+              <span className="text-amber-800 font-medium">
+                ບໍ່ມີສັນຍານອິນເຕີເນັດ. ທ່ານຍັງສາມາດຍິງບາໂຄດ, ຂາຍເງິນສົດ, ພິມໃບບິນ ແລະ ຕັດສະຕັອກໄດ້ປົກກະຕິ.
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/90 px-2.5 py-0.5 text-[11px] font-bold text-amber-900">
+                <Database className="h-3 w-3" />
+                {pendingCount} ບິນລໍຖ້າຊິ້ງ
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isOnline && pendingCount > 0 && (
+        <div className="shrink-0 mx-2.5 sm:mx-3 mt-1.5 rounded-xl border border-sky-300 bg-sky-50 px-3.5 py-1.5 text-xs text-sky-900 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-sky-200/90 text-sky-800 shrink-0">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+            </div>
+            <div className="truncate">
+              <span className="font-extrabold text-sky-950">ກຳລັງຊິ້ງຂໍ້ມູນບິນອອບລາຍ:</span>{" "}
+              <span className="text-sky-800 font-medium">
+                ພົບ {pendingCount} ບິນທີ່ບັນທຶກໄວ້ໃນເຄື່ອງ, ກຳລັງນຳສົ່ງຂຶ້ນ Cloud ອັດຕະໂນມັດ...
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => syncEngine.processQueue()}
+            className="inline-flex items-center gap-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-0.5 text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0"
+          >
+            <RefreshCw className="h-3 w-3" />
+            <span>ຊິ້ງດຽວນີ້</span>
+          </button>
+        </div>
+      )}
 
       <main className="flex flex-1 overflow-hidden p-2.5 sm:p-3 gap-2.5 sm:gap-3 min-h-0">
         {/* Left Area: Unified Control Bar + Product Catalog Grid */}

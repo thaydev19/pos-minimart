@@ -227,6 +227,26 @@ input, button, select, textarea, table, th, td {
 }
 
 /* Thermal 80mm / 72mm Print Styling for POS-80 Thermal Receipt Printers */
+/* ============================================================================
+   Toast Notification Styling: System-wide Noto Sans Lao + Plus Jakarta Sans
+   ============================================================================ */
+
+[data-sonner-toaster],
+[data-sonner-toaster] *,
+[data-sonner-toast],
+[data-sonner-toast] *,
+[data-sonner-toast] [data-title],
+[data-sonner-toast] [data-description] {
+  font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif !important;
+}
+
+[data-sonner-toast] {
+  border-radius: 1rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+}
+
 @media print {
   @page {
     size: 80mm auto;

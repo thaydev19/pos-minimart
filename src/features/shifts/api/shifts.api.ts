@@ -4,6 +4,7 @@
 
 import { supabase } from "@/apis/supabase-client";
 import { offlineDb, LocalShift, LocalAuditLog } from "@/apis/offline-db";
+import { syncEngine } from "@/apis/sync-engine";
 import { DEFAULT_STORE, DEFAULT_CASHIER } from "@/features/pos/constants/pos.constants";
 import { useAuthStore } from "@/features/auth";
 import {
@@ -168,16 +169,24 @@ export const shiftsApi = {
     };
 
     // 1. Insert into Supabase
+    let supabaseInsertSuccess = false;
     try {
       const { error: insertErr } = await supabase
         .from("shifts")
         .insert([payload]);
 
-      if (insertErr) {
+      if (!insertErr) {
+        supabaseInsertSuccess = true;
+      } else {
         console.warn("[ShiftsApi] Supabase open shift warning (RLS/Network):", insertErr.message);
       }
     } catch (e: any) {
       console.warn("[ShiftsApi] Supabase open shift exception:", e?.message);
+    }
+
+    // If offline or remote insert failed, enqueue into background sync
+    if (!supabaseInsertSuccess) {
+      await syncEngine.enqueue("shift", shiftId, "INSERT", payload);
     }
 
     // 2. Audit log
@@ -233,25 +242,56 @@ export const shiftsApi = {
         ? input.actual_cash_entered
         : calculateDenominationsTotal(input.counts);
 
-    // 1. Read shift details
-    const { data: shiftData, error: fetchErr } = await supabase
-      .from("shifts")
-      .select("*")
-      .eq("id", input.shift_id)
-      .single();
+    // 1. Read shift details (Supabase first, fallback to Dexie if offline)
+    let shiftData: any = null;
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from("shifts")
+        .select("*")
+        .eq("id", input.shift_id)
+        .single();
+      if (!fetchErr && data) {
+        shiftData = data;
+      }
+    } catch {
+      // Network offline
+    }
 
-    if (fetchErr || !shiftData) {
-      throw new Error(`ບໍ່ພົບຂໍ້ມູນກະທີ່ຕ້ອງການປິດ: ${fetchErr?.message || ""}`);
+    if (!shiftData) {
+      shiftData = await offlineDb.shifts.get(input.shift_id);
+    }
+
+    if (!shiftData) {
+      throw new Error("ບໍ່ພົບຂໍ້ມູນກະທີ່ຕ້ອງການປິດໃນລະບົບ (ທັງ Cloud ແລະ ອອບລາຍ)");
     }
 
     const openingCash = Number(shiftData.opening_cash) || 0;
 
-    // 2. Query completed orders in this shift to calculate expected cash
-    const { data: ordersData } = await supabase
-      .from("orders")
-      .select("payment_method, final_total, status")
-      .eq("shift_id", input.shift_id)
-      .eq("status", "completed");
+    // 2. Query completed orders in this shift (Supabase first, fallback to Dexie if offline)
+    let ordersData: any[] | null = null;
+    try {
+      const { data } = await supabase
+        .from("orders")
+        .select("payment_method, final_total, status")
+        .eq("shift_id", input.shift_id)
+        .eq("status", "completed");
+      ordersData = data;
+    } catch {
+      // Network offline
+    }
+
+    if (!ordersData) {
+      const localOrders = await offlineDb.orders
+        .where("shift_id")
+        .equals(input.shift_id)
+        .filter((o) => o.status === "completed")
+        .toArray();
+      ordersData = localOrders.map((o) => ({
+        payment_method: o.payment_method,
+        final_total: o.final_total,
+        status: o.status,
+      }));
+    }
 
     let cashSales = 0;
     let transferSales = 0;
@@ -262,7 +302,7 @@ export const shiftsApi = {
       for (const o of ordersData) {
         if (o.payment_method === "cash") {
           cashSales += Number(o.final_total) || 0;
-        } else if (o.payment_method === "transfer") {
+        } else if (o.payment_method === "transfer" || o.payment_method === "lao_qr") {
           transferSales += Number(o.final_total) || 0;
         }
       }
@@ -277,21 +317,31 @@ export const shiftsApi = {
       expected_closing_cash: expectedCash,
       actual_closing_cash: actualCash,
       discrepancy: discrepancy,
-      status: "closed",
+      status: "closed" as const,
       notes: input.notes?.trim() || null,
     };
 
+    let updateSucceeded = false;
     try {
       const { error: updateErr } = await supabase
         .from("shifts")
         .update(updatePayload)
         .eq("id", input.shift_id);
 
-      if (updateErr) {
+      if (!updateErr) {
+        updateSucceeded = true;
+      } else {
         console.warn("[ShiftsApi] Supabase close shift warning (RLS/Network):", updateErr.message);
       }
     } catch (e: any) {
       console.warn("[ShiftsApi] Supabase close shift exception:", e?.message);
+    }
+
+    if (!updateSucceeded) {
+      await syncEngine.enqueue("shift", input.shift_id, "UPDATE", {
+        id: input.shift_id,
+        ...updatePayload,
+      });
     }
 
     // 4. Record Audit Log with full denomination breakdown

@@ -10,7 +10,7 @@ import { StaffUser, STAFF_ROLES_CONFIG } from "../types/staff.types";
 import { triggerHapticFeedback } from "@/utils/haptics";
 
 interface StaffPinModalProps {
-  staff: StaffUser;
+  staff: StaffUser | null;
   isOpen: boolean;
   onClose: () => void;
   onSavePin: (staffId: string, newPin: string) => Promise<void>;
@@ -26,7 +26,7 @@ export function StaffPinModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !staff) return null;
 
   const roleConfig = STAFF_ROLES_CONFIG[staff.role];
 

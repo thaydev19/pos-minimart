@@ -58,19 +58,28 @@ export const staffApi = {
         .order("created_at", { ascending: true });
 
       if (!error && data && data.length > 0) {
-        const staffList: StaffUser[] = data.map((u: any) => ({
-          id: u.id,
-          store_id: u.store_id || storeId,
-          username: u.username,
-          email: u.email || `${u.username}@laochaleun.la`,
-          full_name_lo: u.full_name_lo,
-          role: (u.role as StaffRole) || "cashier",
-          pin: u.pin_hash ? "••••••" : "123456",
-          pin_hash: u.pin_hash,
-          is_active: u.is_active !== false,
-          created_at: u.created_at,
-          last_login_at: u.last_login_at,
-        }));
+        const staffList: StaffUser[] = data.map((u: any) => {
+          const rawPin =
+            u.pin_hash && u.pin_hash.length === 6
+              ? u.pin_hash
+              : u.pin_hash === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+              ? "123456"
+              : u.pin || "123456";
+
+          return {
+            id: u.id,
+            store_id: u.store_id || storeId,
+            username: u.username,
+            email: u.email || `${u.username}@laochaleun.la`,
+            full_name_lo: u.full_name_lo,
+            role: (u.role as StaffRole) || "cashier",
+            pin: rawPin,
+            pin_hash: rawPin,
+            is_active: u.is_active !== false,
+            created_at: u.created_at,
+            last_login_at: u.last_login_at,
+          };
+        });
 
         // Cache to localStorage for offline fallback
         if (typeof window !== "undefined") {
@@ -116,7 +125,6 @@ export const staffApi = {
       throw new Error("ລະຫັດ PIN ຕ້ອງເປັນຕົວເລກ 6 ຫຼັກ");
     }
 
-    const hashedPin = await hashPin(cleanPin);
     const newId = crypto.randomUUID();
 
     const payload = {
@@ -126,7 +134,7 @@ export const staffApi = {
       email: input.email?.trim() || `${cleanUsername}@laochaleun.la`,
       full_name_lo: cleanName,
       role: input.role,
-      pin_hash: hashedPin,
+      pin_hash: cleanPin,
       is_active: input.is_active !== false,
       created_at: new Date().toISOString(),
     };
@@ -172,21 +180,19 @@ export const staffApi = {
   },
 
   /**
-   * Updates an existing staff profile.
+   * Updates an existing staff profile in Supabase users table.
    */
   async updateStaff(id: string, input: UpdateStaffInput): Promise<StaffUser> {
-    const updatePayload: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-    };
+    const updatePayload: Record<string, any> = {};
 
-    if (input.full_name_lo) updatePayload.full_name_lo = input.full_name_lo.trim();
-    if (input.username) updatePayload.username = input.username.trim().toLowerCase();
-    if (input.email) updatePayload.email = input.email.trim();
-    if (input.role) updatePayload.role = input.role;
+    if (input.full_name_lo !== undefined) updatePayload.full_name_lo = input.full_name_lo.trim();
+    if (input.username !== undefined) updatePayload.username = input.username.trim().toLowerCase();
+    if (input.email !== undefined) updatePayload.email = input.email.trim();
+    if (input.role !== undefined) updatePayload.role = input.role;
     if (typeof input.is_active === "boolean") updatePayload.is_active = input.is_active;
 
     if (input.pin && input.pin.trim().length === 6) {
-      updatePayload.pin_hash = await hashPin(input.pin.trim());
+      updatePayload.pin_hash = input.pin.trim();
     }
 
     try {
@@ -208,7 +214,7 @@ export const staffApi = {
         email: data.email,
         full_name_lo: data.full_name_lo,
         role: data.role as StaffRole,
-        pin: input.pin || "••••••",
+        pin: input.pin || data.pin_hash || "123456",
         pin_hash: data.pin_hash,
         is_active: data.is_active,
         created_at: data.created_at,
@@ -217,11 +223,12 @@ export const staffApi = {
       await this.syncLocalCache(updated, "update");
       return updated;
     } catch (err: any) {
-      console.warn("[StaffApi] Supabase update error, updating local cache:", err);
-      // Local fallback
+      console.warn("[StaffApi] Supabase update note:", err);
+
+      // Local fallback for offline mode
       const cachedList = await this.getStaffList();
       const existing = cachedList.find((s) => s.id === id);
-      if (!existing) throw new Error("ບໍ່ພົບຂໍ້ມູນພະນັກງານ");
+      if (!existing) throw err;
 
       const localUpdated: StaffUser = {
         ...existing,
@@ -242,14 +249,11 @@ export const staffApi = {
       throw new Error("ລະຫັດ PIN ຕ້ອງເປັນຕົວເລກ 6 ຫຼັກ");
     }
 
-    const hashedPin = await hashPin(cleanPin);
-
     try {
       const { error } = await supabase
         .from("users")
         .update({
-          pin_hash: hashedPin,
-          updated_at: new Date().toISOString(),
+          pin_hash: cleanPin,
         })
         .eq("id", id);
 
@@ -265,7 +269,7 @@ export const staffApi = {
     const idx = cachedList.findIndex((s) => s.id === id);
     if (idx !== -1) {
       cachedList[idx].pin = cleanPin;
-      cachedList[idx].pin_hash = hashedPin;
+      cachedList[idx].pin_hash = cleanPin;
       localStorage.setItem(LOCAL_STAFF_STORAGE_KEY, JSON.stringify(cachedList));
     }
   },
@@ -279,7 +283,6 @@ export const staffApi = {
         .from("users")
         .update({
           is_active: isActive,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", id);
 
@@ -314,9 +317,17 @@ export const staffApi = {
 
     try {
       const { error } = await supabase.from("users").delete().eq("id", id);
-      if (error) throw new Error(error.message);
-    } catch (err) {
+      if (error) {
+        // Foreign key violation: staff has sales/shift history -> soft delete (deactivate)
+        if (error.code === "23503") {
+          await supabase.from("users").update({ is_active: false }).eq("id", id);
+          throw new Error("ພະນັກງານນີ້ເຄີຍມີປະຫວັດການຂາຍ ຫຼື ເປີດກະ ລະບົບໄດ້ປິດການໃຊ້ງານ (Deactivated) ແທນການລຶບ");
+        }
+        throw new Error(error.message);
+      }
+    } catch (err: any) {
       console.warn("[StaffApi] Supabase delete note:", err);
+      throw err;
     }
 
     // Update local cache

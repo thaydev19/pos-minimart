@@ -24,6 +24,7 @@ import { formatShiftDuration } from "../utils/shift.util";
 import { ShiftHistoryTable } from "../components/ShiftHistoryTable";
 import { OpenShiftDialog } from "../components/OpenShiftDialog";
 import { CloseShiftBlindDialog } from "../components/CloseShiftBlindDialog";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 
 export function ShiftsPage() {
   const { activeShift, shiftHistory, isLoading, refreshActiveShift, refreshHistory } =
@@ -50,18 +51,7 @@ export function ShiftsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-            title="ດຶງຂໍ້ມູນລ່າສຸດຈາກ Supabase"
-          >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-emerald-600" : ""}`}
-            />
-            <span>ໂຫຼດຂໍ້ມູນໃໝ່</span>
-          </button>
+          <HeaderRefreshButton />
 
           {!activeShift && (
             <button

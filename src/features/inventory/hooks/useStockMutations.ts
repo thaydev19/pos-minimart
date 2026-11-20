@@ -6,8 +6,10 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useInventoryStore } from "../stores/inventory.store";
 import { inventoryApi } from "../api/inventory.api";
+import { invalidateProductsAndInventory } from "@/constants/queryKeys";
 import {
   StockInFormData,
   StockAdjustmentFormData,
@@ -28,8 +30,7 @@ export function useStockMutations() {
     try {
       await inventoryApi.createStockIn(data);
       await loadInventory();
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      await invalidateProductsAndInventory(queryClient);
       closeStockIn();
       return true;
     } catch (err: any) {
@@ -48,12 +49,17 @@ export function useStockMutations() {
     try {
       await inventoryApi.adjustBatchStock(adjustment);
       await loadInventory();
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      await invalidateProductsAndInventory(queryClient);
       closeAdjustment();
+      toast.success(
+        `ປັບຍອດສະຕັອກ "${adjustment.product_name}" ເປັນ ${adjustment.adjusted_quantity} ສຳເລັດແລ້ວ`,
+        { duration: 3000 }
+      );
       return true;
     } catch (err: any) {
-      setErrorMessage(err.message || "ປັບຍອດສະຕັອກບໍ່ສຳເລັດ");
+      const msg = err.message || "ປັບຍອດສະຕັອກບໍ່ສຳເລັດ";
+      setErrorMessage(msg);
+      toast.error(msg, { duration: 4000 });
       return false;
     } finally {
       setIsSubmitting(false);
@@ -68,6 +74,7 @@ export function useStockMutations() {
     try {
       await inventoryApi.markBatchClearance(batchId, isClearance, clearancePrice);
       await loadInventory();
+      await invalidateProductsAndInventory(queryClient);
       return true;
     } catch (err: any) {
       alert(err.message || "ອັບເດດສະຖານະລັອດບໍ່ສຳເລັດ");

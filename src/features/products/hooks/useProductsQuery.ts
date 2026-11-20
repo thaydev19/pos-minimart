@@ -2,14 +2,16 @@
 
 // ============================================================================
 // TanStack Query: Products Data Fetching
-// 5-minute staleTime ensures stable reference & zero re-render thrashing
+// 30-second staleTime for fast navigation + guaranteed freshness
+// Zero Emojis - Enterprise Cache
 // ============================================================================
 
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "../api/products.api";
 import { ProductListItem } from "../types/product.types";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 
-export const PRODUCTS_QUERY_KEY = ["products"] as const;
+export const PRODUCTS_QUERY_KEY = QUERY_KEYS.products;
 
 export interface ProductFilters {
   searchTerm?: string;
@@ -18,7 +20,7 @@ export interface ProductFilters {
 }
 
 /**
- * Main query for all products with 5-minute stale cache
+ * Main query for all products with 30-second stale cache
  */
 export function useProductsQuery(filters?: ProductFilters) {
   const queryKey = filters
@@ -28,8 +30,8 @@ export function useProductsQuery(filters?: ProductFilters) {
   const query = useQuery<ProductListItem[]>({
     queryKey,
     queryFn: () => productsApi.fetchProducts(),
-    staleTime: 1000 * 60 * 5, // 5 minutes stable cache
-    refetchOnWindowFocus: false,
+    staleTime: 1000 * 30, // 30 seconds
+    refetchOnWindowFocus: true,
   });
 
   return {
@@ -46,15 +48,14 @@ export function useProductsQuery(filters?: ProductFilters) {
  */
 export function useProductDetailQuery(productId?: string) {
   return useQuery<ProductListItem | undefined>({
-    queryKey: ["product-detail", productId],
+    queryKey: QUERY_KEYS.productDetail(productId),
     queryFn: async () => {
       if (!productId) return undefined;
       const all = await productsApi.fetchProducts();
       return all.find((p) => p.id === productId);
     },
     enabled: Boolean(productId),
-    staleTime: 1000 * 60 * 5, // 5 minutes stable cache
-    refetchOnWindowFocus: false,
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: true,
   });
 }
-

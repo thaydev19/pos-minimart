@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Boxes,
   Plus,
+  ClipboardList,
 } from "lucide-react";
 import { ProductListItem } from "../types/product.types";
 import { useProductStore } from "../stores/product.store";
@@ -241,28 +242,38 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     </div>
                   </td>
 
-                  {/* 6. Stock Count with Quick Stock-In Shortcut */}
+                  {/* 6. Stock Count with Quick Adjust & Stock-In Shortcuts */}
                   <td className="py-2.5 px-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => useInventoryStore.getState().openStockIn(prod.id)}
-                      className={`group inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs border ${
-                        prod.total_stock <= 0
-                          ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300"
-                          : prod.total_stock <= 10
-                          ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300"
-                          : "bg-zinc-100 text-zinc-800 border-zinc-200/90 hover:bg-zinc-200/80 hover:text-zinc-900"
-                      }`}
-                      title="ນຳເຂົ້າສະຕັອກດ່ວນ (Quick Stock In)"
-                    >
-                      <Boxes className="h-3.5 w-3.5 shrink-0 text-zinc-500 group-hover:text-zinc-700" />
-                      <span>
-                        {prod.total_stock} {prod.base_unit}
-                      </span>
-                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-white text-emerald-700 border border-emerald-300 opacity-70 group-hover:opacity-100 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-2xs">
-                        <Plus className="h-2.5 w-2.5 stroke-[3]" />
-                      </span>
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      {/* Click Badge to Quick Adjust Stock */}
+                      <button
+                        type="button"
+                        onClick={() => useInventoryStore.getState().openAdjustmentForProduct(prod.id)}
+                        className={`group inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs border ${
+                          prod.total_stock <= 0
+                            ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300"
+                            : prod.total_stock <= 10
+                            ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300"
+                            : "bg-zinc-100 text-zinc-800 border-zinc-200/90 hover:bg-zinc-200/80 hover:text-zinc-900"
+                        }`}
+                        title="ກົດເພື່ອປັບຍອດສະຕັອກ (Adjust Stock)"
+                      >
+                        <Boxes className="h-3.5 w-3.5 shrink-0 text-zinc-500 group-hover:text-zinc-700" />
+                        <span>
+                          {prod.total_stock} {prod.base_unit}
+                        </span>
+                      </button>
+
+                      {/* Plus Button for Quick Stock-In */}
+                      <button
+                        type="button"
+                        onClick={() => useInventoryStore.getState().openStockIn(prod.id)}
+                        className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all shadow-2xs cursor-pointer"
+                        title="ນຳເຂົ້າສະຕັອກດ່ວນ (Quick Stock In)"
+                      >
+                        <Plus className="h-3 w-3 stroke-[3]" />
+                      </button>
+                    </div>
                   </td>
 
                   {/* 7. Active Status */}
@@ -279,9 +290,20 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     )}
                   </td>
 
-                  {/* 8. Actions */}
+                  {/* 8. Actions: Adjust Stock, Edit, Toggle, Delete */}
                   <td className="py-2.5 px-4 text-center">
                     <div className="flex items-center justify-center gap-1">
+                      {/* 1. Quick Stock Adjustment Button */}
+                      <button
+                        type="button"
+                        onClick={() => useInventoryStore.getState().openAdjustmentForProduct(prod.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors cursor-pointer shadow-2xs"
+                        title="ກວດນັບ / ປັບຍອດສະຕັອກ (Adjust Stock)"
+                      >
+                        <ClipboardList className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* 2. Edit Product */}
                       <button
                         type="button"
                         onClick={() => openEditSheet(prod)}
@@ -291,6 +313,7 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                         <Edit3 className="h-3.5 w-3.5" />
                       </button>
 
+                      {/* 3. Toggle Active */}
                       <button
                         type="button"
                         onClick={() => toggleProductActive(prod.id, !prod.is_active)}
@@ -304,6 +327,7 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                         <Power className="h-3.5 w-3.5" />
                       </button>
 
+                      {/* 4. Delete Product */}
                       <button
                         type="button"
                         onClick={async () => {

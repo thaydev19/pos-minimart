@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Menu, ScanBarcode } from "lucide-react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { NetworkSyncBadge } from "@/components/NetworkSyncBadge";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 import { AuthGuard, UserProfileMenu } from "@/features/auth";
 import { ImageCleanupService } from "@/features/products/services/image-cleanup.service";
 
@@ -60,9 +61,12 @@ export default function BackofficeLayout({
                   Back-Office Management
                 </span>
               </div>
+
+              {/* Online / Offline Status Icon at end of Header Brand */}
+              <NetworkSyncBadge showText={false} className="ml-1" />
             </div>
 
-            {/* Right: Quick POS Jump + Network Status + Real User Menu */}
+            {/* Right: Quick POS Jump + Refresh Button + Real User Menu */}
             <div className="flex items-center gap-2.5 shrink-0">
               {/* Quick POS Launch Button */}
               <Link
@@ -73,8 +77,8 @@ export default function BackofficeLayout({
                 <span className="hidden sm:inline">ຂາຍໜ້າຮ້ານ (POS)</span>
               </Link>
 
-              <NetworkSyncBadge />
-              
+              {/* Refresh & Clear Cache Button (Icon only) */}
+              <HeaderRefreshButton />
 
               {/* Real Staff Profile Card & Signout */}
               <UserProfileMenu />

@@ -20,6 +20,7 @@ interface AuthState {
   // Actions
   initAuth: () => Promise<AuthUser | null>;
   login: (credentials: LoginCredentials) => Promise<AuthUser>;
+  loginWithPin: (staffId: string, pin: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
   requireManagerPin: (reason: string, callback: () => void) => void;
@@ -64,6 +65,18 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const authUser = await authApi.login(credentials);
+          set({ user: authUser, isInitialized: true, isLoading: false });
+          return authUser;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
+      loginWithPin: async (staffId: string, pin: string) => {
+        set({ isLoading: true });
+        try {
+          const authUser = await authApi.loginWithStaffPin(staffId, pin);
           set({ user: authUser, isInitialized: true, isLoading: false });
           return authUser;
         } catch (err) {

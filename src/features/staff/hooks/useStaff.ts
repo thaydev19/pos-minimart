@@ -2,19 +2,23 @@
 
 // ============================================================================
 // Staff React Query Hooks: Caching, Auto-Invalidation & Optimistic Mutations
+// 30-second staleTime & auto-refetch on window focus
+// Zero Emojis - Enterprise Cache
 // ============================================================================
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { staffApi } from "../api/staff.api";
 import { CreateStaffInput, UpdateStaffInput } from "../types/staff.types";
+import { QUERY_KEYS, invalidateStaff } from "@/constants/queryKeys";
 
-export const STAFF_QUERY_KEY = ["staff_list"];
+export const STAFF_QUERY_KEY = QUERY_KEYS.staff;
 
 export function useStaffList() {
   return useQuery({
     queryKey: STAFF_QUERY_KEY,
     queryFn: () => staffApi.getStaffList(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -23,8 +27,8 @@ export function useCreateStaff() {
 
   return useMutation({
     mutationFn: (input: CreateStaffInput) => staffApi.createStaff(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STAFF_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateStaff(queryClient);
     },
   });
 }
@@ -35,8 +39,8 @@ export function useUpdateStaff() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateStaffInput }) =>
       staffApi.updateStaff(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STAFF_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateStaff(queryClient);
     },
   });
 }
@@ -47,8 +51,8 @@ export function useUpdateStaffPin() {
   return useMutation({
     mutationFn: ({ id, pin }: { id: string; pin: string }) =>
       staffApi.updateStaffPin(id, pin),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STAFF_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateStaff(queryClient);
     },
   });
 }
@@ -59,8 +63,8 @@ export function useToggleStaffStatus() {
   return useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       staffApi.toggleStaffStatus(id, isActive),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STAFF_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateStaff(queryClient);
     },
   });
 }
@@ -70,8 +74,8 @@ export function useDeleteStaff() {
 
   return useMutation({
     mutationFn: (id: string) => staffApi.deleteStaff(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STAFF_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateStaff(queryClient);
     },
   });
 }

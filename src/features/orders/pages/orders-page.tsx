@@ -27,6 +27,7 @@ import { VoidOrderDialog } from "../components/VoidOrderDialog";
 import { Receipt80mmTemplate } from "../components/Receipt80mmTemplate";
 import { ShiftsPage } from "@/features/shifts";
 import { triggerHapticFeedback } from "@/utils/haptics";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 
 export function OrdersPage() {
   const [activeTab, setActiveTab] = useState<"orders" | "shifts">("orders");
@@ -102,17 +103,7 @@ export function OrdersPage() {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => refresh()}
-            disabled={isLoading}
-            className="flex min-h-[48px] h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs disabled:opacity-50 touch-manipulation"
-            title="ດຶງຂໍ້ມູນລ່າສຸດ"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin text-emerald-600" : ""}`}
-            />
-          </button>
+          <HeaderRefreshButton />
         </div>
       </div>
 

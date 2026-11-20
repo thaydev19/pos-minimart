@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoriesApi } from "../api/categories.api";
 import { CategoryFormData, DeleteCategoryResult } from "../types/category.types";
 import { useCategoryStore } from "../stores/category.store";
-import { CATEGORIES_QUERY_KEY } from "./useCategoriesQuery";
+import { invalidateCategories } from "@/constants/queryKeys";
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
@@ -18,8 +18,8 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: (data: CategoryFormData) => categoriesApi.createCategory(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateCategories(queryClient);
       closeModal();
     },
   });
@@ -32,8 +32,8 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
       categoriesApi.updateCategory(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateCategories(queryClient);
       closeModal();
     },
   });
@@ -44,8 +44,8 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: (id: string) => categoriesApi.deleteCategory(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateCategories(queryClient);
     },
   });
 }

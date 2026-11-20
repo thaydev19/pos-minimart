@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "../api/products.api";
 import { ProductFormData } from "../types/product.types";
 import { useProductStore } from "../stores/product.store";
-import { PRODUCTS_QUERY_KEY } from "./useProductsQuery";
+import { invalidateProductsAndInventory } from "@/constants/queryKeys";
 
 export function useCreateProduct() {
   const queryClient = useQueryClient();
@@ -18,8 +18,8 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: (data: ProductFormData) => productsApi.createProduct(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateProductsAndInventory(queryClient);
       closeFormSheet();
     },
   });
@@ -32,8 +32,8 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductFormData }) =>
       productsApi.updateProduct(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateProductsAndInventory(queryClient);
       closeFormSheet();
     },
   });
@@ -44,8 +44,8 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: (id: string) => productsApi.deleteProduct(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateProductsAndInventory(queryClient);
     },
   });
 }
@@ -56,8 +56,8 @@ export function useToggleProductActive() {
   return useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       productsApi.toggleProductActive(id, isActive),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
+    onSuccess: async () => {
+      await invalidateProductsAndInventory(queryClient);
     },
   });
 }

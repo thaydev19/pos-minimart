@@ -16,10 +16,16 @@ import {
   X,
   Sparkles,
   Calculator,
+  AlertTriangle,
+  Database,
+  WifiOff,
 } from "lucide-react";
 import { formatLak, getSmartCashSuggestions } from "@/utils/formatLakCurrency";
 import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
 import { lo } from "@/constants/locales/lo";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateProductsAndInventory, invalidateOrders } from "@/constants/queryKeys";
 import { usePosStore } from "../stores/pos.store";
 import { posApi } from "../api/pos.api";
 import { ThermalPrinterAdapter, ReceiptData } from "@/utils/printer.adapter";
@@ -49,6 +55,8 @@ export function PaymentModal({
   onPaymentSuccess,
 }: PaymentModalProps) {
   const { user } = useAuth();
+  const { isOnline } = useOnlineStatus();
+  const queryClient = useQueryClient();
   const activeShift = useShiftStore((s) => s.activeShift);
   const cart = usePosStore((s) => s.cart);
   const cashier = usePosStore((s) => s.cashier);
@@ -323,7 +331,10 @@ export function PaymentModal({
       // Submit via atomic RPC or offline sync engine
       await posApi.submitOrder(orderPayload);
 
-      setLastCompletedOrder(orderPayload);
+      setLastCompletedOrder({
+        ...orderPayload,
+        isOfflineOrder: !isOnline || (typeof navigator !== "undefined" && !navigator.onLine),
+      });
       setIsCompleted(true);
 
       // Open cash drawer immediately if cash is involved
@@ -378,6 +389,11 @@ export function PaymentModal({
       });
 
       clearCart();
+
+      // Invalidate products, inventory, and orders caches across backoffice
+      invalidateProductsAndInventory(queryClient).catch(() => {});
+      invalidateOrders(queryClient).catch(() => {});
+
       onPaymentSuccess?.();
     } finally {
       setIsProcessing(false);
@@ -419,6 +435,19 @@ export function PaymentModal({
               <p className="text-xs text-slate-500 font-mono font-bold">
                 ເລກທີບິນ: {lastCompletedOrder?.order_number}
               </p>
+              <div className="pt-1">
+                {lastCompletedOrder?.isOfflineOrder ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 px-3 py-1 text-xs font-bold">
+                    <Database className="h-3.5 w-3.5 text-amber-600" />
+                    <span>ບັນທຶກອອບລາຍໃນເຄື່ອງແລ້ວ (ລໍຖ້າຊິ້ງ)</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 text-xs font-bold">
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>ຊິ້ງຂຶ້ນ Cloud ຮຽບຮ້ອຍ</span>
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* 1. Final Total Paid Display */}
@@ -711,6 +740,18 @@ export function PaymentModal({
             {/* TAB 2: FULL LAO QR / BCEL ONE */}
             {activeTab === "lao_qr" && (
               <div className="flex flex-col items-center justify-center p-3.5 border border-dashed border-slate-300 rounded-2xl bg-slate-50/70 text-center">
+                {!isOnline && (
+                  <div className="mb-2.5 w-full rounded-xl bg-amber-50 border border-amber-300 p-2.5 text-left text-xs text-amber-900 flex items-start gap-2 shadow-2xs">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                    <div>
+                      <div className="font-bold text-amber-950">ໂໝດອອບລາຍ: ບໍ່ມີສັນຍານອິນເຕີເນັດ</div>
+                      <div className="text-[11px] text-amber-800 mt-0.5 leading-snug">
+                        ບໍ່ສາມາດກວດສອບຍອດໂອນອັດຕະໂນມັດໄດ້. ກະລຸນາກວດສອບສະລິບໂອນໃນໂທລະສັບລູກຄ້າໃຫ້ລະອຽດກ່ອນກົດຢືນຢັນ.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mb-2 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
                   LAO QR - LAPNet Standard (BCEL OnePay / LDB / JDB)
                 </div>

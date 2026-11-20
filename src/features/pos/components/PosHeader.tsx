@@ -25,6 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { NetworkSyncBadge } from "@/components/NetworkSyncBadge";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 import { DEFAULT_STORE } from "../constants/pos.constants";
 import { HoldOrdersTabs } from "./HoldOrdersTabs";
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -228,7 +229,7 @@ export function PosHeader() {
             <Menu className="h-4 w-4" />
           </button>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Desktop & Tablet: Sleek, well-proportioned QuickOne logo with text */}
             <div className="hidden sm:flex items-center">
               <Image
@@ -252,6 +253,9 @@ export function PosHeader() {
                 priority
               />
             </div>
+
+            {/* Online / Offline Icon Indicator at the end of Logo (Frameless & Borderless) */}
+            <NetworkSyncBadge showText={false} />
           </div>
         </div>
 
@@ -260,18 +264,43 @@ export function PosHeader() {
           <HoldOrdersTabs />
         </div>
 
-        {/* 3. Right: Exactly 4 Streamlined Elements */}
+        {/* 3. Right: Exactly 5 Streamlined Elements */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* ELEMENT 1: Clock & Network Status */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 h-9 text-xs font-bold text-slate-700 shadow-2xs font-mono">
-              <Clock className="h-3.5 w-3.5 text-slate-500" />
-              <span>{currentTime}</span>
-            </div>
-            <NetworkSyncBadge />
-          </div>
+          {/* ELEMENT 1: Smart Shift Control Button (Single Button) - FIRST IN LINE */}
+          {!activeShift ? (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHapticFeedback(30);
+                openOpenShiftModal();
+              }}
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-2 sm:px-2.5 text-xs font-bold text-amber-900 hover:bg-amber-100 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
+              title="ກົດເພື່ອເປີດກະຂາຍໃໝ່ (Open Shift)"
+            >
+              <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span className="whitespace-nowrap">ເປີດກະຂາຍ</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHapticFeedback(30);
+                openCloseShiftModal();
+              }}
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-2 sm:px-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
+              title="ກວດສອບ ຫຼື ປິດກະຂາຍ (Click to view or close shift)"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span className="whitespace-nowrap">
+                ປິດກະ{" "}
+                <span className="font-mono text-[11px] text-emerald-700 font-semibold">
+                  ({shiftDuration})
+                </span>
+              </span>
+            </button>
+          )}
 
-          {/* ELEMENT 2: Hardware & Peripherals Dropdown (Settings2) */}
+          {/* ELEMENT 2: Hardware & Peripherals Dropdown (Settings2 - Icon Only) */}
           <div className="relative shrink-0" ref={hardwareMenuRef}>
             <button
               type="button"
@@ -279,25 +308,20 @@ export function PosHeader() {
                 triggerHapticFeedback(20);
                 setIsHardwareMenuOpen((prev) => !prev);
               }}
-              className={`relative flex h-9 items-center gap-1.5 rounded-xl border px-2 sm:px-2.5 text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
+              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0 ${
                 isHardwareMenuOpen
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                  ? "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-xs"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-700"
               }`}
               title="ອຸປະກອນ & ລິ້ນຊັກເງິນ (Hardware Peripherals)"
+              aria-label="ອຸປະກອນ & ລິ້ນຊັກເງິນ"
             >
-              <Settings2 className="h-4 w-4 text-slate-700 shrink-0" />
-              <span className="hidden xl:inline text-xs">ອຸປະກອນ</span>
+              <Settings2 className="h-4 w-4 shrink-0" />
               {/* Online Hardware Status Dot Indicator */}
-              <span className="relative flex h-2 w-2">
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <ChevronDown
-                className={`h-3 w-3 text-slate-400 transition-transform ${
-                  isHardwareMenuOpen ? "rotate-180 text-emerald-600" : ""
-                }`}
-              />
             </button>
 
             {/* Popover Dropdown Menu */}
@@ -417,42 +441,17 @@ export function PosHeader() {
             )}
           </div>
 
-          {/* ELEMENT 3: Smart Shift Control Button (Single Button) */}
-          {!activeShift ? (
-            <button
-              type="button"
-              onClick={() => {
-                triggerHapticFeedback(30);
-                openOpenShiftModal();
-              }}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-2 sm:px-2.5 text-xs font-bold text-amber-900 hover:bg-amber-100 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
-              title="ກົດເພື່ອເປີດກະຂາຍໃໝ່ (Open Shift)"
-            >
-              <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-              <span className="whitespace-nowrap">ເປີດກະຂາຍ</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                triggerHapticFeedback(30);
-                openCloseShiftModal();
-              }}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-2 sm:px-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
-              title="ກວດສອບ ຫຼື ປິດກະຂາຍ (Click to view or close shift)"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="whitespace-nowrap">
-                ປິດກະ{" "}
-                <span className="font-mono text-[11px] text-emerald-700 font-semibold">
-                  ({shiftDuration})
-                </span>
-              </span>
-            </button>
-          )}
+          {/* Refresh & Clear Cache Button (Right After Hardware, Before Logout) */}
+          <HeaderRefreshButton />
 
           {/* ELEMENT 4: Logout / Exit Button */}
           <UserProfileMenu compact={true} />
+
+          {/* ELEMENT 5: Clock at Far Right */}
+          <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 h-9 text-xs font-bold text-slate-700 shadow-2xs font-mono shrink-0">
+            <Clock className="h-3.5 w-3.5 text-slate-500" />
+            <span>{currentTime}</span>
+          </div>
         </div>
       </header>
 

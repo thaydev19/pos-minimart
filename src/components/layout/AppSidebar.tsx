@@ -29,7 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { DEFAULT_STORE } from "@/features/pos/constants/pos.constants";
-import { useAuth, formatRoleLabel, getRoleBadgeClass } from "@/features/auth";
+import { useAuth, formatRoleLabel, getRoleBadgeClass, LogoutConfirmModal } from "@/features/auth";
 
 export interface NavItem {
   name: string;
@@ -112,18 +112,20 @@ export function AppSidebar({
   const { user, logout } = useAuth();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    const confirmLogout = window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການອອກຈາກລະບົບ? (Logout)");
-    if (!confirmLogout) return;
+  const handleLogout = () => {
+    setIsConfirmOpen(true);
+  };
 
+  const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logout();
       router.replace("/login");
     } finally {
       setIsLoggingOut(false);
+      setIsConfirmOpen(false);
     }
   };
 
@@ -386,6 +388,13 @@ export function AppSidebar({
           {renderNavList(false)}
           {renderFooter(false, false)}
         </aside>
+
+        <LogoutConfirmModal
+          isOpen={isConfirmOpen}
+          isLoggingOut={isLoggingOut}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={handleConfirmLogout}
+        />
       </div>
     );
   }
@@ -420,6 +429,14 @@ export function AppSidebar({
           </aside>
         </div>
       )}
+
+      {/* Modern Confirmation Dialog for Logout */}
+      <LogoutConfirmModal
+        isOpen={isConfirmOpen}
+        isLoggingOut={isLoggingOut}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </>
   );
 }

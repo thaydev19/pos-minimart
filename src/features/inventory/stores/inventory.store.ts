@@ -39,6 +39,7 @@ interface InventoryState {
   closeBatchDetail: () => void;
 
   openAdjustment: (prod: InventoryProductItem, batch: BatchDetail) => void;
+  openAdjustmentForProduct: (productId: string) => Promise<void>;
   closeAdjustment: () => void;
 }
 
@@ -91,6 +92,33 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   openAdjustment: (prod: InventoryProductItem, batch: BatchDetail) =>
     set({ selectedBatchForAdjustment: { product: prod, batch } }),
+
+  openAdjustmentForProduct: async (productId: string) => {
+    let items = get().items;
+    if (items.length === 0) {
+      await get().loadInventory();
+      items = get().items;
+    }
+    const prod = items.find((p) => p.id === productId);
+    if (!prod) return;
+
+    if (prod.batches && prod.batches.length > 0) {
+      const activeBatch = prod.fefo_next_batch || prod.batches[0];
+      get().openAdjustment(prod, activeBatch);
+    } else {
+      try {
+        await inventoryApi.createInitialBatchIfEmpty(prod.id, prod.latest_cost_price);
+        await get().loadInventory();
+        const refreshed = get().items.find((p) => p.id === productId);
+        if (refreshed && refreshed.batches.length > 0) {
+          get().openAdjustment(refreshed, refreshed.batches[0]);
+        }
+      } catch {
+        get().openStockIn(productId);
+      }
+    }
+  },
+
   closeAdjustment: () => set({ selectedBatchForAdjustment: null }),
 }));
 

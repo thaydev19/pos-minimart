@@ -1,14 +1,14 @@
 "use client";
 
 // ============================================================================
-// StaffPage: Complete Staff & Role-Based Access Control Management
+// StaffPage: Enterprise Staff & Role-Based Access Control Management
+// 100% Consistent with ProductsPage, CategoriesPage, and InventoryPage Architecture
 // ============================================================================
 
 import React, { useState, useMemo } from "react";
 import {
   Users,
-  UserPlus,
-  ShieldCheck,
+  Plus,
   Shield,
   Search,
   RefreshCw,
@@ -25,11 +25,12 @@ import {
   useToggleStaffStatus,
   useDeleteStaff,
 } from "../hooks/useStaff";
-import { StaffUser, StaffRole, CreateStaffInput, UpdateStaffInput } from "../types/staff.types";
+import { StaffUser, CreateStaffInput, UpdateStaffInput } from "../types/staff.types";
 import { StaffTable } from "../components/StaffTable";
 import { StaffFormModal } from "../components/StaffFormModal";
 import { StaffPinModal } from "../components/StaffPinModal";
 import { triggerHapticFeedback } from "@/utils/haptics";
+import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 
 export function StaffPage() {
   const { data: staffList = [], isLoading, refetch, isRefetching } = useStaffList();
@@ -147,8 +148,15 @@ export function StaffPage() {
     }
   };
 
+  const roleFilterTabs = [
+    { key: "all", label: "ທັງໝົດ" },
+    { key: "owner", label: "ເຈົ້າຂອງຮ້ານ" },
+    { key: "store_manager", label: "ຜູ້ຈັດການ" },
+    { key: "cashier", label: "ພະນັກງານຂາຍ" },
+  ];
+
   return (
-    <div className="flex-1 space-y-5 p-4 sm:p-6 overflow-y-auto max-w-7xl mx-auto">
+    <div className="space-y-4">
       {/* Toast Notification */}
       {toast && (
         <div
@@ -167,138 +175,128 @@ export function StaffPage() {
         </div>
       )}
 
-      {/* Header Area */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                ຈັດການພະນັກງານ (Staff Management)
-              </h1>
-              <p className="text-xs text-slate-500 font-medium">
-                ຄຸ້ມຄອງບັນຊີຜູ້ໃຊ້ງານ, ກຳນົດສິດການເຂົ້າເຖິງ ແລະ ລະຫັດ PIN ປະຈຳຕົວ
-              </p>
-            </div>
+      {/* 1. Header Bar & Quick Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/80 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              ຈັດການພະນັກງານ (Staff Management)
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ຄຸ້ມຄອງບັນຊີຜູ້ໃຊ້ງານ, ກຳນົດສິດການເຂົ້າເຖິງ ແລະ ລະຫັດ PIN ປະຈຳຕົວ
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isLoading || isRefetching}
-            className="flex h-10 items-center gap-1.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
-            title="ໂຫຼດຂໍ້ມູນໃໝ່"
-          >
-            <RefreshCw
-              className={`h-4 w-4 text-slate-500 ${isRefetching ? "animate-spin" : ""}`}
-            />
-            <span className="hidden sm:inline">ໂຫຼດໃໝ່</span>
-          </button>
+          <HeaderRefreshButton />
 
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="flex h-10 items-center gap-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
           >
-            <UserPlus className="h-4 w-4" />
-            <span>+ ເພີ່ມພະນັກງານໃໝ່</span>
+            <Plus className="h-4 w-4" />
+            <span>ເພີ່ມພະນັກງານໃໝ່</span>
           </button>
         </div>
       </div>
 
-      {/* Stat Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-xs font-bold">ພະນັກງານທັງໝົດ</span>
-            <Users className="h-4 w-4 text-emerald-600" />
+      {/* 2. Top Summary KPI Cards (Compact 2-Line Design) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {/* Total Staff */}
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ພະນັກງານທັງໝົດ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 shrink-0">
+              <Users className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
-            {stats.total} <span className="text-xs font-normal text-slate-400">ຄົນ</span>
+          <div className="text-lg sm:text-xl font-extrabold text-slate-900 tabular-nums mt-1 leading-tight">
+            {stats.total} <span className="text-[11px] font-normal text-slate-400">ຄົນ</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">ບັນຊີທີ່ໄດ້ລົງທະບຽນ</div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-emerald-800 mb-1.5">
-            <span className="text-xs font-bold">ກຳລັງປະຕິບັດງານ</span>
-            <UserCheck className="h-4 w-4 text-emerald-600" />
+        {/* Active Staff */}
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ກຳລັງປະຕິບັດງານ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 shrink-0">
+              <UserCheck className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-emerald-700 font-mono">
-            {stats.active} <span className="text-xs font-normal text-emerald-600">ຄົນ</span>
+          <div className="text-lg sm:text-xl font-extrabold text-emerald-600 tabular-nums mt-1 leading-tight">
+            {stats.active} <span className="text-[11px] font-normal text-slate-400">ຄົນ</span>
           </div>
-          <div className="text-[11px] text-emerald-600/80 mt-0.5">ພ້ອມເຂົ້າສູ່ລະບົບ</div>
         </div>
 
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-blue-800 mb-1.5">
-            <span className="text-xs font-bold">ຜູ້ຈັດການ & ເຈົ້າຂອງ</span>
-            <ShieldCheck className="h-4 w-4 text-blue-600" />
+        {/* Managers & Owners */}
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ຜູ້ຈັດການ & ເຈົ້າຂອງ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-50 text-indigo-700 shrink-0">
+              <Shield className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-blue-700 font-mono">
-            {stats.managers} <span className="text-xs font-normal text-blue-600">ຄົນ</span>
+          <div className="text-lg sm:text-xl font-extrabold text-slate-900 tabular-nums mt-1 leading-tight">
+            {stats.managers} <span className="text-[11px] font-normal text-slate-400">ຄົນ</span>
           </div>
-          <div className="text-[11px] text-blue-600/80 mt-0.5">ມີສິດເຂົ້າຫຼັງຮ້ານ</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-xs font-bold">ພະນັກງານຂາຍໜ້າຮ້ານ</span>
-            <KeyRound className="h-4 w-4 text-amber-600" />
+        {/* Cashiers */}
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-[11px] font-bold text-slate-600 truncate">ພະນັກງານຂາຍ</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-700 shrink-0">
+              <KeyRound className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
-            {stats.cashiers} <span className="text-xs font-normal text-slate-400">ຄົນ</span>
+          <div className="text-lg sm:text-xl font-extrabold text-slate-900 tabular-nums mt-1 leading-tight">
+            {stats.cashiers} <span className="text-[11px] font-normal text-slate-400">ຄົນ</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">ປະຈຳຈຸດຂາຍ POS</div>
         </div>
       </div>
 
-      {/* Toolbar: Search & Filter Pills */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-        {/* Search */}
+      {/* 3. Search & Filter Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-zinc-200/80 shadow-2xs">
+        {/* Search Input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ຄົ້ນຫາຊື່ພະນັກງານ, username, ອີເມວ..."
-            className="h-10 w-full pl-9.5 pr-4 rounded-xl border border-slate-200 bg-slate-50/60 text-xs text-slate-800 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-600/10 transition-all"
+            className="h-9 w-full rounded-xl border border-slate-200 pl-9 pr-3 text-xs outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 transition-colors"
           />
         </div>
 
-        {/* Role Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {[
-            { id: "all", label: "ທັງໝົດ" },
-            { id: "owner", label: "ເຈົ້າຂອງຮ້ານ" },
-            { id: "store_manager", label: "ຜູ້ຈັດການ" },
-            { id: "cashier", label: "ພະນັກງານຂາຍ" },
-          ].map((pill) => {
-            const isActive = roleFilter === pill.id;
+        {/* Role Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          {roleFilterTabs.map((tab) => {
+            const isActive = roleFilter === tab.key;
             return (
               <button
-                key={pill.id}
+                key={tab.key}
                 type="button"
-                onClick={() => setRoleFilter(pill.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                onClick={() => setRoleFilter(tab.key)}
+                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer shrink-0 ${
                   isActive
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                    ? "bg-emerald-600 text-white shadow-2xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {pill.label}
+                {tab.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Staff Directory Table */}
+      {/* 4. Staff Directory Table */}
       <StaffTable
         staffList={filteredStaff}
         isLoading={isLoading}
@@ -306,27 +304,26 @@ export function StaffPage() {
         onChangePin={handleOpenPinModal}
         onToggleStatus={handleToggleStatus}
         onDelete={handleDeleteStaff}
+        onAddNew={handleOpenCreateModal}
       />
 
-      {/* Modals */}
+      {/* Staff Create / Edit Modal */}
       <StaffFormModal
+        key={`staff-modal-${editingStaff?.id || "new"}-${isFormModalOpen}`}
         staff={editingStaff}
         isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setEditingStaff(null);
-        }}
+        onClose={() => setIsFormModalOpen(false)}
         onSubmit={handleFormSubmit}
       />
 
-      {pinEditingStaff && (
-        <StaffPinModal
-          staff={pinEditingStaff}
-          isOpen={Boolean(pinEditingStaff)}
-          onClose={() => setPinEditingStaff(null)}
-          onSavePin={handleSavePin}
-        />
-      )}
+      {/* Touch 6-Digit PIN Modal */}
+      <StaffPinModal
+        key={`pin-modal-${pinEditingStaff?.id || "none"}-${Boolean(pinEditingStaff)}`}
+        staff={pinEditingStaff}
+        isOpen={Boolean(pinEditingStaff)}
+        onClose={() => setPinEditingStaff(null)}
+        onSavePin={handleSavePin}
+      />
     </div>
   );
 }

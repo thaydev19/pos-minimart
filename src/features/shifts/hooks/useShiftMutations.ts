@@ -5,8 +5,10 @@
 // ============================================================================
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useShiftStore } from "../stores/shift.store";
 import { shiftsApi } from "../api/shifts.api";
+import { invalidateShifts } from "@/constants/queryKeys";
 import {
   CloseShiftBlindInput,
   ShiftClosingSummary,
@@ -15,6 +17,7 @@ import {
 export function useShiftMutations() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const loadActiveShift = useShiftStore((s) => s.loadActiveShift);
   const loadShiftHistory = useShiftStore((s) => s.loadShiftHistory);
@@ -29,6 +32,7 @@ export function useShiftMutations() {
       await shiftsApi.openShift(openingCash, notes);
       await loadActiveShift();
       await loadShiftHistory();
+      await invalidateShifts(queryClient);
       closeOpenShiftModal();
       return true;
     } catch (err: any) {
@@ -49,6 +53,7 @@ export function useShiftMutations() {
       setLastClosingSummary(summary);
       await loadActiveShift();
       await loadShiftHistory();
+      await invalidateShifts(queryClient);
       // Keep modal open so the cashier can review the Z-Report and print 80mm slip
       return summary;
     } catch (err: any) {

@@ -13,4 +13,5 @@ export * from "./components/LoginForm";
 export * from "./components/AuthGuard";
 export * from "./components/PinVerifyModal";
 export * from "./components/UserProfileMenu";
+export * from "./components/LogoutConfirmModal";
 export * from "./pages/login-page";

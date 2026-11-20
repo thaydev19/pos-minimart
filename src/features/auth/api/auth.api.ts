@@ -316,6 +316,86 @@ export const authApi = {
   },
 
   /**
+   * Fast Touch PIN Login for Cashiers & Staff into POS Terminal
+   */
+  async loginWithStaffPin(staffId: string, pin: string): Promise<AuthUser> {
+    const trimmedPin = pin.trim();
+    if (!trimmedPin || trimmedPin.length !== 6) {
+      throw new Error("ກະລຸນາປ້ອນລະຫັດ PIN 6 ຕົວເລກ");
+    }
+
+    const pinSha256 = await hashPin(trimmedPin);
+
+    // 1. Fetch user from Supabase or local cache
+    let staffUser: any = null;
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*, stores(*)")
+        .eq("id", staffId)
+        .maybeSingle();
+
+      if (!error && data) {
+        staffUser = data;
+      }
+    } catch (e) {
+      console.warn("[AuthApi] Remote fetch staff error:", e);
+    }
+
+    // Fallback: check local storage if offline
+    if (!staffUser && typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("pos_staff_list_v2");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          staffUser = parsed.find((s: any) => s.id === staffId);
+        }
+      } catch {}
+    }
+
+    if (!staffUser) {
+      throw new Error("ບໍ່ພົບຂໍ້ມູນພະນັກງານໃນລະບົບ");
+    }
+
+    if (staffUser.is_active === false) {
+      throw new Error("ບັນຊີພະນັກງານນີ້ຖືກປິດການໃຊ້ງານຊົ່ວຄາວ");
+    }
+
+    // Verify PIN
+    const isPinValid =
+      staffUser.pin_hash === trimmedPin ||
+      staffUser.pin_hash === pinSha256 ||
+      staffUser.pin === trimmedPin;
+
+    if (!isPinValid) {
+      throw new Error("ລະຫັດ PIN ບໍ່ຖືກຕ້ອງ ກະລຸນາກວດສອບອີກຄັ້ງ");
+    }
+
+    // Update last_login_at
+    try {
+      await supabase
+        .from("users")
+        .update({ last_login_at: new Date().toISOString() })
+        .eq("id", staffId);
+    } catch {}
+
+    const authUser: AuthUser = {
+      id: staffUser.id,
+      store_id: staffUser.store_id || DEFAULT_STORE.id,
+      username: staffUser.username,
+      email: staffUser.email,
+      full_name_lo: staffUser.full_name_lo,
+      role: staffUser.role as UserRole,
+      is_active: true,
+      store_name_lo: DEFAULT_STORE.name_lo,
+      store_branch: DEFAULT_STORE.branch,
+      pin_hash: staffUser.pin_hash || pinSha256,
+    };
+
+    return authUser;
+  },
+
+  /**
    * Logs out the user from Supabase Auth and cleans up session.
    */
   async logout(): Promise<void> {

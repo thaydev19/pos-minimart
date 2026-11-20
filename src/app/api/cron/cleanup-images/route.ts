@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ImageCleanupService } from "@/features/products/services/image-cleanup.service";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
+export const revalidate = 0;
 
 /**
  * Automated Cron Job Endpoint: Clean Orphaned Product Images
@@ -11,6 +12,10 @@ export const dynamic = "force-dynamic";
  * Safety: Only unreferenced files older than 7 days are deleted.
  */
 export async function GET(request: NextRequest) {
+  // During static export build, bypass execution
+  if (process.env.NEXT_PHASE === "phase-production-build" || !request?.headers) {
+    return NextResponse.json({ status: "static_export_stub" });
+  }
   try {
     // Optional Bearer token authorization if CRON_SECRET is set in environment
     const authHeader = request.headers.get("authorization");

@@ -72,11 +72,11 @@ export class ThermalPrinterAdapter {
     ctx.fillText(data.storeName || lo.receipt.storeName, width / 2, y);
     y += 36;
 
-    ctx.font = "20px 'Noto Sans Lao', sans-serif";
+    ctx.font = "600 20px 'Noto Sans Lao', sans-serif";
     ctx.fillText(data.storeBranch || lo.receipt.storeBranch, width / 2, y);
     y += 28;
 
-    ctx.font = "18px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif";
+    ctx.font = "600 18px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif";
     ctx.fillText(data.storeTel || lo.receipt.storeTel, width / 2, y);
     y += 26;
 
@@ -92,7 +92,7 @@ export class ThermalPrinterAdapter {
 
     // 2. Metadata
     ctx.textAlign = "left";
-    ctx.font = "18px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
+    ctx.font = "600 19px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(`${lo.receipt.billNo}: ${data.orderNumber}`, 24, y);
     y += 26;
 
@@ -105,7 +105,7 @@ export class ThermalPrinterAdapter {
     this.drawDottedLine(ctx, 20, y, width - 20);
     y += 12;
 
-    ctx.font = "bold 18px 'Noto Sans Lao', sans-serif";
+    ctx.font = "bold 19px 'Noto Sans Lao', sans-serif";
     ctx.fillText(lo.receipt.itemName, 24, y);
     ctx.textAlign = "right";
     ctx.fillText(lo.receipt.itemQty, 360, y);
@@ -116,7 +116,7 @@ export class ThermalPrinterAdapter {
     y += 16;
 
     // 3. Items List
-    ctx.font = "19px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
+    ctx.font = "600 20px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
     for (const item of data.items) {
       ctx.textAlign = "left";
       const itemTitle = `${item.name} (${item.unitName})`;
@@ -127,12 +127,11 @@ export class ThermalPrinterAdapter {
       ctx.fillText(formatLak(item.totalPrice, false), width - 24, y);
       y += 26;
 
-      ctx.font = "16px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif";
-      ctx.fillStyle = "#333333";
+      ctx.font = "600 17px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif";
+      ctx.fillStyle = "#000000";
       ctx.textAlign = "left";
       ctx.fillText(`@ ${formatLak(item.unitPrice, false)} ₭`, 32, y);
-      ctx.fillStyle = "#000000";
-      ctx.font = "19px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
+      ctx.font = "600 20px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
       y += 24;
     }
 
@@ -143,8 +142,8 @@ export class ThermalPrinterAdapter {
     // 4. Totals Summary
     const printRow = (label: string, value: string, isBold: boolean = false) => {
       ctx.font = isBold
-        ? "bold 22px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif"
-        : "19px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
+        ? "bold 23px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif"
+        : "600 20px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
       ctx.textAlign = "left";
       ctx.fillText(label, 24, y);
       ctx.textAlign = "right";
@@ -182,7 +181,7 @@ export class ThermalPrinterAdapter {
     ctx.fillText(lo.receipt.thankYou, width / 2, y);
     y += 28;
 
-    ctx.font = "16px 'Noto Sans Lao', sans-serif";
+    ctx.font = "600 17px 'Noto Sans Lao', sans-serif";
     ctx.fillText(lo.receipt.returnNotice, width / 2, y);
     y += 40;
 
@@ -210,7 +209,8 @@ export class ThermalPrinterAdapter {
         const b = pixels[offset + 2];
         const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
 
-        if (luminance < 128) {
+        // Higher threshold (175) keeps anti-aliased font edges solid black on thermal paper
+        if (luminance < 175) {
           const byteIndex = y * widthBytes + Math.floor(x / 8);
           const bitIndex = 7 - (x % 8);
           rasterData[byteIndex] |= 1 << bitIndex;
@@ -241,7 +241,10 @@ export class ThermalPrinterAdapter {
     return finalBuffer;
   }
 
-  public static async printReceipt(data: ReceiptData): Promise<boolean> {
+  public static async printReceipt(
+    data: ReceiptData,
+    paperWidth: "58mm" | "80mm" = "80mm"
+  ): Promise<boolean> {
     const canvas = await this.renderReceiptToCanvas(data);
 
     if (this.isTauri()) {
@@ -255,37 +258,83 @@ export class ThermalPrinterAdapter {
       }
     }
 
-    const printWindow = window.open("", "_blank", "width=600,height=800");
-    if (printWindow) {
-      const dataUrl = canvas.toDataURL("image/png");
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Receipt - ${data.orderNumber}</title>
-            <style>
-              @page { size: 80mm auto; margin: 0; }
-              body { margin: 0; padding: 0; display: flex; justify-content: center; background: #fff; }
-              img { width: 80mm; height: auto; }
-            </style>
-          </head>
-          <body>
-            <img src="${dataUrl}" onload="window.print(); window.close();" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      return true;
-    }
+    // Use hidden iframe to bypass browser popup blockers and avoid blank tab flashes
+    const dataUrl = canvas.toDataURL("image/png");
+    const widthCss = paperWidth === "58mm" ? "58mm" : "80mm";
 
-    return false;
+    return new Promise<boolean>((resolve) => {
+      try {
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        iframe.style.visibility = "hidden";
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document;
+        if (!doc || !iframe.contentWindow) {
+          iframe.remove();
+          resolve(false);
+          return;
+        }
+
+        doc.open();
+        doc.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Receipt - ${data.orderNumber}</title>
+              <style>
+                @page { size: ${widthCss} auto; margin: 0; }
+                body { margin: 0; padding: 0; display: flex; justify-content: center; background: #fff; }
+                img { width: ${widthCss}; height: auto; display: block; }
+              </style>
+            </head>
+            <body>
+              <img id="receipt-img" src="${dataUrl}" />
+            </body>
+          </html>
+        `);
+        doc.close();
+
+        const img = doc.getElementById("receipt-img") as HTMLImageElement | null;
+        const triggerPrint = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } finally {
+            setTimeout(() => iframe.remove(), 1500);
+            resolve(true);
+          }
+        };
+
+        if (img) {
+          if (img.complete) {
+            setTimeout(triggerPrint, 50);
+          } else {
+            img.onload = () => setTimeout(triggerPrint, 50);
+            img.onerror = () => {
+              iframe.remove();
+              resolve(false);
+            };
+          }
+        } else {
+          setTimeout(triggerPrint, 100);
+        }
+      } catch {
+        resolve(false);
+      }
+    });
   }
 
   private static drawDottedLine(ctx: CanvasRenderingContext2D, x1: number, y: number, x2: number) {
     ctx.save();
     ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = "#444444";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x1, y);
     ctx.lineTo(x2, y);

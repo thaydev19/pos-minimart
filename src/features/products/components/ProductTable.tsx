@@ -71,15 +71,15 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-zinc-200/80 bg-slate-50/80 text-[11px] text-slate-500 font-bold uppercase tracking-wider">
-              <th className="py-3 px-4">ສິນຄ້າ</th>
-              <th className="py-3 px-3">ບາໂຄດ / SKU</th>
-              <th className="py-3 px-3">ໝວດໝູ່</th>
-              <th className="py-3 px-3">ຫົວໜ່ວຍຂາຍ (Packaging)</th>
-              <th className="py-3 px-3 text-right">ລາຄາຂາຍ</th>
-              <th className="py-3 px-3 text-right">ລາຄາຕົ້ນທຶນ & ກຳໄລ</th>
-              <th className="py-3 px-3 text-center">ສະຕັອກຄົງເຫຼືອ</th>
-              <th className="py-3 px-3 text-center">ສະຖານະ</th>
-              <th className="py-3 px-4 text-center">ຈັດການ</th>
+              <th className="py-3 px-3.5">ສິນຄ້າ</th>
+              <th className="py-3 px-2.5 whitespace-nowrap">ບາໂຄດ / SKU</th>
+              <th className="py-3 px-2.5 whitespace-nowrap">ໝວດໝູ່</th>
+              <th className="py-3 px-2.5 whitespace-nowrap">ຫົວໜ່ວຍຂາຍ</th>
+              <th className="py-3 px-2.5 text-right whitespace-nowrap">ລາຄາຂາຍ</th>
+              <th className="py-3 px-2.5 text-right whitespace-nowrap">ຕົ້ນທຶນ & ກຳໄລ</th>
+              <th className="py-3 px-2.5 text-center whitespace-nowrap">ສະຕັອກຄົງເຫຼືອ</th>
+              <th className="py-3 px-2.5 text-center whitespace-nowrap">ສະຖານະ</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">ຈັດການ</th>
             </tr>
           </thead>
 
@@ -296,22 +296,22 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     </div>
                   </td>
 
-                  {/* 7. Active Status */}
-                  <td className="py-2.5 px-3 text-center">
+                  {/* 7. Active Status (Single-line pill) */}
+                  <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                     {prod.is_active ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10.5px] font-bold text-emerald-800">
+                        <CheckCircle2 className="h-3 w-3 shrink-0" />
                         <span>ເປີດຂາຍ</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-200 px-2.5 py-0.5 text-[10.5px] font-bold text-slate-600">
                         <span>ປິດຂາຍ</span>
                       </span>
                     )}
                   </td>
 
                   {/* 8. Actions: Adjust Stock, Edit, Toggle, Delete */}
-                  <td className="py-2.5 px-4 text-center">
+                  <td className="py-2.5 px-3 text-center whitespace-nowrap">
                     <div className="flex items-center justify-center gap-1">
                       {/* 1. Quick Stock Adjustment Button */}
                       <button

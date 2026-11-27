@@ -82,6 +82,7 @@ export function useInventory() {
         prod.name_lo.toLowerCase().includes(q) ||
         (prod.name_en && prod.name_en.toLowerCase().includes(q)) ||
         prod.barcode.toLowerCase().includes(q) ||
+        (prod.units && prod.units.some((u) => u.barcode && u.barcode.toLowerCase().includes(q))) ||
         prod.batches.some((b) => b.batch_number.toLowerCase().includes(q))
       );
     });

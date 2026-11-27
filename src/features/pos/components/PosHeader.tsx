@@ -141,7 +141,7 @@ export function PosHeader() {
     setIsDrawerKicking(true);
     triggerHapticFeedback(50);
     try {
-      const res = await HardwareService.openCashDrawer(2);
+      const res = await HardwareService.openCashDrawer();
       if (res.success) {
         toast.success(res.message);
       } else {
@@ -308,7 +308,7 @@ export function PosHeader() {
                 triggerHapticFeedback(20);
                 setIsHardwareMenuOpen((prev) => !prev);
               }}
-              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0 ${
+              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 ${
                 isHardwareMenuOpen
                   ? "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-xs"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-700"
@@ -318,8 +318,11 @@ export function PosHeader() {
             >
               <Settings2 className="h-4 w-4 shrink-0" />
               {/* Online Hardware Status Dot Indicator */}
-              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span
+                style={{ position: "absolute", top: 5, right: 5 }}
+                className="flex h-2 w-2 pointer-events-none"
+              >
+                <span className="animate-ping absolute inset-0 inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
             </button>

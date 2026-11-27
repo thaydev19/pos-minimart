@@ -47,22 +47,44 @@ export function ProductCatalogGrid({
     );
   });
 
-  // 1. Skeleton Loading State (Matches touch-optimized layout)
+  // 1. Skeleton Loading State (Matches exact ProductCard geometry on Web & Desktop .exe)
   if (isLoadingCatalog && products.length === 0) {
     return (
-      <div className="h-full overflow-y-auto content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5 pr-1 pb-4">
+      <div className="absolute inset-0 overflow-y-auto overscroll-contain content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 pr-1 pb-6">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
           <div
             key={n}
-            className="flex flex-col h-full rounded-2xl border border-slate-200/80 bg-white p-1.5 pb-2.5 shadow-2xs animate-pulse"
+            className="flex flex-col rounded-2xl border border-slate-200 bg-white p-2 pb-2.5 shadow-xs animate-pulse"
           >
-            <div className="h-36 w-full rounded-xl bg-slate-100" />
-            <div className="flex flex-col flex-1 justify-between px-1.5 pt-2">
-              <div className="h-4 w-3/4 rounded bg-slate-200 mb-2" />
-              <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 mt-auto">
-                <div className="h-4 w-16 rounded bg-slate-200" />
-                <div className="h-8 w-8 rounded-xl bg-slate-200" />
-              </div>
+            {/* Image Placeholder matching h-40 */}
+            <div
+              style={{ height: 152, backgroundColor: "#f1f5f9" }}
+              className="w-full shrink-0 rounded-xl bg-slate-100 mb-2"
+            />
+            {/* Title Placeholder (2 lines matching min-h-[38px]) */}
+            <div className="px-1 pt-1 space-y-1.5 mb-2">
+              <div
+                style={{ backgroundColor: "#e2e8f0" }}
+                className="h-3.5 w-4/5 rounded-md bg-slate-200"
+              />
+              <div
+                style={{ backgroundColor: "#f1f5f9" }}
+                className="h-3.5 w-1/2 rounded-md bg-slate-100"
+              />
+            </div>
+            {/* Price & Add Button Placeholder */}
+            <div
+              style={{ borderTopColor: "#f1f5f9" }}
+              className="mt-auto pt-2 px-1 flex items-center justify-between border-t border-slate-100"
+            >
+              <div
+                style={{ backgroundColor: "#e2e8f0" }}
+                className="h-4 w-20 rounded-md bg-slate-200"
+              />
+              <div
+                style={{ backgroundColor: "#d1fae5" }}
+                className="h-8 w-8 rounded-xl bg-emerald-100 shrink-0"
+              />
             </div>
           </div>
         ))}
@@ -124,7 +146,7 @@ export function ProductCatalogGrid({
   // 4. Compact / List Mode Layout: Horizontal Strip Cards
   if (viewMode === "compact") {
     return (
-      <div className="h-full overflow-y-auto content-start grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 pr-1 pb-4">
+      <div className="absolute inset-0 overflow-y-auto overscroll-contain content-start grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 pr-1 pb-6">
         {filteredProducts.map((prod) => {
           const clearanceBatch = prod.batches?.find(
             (b) => b.is_clearance && b.quantity_on_hand > 0
@@ -219,7 +241,7 @@ export function ProductCatalogGrid({
 
   // 5. Standard Grid Mode: Touch-Optimized Layout (Compact gap between cards)
   return (
-    <div className="h-full overflow-y-auto content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 pr-1 pb-4">
+    <div className="absolute inset-0 overflow-y-auto overscroll-contain content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 pr-1 pb-6">
       {filteredProducts.map((prod) => (
         <ProductCard key={prod.id} product={prod} />
       ))}

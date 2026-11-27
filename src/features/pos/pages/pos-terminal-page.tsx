@@ -224,7 +224,7 @@ export function PosTerminalPage() {
             />
           </div>
 
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="relative flex-1 min-h-0">
             <ProductCatalogGrid
               searchFilter={searchInput}
               onClearSearch={() => setSearchInput("")}
@@ -234,18 +234,32 @@ export function PosTerminalPage() {
 
         {/* Top-Centered Floating Toast Notification for Barcode Scan & Cart Actions */}
         {(scanMessage || scanError) && (
-          <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300">
+          <div
+            style={{
+              position: "fixed",
+              top: 20,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 9999,
+            }}
+            className="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300"
+          >
             <div
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold tracking-tight animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 backdrop-blur-md ${
+              style={{
+                backgroundColor: scanMessage ? "#059669" : "#e11d48",
+                color: "#ffffff",
+                borderColor: scanMessage ? "#047857" : "#be123c",
+              }}
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold tracking-tight animate-in fade-in zoom-in-95 duration-200 ${
                 scanMessage
-                  ? "bg-emerald-600/95 text-white border-emerald-500/80 shadow-emerald-600/25"
-                  : "bg-rose-600/95 text-white border-rose-500/80 shadow-rose-600/30"
+                  ? "bg-emerald-600 text-white border-emerald-700"
+                  : "bg-rose-600 text-white border-rose-700"
               }`}
             >
               {scanMessage ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-100" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-white" />
               ) : (
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-100" />
+                <AlertCircle className="h-4 w-4 shrink-0 text-white" />
               )}
               <span className="leading-snug">{scanMessage || scanError}</span>
             </div>

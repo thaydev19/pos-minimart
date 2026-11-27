@@ -11,7 +11,6 @@ import {
   Boxes,
   Plus,
   RefreshCw,
-  Search,
   Filter,
   PackagePlus,
   AlertTriangle,
@@ -27,6 +26,7 @@ import { StockInSheet } from "../components/StockInSheet";
 import { BatchDetailDrawer } from "../components/BatchDetailDrawer";
 import { StockAdjustmentDialog } from "../components/StockAdjustmentDialog";
 import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
+import { CatalogBarcodeSearchInput } from "@/components/CatalogBarcodeSearchInput";
 
 function QuickStockInListener() {
   const searchParams = useSearchParams();
@@ -51,6 +51,10 @@ export function InventoryPage() {
   const selectedCategory = useInventoryStore((s) => s.selectedCategory);
   const setSelectedCategory = useInventoryStore((s) => s.setSelectedCategory);
   const openStockIn = useInventoryStore((s) => s.openStockIn);
+  const isStockInOpen = useInventoryStore((s) => s.isStockInOpen);
+  const hasBatchViewOpen = useInventoryStore((s) => Boolean(s.selectedProductForBatchView));
+  const hasAdjustmentOpen = useInventoryStore((s) => Boolean(s.selectedBatchForAdjustment));
+  const isAnyModalOpen = isStockInOpen || hasBatchViewOpen || hasAdjustmentOpen;
 
   const { allCategories, categories } = useCategories();
   const displayCategories = allCategories && allCategories.length > 0 ? allCategories : categories;
@@ -96,17 +100,13 @@ export function InventoryPage() {
 
       {/* 3. Search & Filter Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-zinc-200/80 shadow-2xs">
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ຄົ້ນຫາຊື່ສິນຄ້າ, ບາໂຄດ, ເລກລັອດ..."
-            className="h-9 w-full rounded-xl border border-slate-200 pl-9 pr-3 text-xs outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 transition-colors"
-          />
-        </div>
+        {/* Search Input (Barcode-Safe & Auto-Focus on Scan) */}
+        <CatalogBarcodeSearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="ຄົ້ນຫາຊື່ສິນຄ້າ, ບາໂຄດ, ເລກລັອດ..."
+          globalEnabled={!isAnyModalOpen}
+        />
 
         {/* Filter Controls */}
         <div className="flex flex-wrap items-center gap-2">

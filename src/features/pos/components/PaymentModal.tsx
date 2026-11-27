@@ -1,8 +1,8 @@
 "use client";
 
 // ============================================================================
-// Payment Modal: Lao Kip Cash Tender, Physical Kip Rounding (500₭/1,000₭),
-// Split Tender (Cash + LAO QR), and Thermal Print Adapter
+// Payment Modal: Lao Kip Cash Tender, Split Tender (Cash + LAO QR),
+// and Thermal Print Adapter
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
@@ -15,7 +15,6 @@ import {
   ArrowRight,
   X,
   Sparkles,
-  Calculator,
   AlertTriangle,
   Database,
   WifiOff,
@@ -33,7 +32,6 @@ import { HardwareService } from "../services/hardware.service";
 import { TouchNumpad } from "./TouchNumpad";
 import { triggerHapticFeedback } from "@/utils/haptics";
 import { DEFAULT_STORE } from "../constants/pos.constants";
-import { roundToLaoKip } from "../utils/pos.util";
 import { useAuth } from "@/features/auth";
 import { useShiftStore } from "@/features/shifts";
 import {
@@ -64,9 +62,6 @@ export function PaymentModal({
   const totals = usePosStore((s) => s.totals);
   const { subtotal, totalDiscount, vatAmount, finalTotal } = totals;
 
-  // Rounding Mode: 500 (standard), 1000, 0 (exact / no rounding)
-  const [roundingStep, setRoundingStep] = useState<500 | 1000 | 0>(500);
-
   // Payment Tabs: cash | lao_qr | mixed (split tender)
   const [activeTab, setActiveTab] = useState<"cash" | "lao_qr" | "mixed">("cash");
 
@@ -76,8 +71,9 @@ export function PaymentModal({
   // Mixed Tender State: cash portion & remaining QR
   const [splitCashPortion, setSplitCashPortion] = useState<number>(0);
 
-  // Manual Cash Discount
+  // Manual Cash Discount & Active Numpad Target
   const [cashDiscount, setCashDiscount] = useState<number>(0);
+  const [numpadTarget, setNumpadTarget] = useState<"cash" | "discount">("cash");
 
   const [qrStatus, setQrStatus] = useState<"awaiting" | "confirmed">("awaiting");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -85,13 +81,15 @@ export function PaymentModal({
   const [lastCompletedOrder, setLastCompletedOrder] = useState<any>(null);
   const [autoCloseSeconds, setAutoCloseSeconds] = useState(5);
 
-  // Compute net payable total after discount and rounding
-  const netTotalBeforeRounding = Math.max(0, finalTotal - cashDiscount);
-  const roundedPayableTotal =
-    roundingStep > 0
-      ? roundToLaoKip(netTotalBeforeRounding, roundingStep as 500 | 1000)
-      : netTotalBeforeRounding;
-  const roundingDifference = roundedPayableTotal - netTotalBeforeRounding;
+  // Compute net payable total after special discount
+  const roundedPayableTotal = Math.max(0, finalTotal - cashDiscount);
+
+  const handleDiscountChange = (val: number) => {
+    const clamped = Math.max(0, Math.min(val, finalTotal));
+    setCashDiscount(clamped);
+    const newPayable = Math.max(0, finalTotal - clamped);
+    setCashTendered(newPayable);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -99,10 +97,9 @@ export function PaymentModal({
       usePosStore.getState().setAttemptedCheckout(true);
 
       setCashDiscount(0);
-      const initialTotal =
-        roundingStep > 0 ? roundToLaoKip(finalTotal, roundingStep as 500 | 1000) : finalTotal;
-      setCashTendered(initialTotal);
-      setSplitCashPortion(Math.floor(initialTotal / 2 / 1000) * 1000);
+      setNumpadTarget("cash");
+      setCashTendered(finalTotal);
+      setSplitCashPortion(Math.floor(finalTotal / 2 / 1000) * 1000);
       setQrStatus("awaiting");
       setIsCompleted(false);
       setIsProcessing(false);
@@ -120,7 +117,6 @@ export function PaymentModal({
       setAutoCloseSeconds((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          onClose();
           return 0;
         }
         return prev - 1;
@@ -128,7 +124,14 @@ export function PaymentModal({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isCompleted, onClose]);
+  }, [isCompleted]);
+
+  // Safely close modal outside setState updater when countdown reaches 0
+  useEffect(() => {
+    if (isCompleted && autoCloseSeconds === 0) {
+      onClose();
+    }
+  }, [isCompleted, autoCloseSeconds, onClose]);
 
   const handleCloseModal = () => {
     if (!isCompleted) {
@@ -283,9 +286,6 @@ export function PaymentModal({
       if (activeTab === "cash") {
         finalCashTendered = cashTendered;
         finalChangeAmount = changeDue;
-        if (roundingDifference !== 0) {
-          orderNotes = `Lao Kip Rounding: ${roundingDifference > 0 ? "+" : ""}${roundingDifference} LAK`;
-        }
       } else if (activeTab === "lao_qr") {
         finalCashTendered = roundedPayableTotal;
         finalChangeAmount = 0;
@@ -337,8 +337,12 @@ export function PaymentModal({
       });
       setIsCompleted(true);
 
-      // Open cash drawer immediately if cash is involved
-      if (finalPaymentMethod === "cash" || finalPaymentMethod === "mixed") {
+      // Open cash drawer immediately if cash is involved and autoOpenDrawer is enabled
+      const hwSettings = HardwareService.getSettings();
+      if (
+        hwSettings.autoOpenDrawer &&
+        (finalPaymentMethod === "cash" || finalPaymentMethod === "mixed")
+      ) {
         HardwareService.openCashDrawer().catch(() => {});
       }
 
@@ -367,7 +371,7 @@ export function PaymentModal({
           storeTel: DEFAULT_STORE.phone,
           storeTaxCode: DEFAULT_STORE.taxCode,
         };
-        await HardwareService.printReceipt(receiptData);
+        await HardwareService.printReceipt(receiptData, { skipDrawerKick: true });
       }
 
       // Deduct batch inventory in memory & clear active cart
@@ -402,9 +406,13 @@ export function PaymentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="w-full max-w-lg rounded-3xl bg-white p-5 sm:p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto no-scrollbar">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div
+        className={`w-full rounded-3xl bg-white shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 max-h-[94vh] flex flex-col overflow-hidden ${
+          isCompleted ? "max-w-lg" : "max-w-4xl"
+        }`}
+      >
+        {/* Fixed Modal Header */}
+        <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-white">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900">
               {lo.payment.modalTitle}
@@ -423,7 +431,7 @@ export function PaymentModal({
         </div>
 
         {isCompleted ? (
-          <div className="py-5 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-md shadow-emerald-600/20">
               <CheckCircle className="h-9 w-9" />
             </div>
@@ -527,7 +535,7 @@ export function PaymentModal({
                     storeTel: DEFAULT_STORE.phone,
                     storeTaxCode: DEFAULT_STORE.taxCode,
                   };
-                  await HardwareService.printReceipt(receiptData);
+                  await HardwareService.printReceipt(receiptData, { skipDrawerKick: true });
                 }}
                 className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
               >
@@ -552,317 +560,339 @@ export function PaymentModal({
             </p>
           </div>
         ) : (
-          <div>
-            {/* Total Due Banner with Kip Rounding Indicator */}
-            <div className="my-3.5 rounded-2xl bg-emerald-50/90 p-3.5 border border-emerald-100 text-center">
-              <div className="flex items-center justify-between text-xs font-semibold text-emerald-800 px-1">
-                <span>{lo.payment.totalDue}</span>
-                {roundingDifference !== 0 && (
-                  <span className="text-[10px] font-mono bg-emerald-200/70 text-emerald-900 px-1.5 py-0.5 rounded">
-                    ປັດເສດ: {roundingDifference > 0 ? "+" : ""}{formatLak(roundingDifference)}
-                  </span>
-                )}
-              </div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-900 tabular-nums mt-0.5">
-                {formatLak(roundedPayableTotal)}
-              </div>
-            </div>
+          <>
+            {/* Light Minimalist 2-Column Checkout Body (Cohesive White + QuickOne Emerald) */}
+            <div className="flex-1 min-h-0 overflow-y-auto bg-white p-5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+                {/* LEFT COLUMN: Single Unified Summary Card */}
+                <div className="md:col-span-5 rounded-2xl border border-slate-200/90 bg-slate-50/70 p-4 flex flex-col justify-between gap-3">
+                  <div className="space-y-3">
+                    {/* 1. Hero Total Due */}
+                    <div className="pb-3 border-b border-slate-200/80">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                        <span>{lo.payment.totalDue}</span>
+                      </div>
+                      <div className="text-3xl sm:text-4xl font-black text-emerald-700 tabular-nums tracking-tight mt-1">
+                        {formatLak(roundedPayableTotal)}
+                      </div>
+                    </div>
 
-            {/* Rounding Step Selector Pills */}
-            <div className="mb-3 flex items-center justify-between gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs">
-              <span className="text-[11px] font-bold text-slate-500 pl-1.5 flex items-center gap-1">
-                <Calculator className="h-3 w-3 text-emerald-600" />
-                <span>ປັດເສດເງິນກີບ:</span>
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setRoundingStep(500)}
-                  className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                    roundingStep === 500
-                      ? "bg-emerald-600 text-white shadow-2xs"
-                      : "text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  500 ₭ (ມາດຕະຖານ)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRoundingStep(1000)}
-                  className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                    roundingStep === 1000
-                      ? "bg-emerald-600 text-white shadow-2xs"
-                      : "text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  1,000 ₭
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRoundingStep(0)}
-                  className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                    roundingStep === 0
-                      ? "bg-emerald-600 text-white shadow-2xs"
-                      : "text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  ບໍ່ປັດ
-                </button>
-              </div>
-            </div>
+                    {/* 2. Payment Method Selector */}
+                    <div className="pb-3 border-b border-slate-200/80">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                        ວິທີຊຳລະເງິນ
+                      </span>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("cash")}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 px-2 text-[11px] font-bold transition-all cursor-pointer border ${
+                            activeTab === "cash"
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Banknote className="h-4 w-4" />
+                          <span>{lo.payment.methodCash}</span>
+                        </button>
 
-            {/* Optional Manual Cash Discount Input */}
-            <div className="mb-3 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 p-2.5">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-emerald-900">
-                  ສ່ວນຫຼຸດເງິນສົດພິເສດ (Cash Discount):
-                </span>
-                {cashDiscount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCashDiscount(0);
-                      const newPayable = roundingStep > 0 ? roundToLaoKip(finalTotal, roundingStep as 500 | 1000) : finalTotal;
-                      setCashTendered(newPayable);
-                    }}
-                    className="text-[10px] text-rose-500 font-bold hover:underline cursor-pointer"
-                  >
-                    ຍົກເລີກສ່ວນຫຼຸດ
-                  </button>
-                )}
-              </div>
-              <KipCurrencyInput
-                value={cashDiscount}
-                onValueChange={(val) => {
-                  setCashDiscount(val);
-                  const newNet = Math.max(0, finalTotal - val);
-                  const newPayable = roundingStep > 0 ? roundToLaoKip(newNet, roundingStep as 500 | 1000) : newNet;
-                  setCashTendered(newPayable);
-                }}
-                placeholder="0"
-                className="h-8 text-xs font-bold text-emerald-800"
-              />
-            </div>
-            {/* 3 Payment Tabs: Cash | LAO QR | Mixed Split */}
-            <div className="grid grid-cols-3 gap-1.5 mb-4">
-              <button
-                type="button"
-                onClick={() => setActiveTab("cash")}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 rounded-xl p-2.5 text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "cash"
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                <Banknote className="h-4 w-4" />
-                <span>{lo.payment.methodCash}</span>
-              </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("lao_qr")}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 px-2 text-[11px] font-bold transition-all cursor-pointer border ${
+                            activeTab === "lao_qr"
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <QrCode className="h-4 w-4" />
+                          <span>LAO QR</span>
+                        </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab("lao_qr")}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 rounded-xl p-2.5 text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "lao_qr"
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                <QrCode className="h-4 w-4" />
-                <span>LAO QR</span>
-              </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("mixed")}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 px-2 text-[11px] font-bold transition-all cursor-pointer border ${
+                            activeTab === "mixed"
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <WalletCards className="h-4 w-4" />
+                          <span>ຈ່າຍຮ່ວມ</span>
+                        </button>
+                      </div>
+                    </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab("mixed")}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 rounded-xl p-2.5 text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "mixed"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                <WalletCards className="h-4 w-4" />
-                <span>ຈ່າຍຮ່ວມ (ສົດ+QR)</span>
-              </button>
-            </div>
-
-            {/* TAB 1: CASH ONLY */}
-            {activeTab === "cash" && (
-              <div className="space-y-3">
-                <div
-                  className={`rounded-2xl p-3.5 transition-all ${
-                    !isCashSufficient
-                      ? "bg-rose-50 border-2 border-rose-300 text-rose-900"
-                      : changeDue > 0
-                      ? "bg-amber-50 border-2 border-amber-400 text-amber-900 shadow-xs"
-                      : "bg-slate-50 border border-slate-200 text-slate-800"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-bold text-slate-700">
-                      {lo.payment.cashTendered}:
-                    </label>
-                    <span className="text-base font-mono text-emerald-800 font-black">
-                      {formatLak(cashTendered)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-xs font-bold ${
-                        changeDue > 0 ? "text-amber-900 font-extrabold" : "text-slate-500"
-                      }`}
-                    >
-                      {lo.payment.cashChange}:
-                    </span>
-                    <span
-                      className={`tabular-nums ${
-                        !isCashSufficient
-                          ? "text-lg font-bold text-rose-600"
-                          : changeDue > 0
-                          ? "text-2xl font-black text-amber-600"
-                          : "text-xl font-bold text-slate-400"
-                      }`}
-                    >
-                      {isCashSufficient ? formatLak(changeDue) : lo.payment.notEnoughCash}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Touch-First On-Screen Keypad with Denominations */}
-                <TouchNumpad
-                  value={cashTendered}
-                  onChange={(val) => setCashTendered(val)}
-                  exactAmount={roundedPayableTotal}
-                  showDenominations={true}
-                />
-              </div>
-            )}
-
-            {/* TAB 2: FULL LAO QR / BCEL ONE */}
-            {activeTab === "lao_qr" && (
-              <div className="flex flex-col items-center justify-center p-3.5 border border-dashed border-slate-300 rounded-2xl bg-slate-50/70 text-center">
-                {!isOnline && (
-                  <div className="mb-2.5 w-full rounded-xl bg-amber-50 border border-amber-300 p-2.5 text-left text-xs text-amber-900 flex items-start gap-2 shadow-2xs">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                    <div>
-                      <div className="font-bold text-amber-950">ໂໝດອອບລາຍ: ບໍ່ມີສັນຍານອິນເຕີເນັດ</div>
-                      <div className="text-[11px] text-amber-800 mt-0.5 leading-snug">
-                        ບໍ່ສາມາດກວດສອບຍອດໂອນອັດຕະໂນມັດໄດ້. ກະລຸນາກວດສອບສະລິບໂອນໃນໂທລະສັບລູກຄ້າໃຫ້ລະອຽດກ່ອນກົດຢືນຢັນ.
+                    {/* 3. Framed Special Discount below Payment Method */}
+                    <div className="rounded-xl border border-slate-200/90 bg-white p-3">
+                      {/* Discount Row (Click to edit via Numpad) */}
+                      <div
+                        onClick={() => {
+                          if (activeTab === "cash") setNumpadTarget("discount");
+                        }}
+                        className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 -mx-1 transition-colors cursor-pointer ${
+                          activeTab === "cash" && numpadTarget === "discount"
+                            ? "bg-amber-50/90"
+                            : "hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`text-xs font-semibold ${
+                              activeTab === "cash" && numpadTarget === "discount"
+                                ? "text-amber-800 font-bold"
+                                : "text-slate-600"
+                            }`}
+                          >
+                            ສ່ວນຫຼຸດພິເສດ
+                          </span>
+                          {cashDiscount > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDiscountChange(0);
+                              }}
+                              className="text-[10px] text-rose-500 font-bold hover:underline cursor-pointer"
+                            >
+                              (ລ້າງ)
+                            </button>
+                          )}
+                        </div>
+                        <div className="w-36">
+                          <KipCurrencyInput
+                            value={cashDiscount}
+                            onFocus={() => {
+                              if (activeTab === "cash") setNumpadTarget("discount");
+                            }}
+                            onValueChange={handleDiscountChange}
+                            placeholder="0"
+                            className={`h-8 text-xs font-bold text-right bg-white transition-all ${
+                              activeTab === "cash" && numpadTarget === "discount"
+                                ? "border-amber-400 ring-2 ring-amber-400/20 text-amber-800"
+                                : "border-slate-200 text-slate-800"
+                            }`}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                )}
 
-                <div className="mb-2 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
-                  LAO QR - LAPNet Standard (BCEL OnePay / LDB / JDB)
-                </div>
-
-                <div className="relative flex h-40 w-40 items-center justify-center rounded-2xl bg-white p-2.5 shadow-md border border-slate-200 my-1">
-                  <div className="grid grid-cols-6 gap-1 w-full h-full p-2 bg-slate-900 rounded-lg">
-                    {Array.from({ length: 36 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`rounded-xs ${
-                          i % 2 === 0 || i % 5 === 0 ? "bg-white" : "bg-slate-900"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-emerald-700 shadow-md border border-emerald-200">
-                      BCEL One
+                  {/* 4. Change Due Indicator (Inside Unified Card) */}
+                  {activeTab === "cash" && (
+                    <div
+                      className={`mt-1 pt-3 border-t border-slate-200/80 flex items-center justify-between gap-2 ${
+                        !isCashSufficient
+                          ? "text-rose-600"
+                          : changeDue > 0
+                          ? "text-amber-600"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      <span className="text-xs font-bold text-slate-600">
+                        {lo.payment.cashChange}
+                      </span>
+                      {!isCashSufficient ? (
+                        <span className="text-sm font-extrabold text-rose-600 tabular-nums">
+                          ຂາດ {formatLak(roundedPayableTotal - cashTendered)}
+                        </span>
+                      ) : changeDue > 0 ? (
+                        <span className="text-2xl font-black text-amber-600 tabular-nums">
+                          {formatLak(changeDue)}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-lg">
+                          ພໍດີ (0 ₭)
+                        </span>
+                      )}
                     </div>
-                  </div>
-                </div>
-
-                <div className="text-xs font-bold text-slate-800 mt-1">
-                  ຍອດໂອນ: <span className="text-emerald-700 text-sm">{formatLak(roundedPayableTotal)}</span>
-                </div>
-
-                <div className="mt-2 text-xs font-semibold text-slate-600">
-                  {qrStatus === "awaiting" ? (
-                    <span className="flex items-center gap-1.5 text-amber-700">
-                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-                      {lo.payment.qrAwaiting}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
-                      <CheckCircle className="h-4 w-4" />
-                      {lo.payment.qrSuccess}
-                    </span>
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setQrStatus("confirmed")}
-                  className="mt-2 text-xs text-emerald-700 underline font-semibold cursor-pointer"
-                >
-                  [ຈຳລອງ] ກົດເພື່ອຢືນຢັນການໂອນເງິນ
-                </button>
-              </div>
-            )}
-
-            {/* TAB 3: SPLIT TENDER (CASH + LAO QR) */}
-            {activeTab === "mixed" && (
-              <div className="space-y-3">
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800 font-medium flex items-center gap-2">
-                  <WalletCards className="h-4 w-4 shrink-0 text-amber-600" />
-                  <span>ລູກຄ້າຈ່າຍເງິນສົດບາງສ່ວນ ແລະ ສ່ວນທີ່ເຫຼືອໂອນຜ່ານ LAO QR</span>
-                </div>
-
-                {/* Cash Portion Input */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    1. ສ່ວນຮັບເງິນສົດ (Cash Received):
-                  </label>
-                  <KipCurrencyInput
-                    value={splitCashPortion}
-                    onValueChange={(val) => setSplitCashPortion(val)}
-                    className="h-10 text-base font-extrabold text-right text-slate-900"
-                  />
-                  {/* Quick Preset Buttons for Split */}
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {[20000, 50000, 100000, 200000].map((amt) => (
-                      <button
-                        key={amt}
-                        type="button"
-                        onClick={() => setSplitCashPortion(amt)}
-                        className={`px-2 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
-                          splitCashPortion === amt
-                            ? "bg-slate-800 text-white border-slate-800"
-                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                {/* RIGHT COLUMN: Light Minimalist Interactive Tender Workspace */}
+                <div className="md:col-span-7 flex flex-col justify-center">
+                  {/* TAB 1: CASH ONLY */}
+                  {activeTab === "cash" && (
+                    <div className="space-y-3">
+                      {/* Light Crisp Digital Readout (Supports both Cash Tendered & Cash Discount) */}
+                      <div
+                        onClick={() => {
+                          if (numpadTarget === "discount") setNumpadTarget("cash");
+                        }}
+                        className={`rounded-2xl border-2 px-4 py-2.5 transition-all ${
+                          numpadTarget === "discount"
+                            ? "border-amber-400 bg-amber-50/40 cursor-pointer"
+                            : "border-emerald-500/70 bg-emerald-50/25"
                         }`}
                       >
-                        {formatLak(amt)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                        <div className="flex items-center justify-between text-[11px] font-bold mb-0.5">
+                          <span
+                            className={
+                              numpadTarget === "discount"
+                                ? "text-amber-800"
+                                : "text-slate-500"
+                            }
+                          >
+                            {numpadTarget === "discount"
+                              ? "ກຳລັງໃສ່: ສ່ວນຫຼຸດພິເສດ (Discount)"
+                              : lo.payment.cashTendered}
+                          </span>
+                          {numpadTarget === "discount" ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNumpadTarget("cash");
+                              }}
+                              className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-emerald-700 cursor-pointer"
+                            >
+                              ກັບໄປໃສ່ເງິນສົດ
+                            </button>
+                          ) : (
+                            <span className="text-emerald-700 font-semibold">
+                              ກົດຕົວເລກ ຫຼື ພິມໄດ້ທັນທີ
+                            </span>
+                          )}
+                        </div>
+                        <KipCurrencyInput
+                          value={numpadTarget === "discount" ? cashDiscount : cashTendered}
+                          onValueChange={(val) => {
+                            if (numpadTarget === "discount") {
+                              handleDiscountChange(val);
+                            } else {
+                              setCashTendered(val);
+                            }
+                          }}
+                          className="h-11 border-0 bg-transparent pl-0 pr-9 text-right text-3xl sm:text-4xl font-black text-slate-900 tabular-nums focus:ring-0"
+                        />
+                      </div>
 
-                {/* Remaining QR Portion */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      2. ສ່ວນທີ່ເຫຼືອໂອນ LAO QR (Transfer QR):
-                    </label>
-                    <span className="text-[10px] text-slate-500">
-                      (ລວມທັງໝົດ: {formatLak(roundedPayableTotal)})
-                    </span>
-                  </div>
-                  <KipCurrencyInput
-                    value={splitQrPortion}
-                    onValueChange={(val) => {
-                      const newCash = Math.max(0, roundedPayableTotal - val);
-                      setSplitCashPortion(newCash);
-                    }}
-                    className="h-10 text-base font-extrabold text-right text-emerald-800 border-emerald-400 bg-emerald-50/30"
-                  />
+                      <TouchNumpad
+                        value={numpadTarget === "discount" ? cashDiscount : cashTendered}
+                        onChange={(val) => {
+                          if (numpadTarget === "discount") {
+                            handleDiscountChange(val);
+                          } else {
+                            setCashTendered(val);
+                          }
+                        }}
+                        exactAmount={
+                          numpadTarget === "discount" ? undefined : roundedPayableTotal
+                        }
+                        onEnter={
+                          numpadTarget === "discount"
+                            ? () => setNumpadTarget("cash")
+                            : undefined
+                        }
+                        showDenominations={numpadTarget === "cash"}
+                      />
+                    </div>
+                  )}
+
+                  {/* TAB 2: FULL LAO QR / BCEL ONE */}
+                  {activeTab === "lao_qr" && (
+                    <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-center">
+                      {!isOnline && (
+                        <div className="mb-3 w-full rounded-xl bg-amber-50 border border-amber-300 p-2.5 text-left text-xs text-amber-900 flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-amber-950">
+                              ໂໝດອອບລາຍ: ບໍ່ມີສັນຍານອິນເຕີເນັດ
+                            </div>
+                            <div className="text-[11px] text-amber-800 mt-0.5 leading-snug">
+                              ກະລຸນາກວດສອບສະລິບໂອນໃນໂທລະສັບລູກຄ້າໃຫ້ລະອຽດກ່ອນກົດຢືນຢັນ.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mb-2 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+                        LAO QR - ສະແກນເພື່ອຊຳລະເງິນ
+                      </div>
+
+                      <div className="relative flex h-56 w-56 items-center justify-center rounded-2xl bg-white p-2 shadow-sm border border-slate-200 my-1 overflow-hidden">
+                        <img
+                          src="/QR.png"
+                          alt="LAO QR"
+                          className="h-full w-full object-contain rounded-xl"
+                        />
+                      </div>
+
+                      <div className="text-sm font-bold text-slate-800 mt-2">
+                        ຍອດໂອນ:{" "}
+                        <span className="text-emerald-700 text-lg font-black tabular-nums">
+                          {formatLak(roundedPayableTotal)}
+                        </span>
+                      </div>
+
+                      <p className="mt-1.5 text-[11px] font-medium text-slate-500">
+                        ກະລຸນາກວດສອບສະລິບການໂອນເງິນກ່ອນກົດຢືນຢັນ
+                      </p>
+                    </div>
+                  )}
+
+                  {/* TAB 3: SPLIT TENDER (CASH + LAO QR) */}
+                  {activeTab === "mixed" && (
+                    <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4">
+                      <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800 font-medium flex items-center gap-2">
+                        <WalletCards className="h-4 w-4 shrink-0 text-amber-600" />
+                        <span>ລູກຄ້າຈ່າຍເງິນສົດບາງສ່ວນ ແລະ ສ່ວນທີ່ເຫຼືອໂອນຜ່ານ LAO QR</span>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                          1. ສ່ວນຮັບເງິນສົດ (Cash Received):
+                        </label>
+                        <KipCurrencyInput
+                          value={splitCashPortion}
+                          onValueChange={(val) => setSplitCashPortion(val)}
+                          className="h-11 text-lg font-extrabold text-right text-slate-900 bg-white"
+                        />
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {[20000, 50000, 100000, 200000].map((amt) => (
+                            <button
+                              key={amt}
+                              type="button"
+                              onClick={() => setSplitCashPortion(amt)}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                                splitCashPortion === amt
+                                  ? "bg-emerald-600 text-white border-emerald-600"
+                                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                              }`}
+                            >
+                              {formatLak(amt)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/70">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-700 block">
+                            2. ສ່ວນທີ່ເຫຼືອໂອນ LAO QR:
+                          </label>
+                          <span className="text-[11px] text-slate-500 font-semibold">
+                            ລວມ: {formatLak(roundedPayableTotal)}
+                          </span>
+                        </div>
+                        <KipCurrencyInput
+                          value={splitQrPortion}
+                          onValueChange={(val) => {
+                            const newCash = Math.max(0, roundedPayableTotal - val);
+                            setSplitCashPortion(newCash);
+                          }}
+                          className="h-11 text-lg font-extrabold text-right text-emerald-800 border-emerald-400 bg-white"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Action Buttons: Print Receipt (Enter) or Complete Directly (F9) */}
-            <div className="mt-5 flex gap-2.5">
+            {/* Sticky / Always-Visible Footer: Checkout Buttons */}
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50/60 px-5 py-3.5 flex gap-2.5">
               <button
                 type="button"
                 disabled={
@@ -871,11 +901,12 @@ export function PaymentModal({
                   (activeTab === "mixed" && !isSplitValid)
                 }
                 onClick={() => handleFinalizeTransaction(true)}
-                className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-98 disabled:opacity-40 transition-all cursor-pointer"
+                style={{ backgroundColor: "#059669", color: "#ffffff" }}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-98 disabled:opacity-40 transition-all cursor-pointer"
               >
                 <Printer className="h-4 w-4" />
                 <span>ພິມໃບບິນຮັບເງິນ (80mm)</span>
-                <span className="rounded bg-emerald-700/80 px-1.5 py-0.5 text-[10px] font-mono font-bold">
+                <span className="rounded bg-emerald-700 px-1.5 py-0.5 text-[10px] font-mono font-bold">
                   Enter
                 </span>
               </button>
@@ -888,16 +919,16 @@ export function PaymentModal({
                   (activeTab === "mixed" && !isSplitValid)
                 }
                 onClick={() => handleFinalizeTransaction(false)}
-                className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all cursor-pointer"
               >
                 <span>ສຳເລັດ (ບໍ່ພິມໃບບິນ)</span>
-                <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-600">
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-600">
                   F9
                 </span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

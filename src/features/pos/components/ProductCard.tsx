@@ -43,19 +43,29 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
       onClick={handleCardClick}
       className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white p-2 pb-2.5 shadow-xs hover:border-emerald-500/60 hover:shadow-md active:bg-emerald-50/20 transition-all cursor-pointer select-none touch-manipulation"
     >
-      {/* 1. Seamless Edge-to-Edge Image Header (Pure white bg, p-0, mix-blend-multiply to blend .jpg borders) */}
-      <div className="relative h-40 w-full bg-white p-0 overflow-hidden flex items-center justify-center border-b border-slate-100/80 pb-2 mb-2">
-        <ProductThumbnail
-          src={product.image_url}
-          alt={product.name_lo}
-          name={product.name_lo}
-          className="w-full h-full"
-          imgClassName="w-full h-full object-contain mix-blend-multiply scale-110 group-hover:scale-115 transition-transform duration-200"
-        />
+      {/* 1. Seamless Edge-to-Edge Image Header (Pure white bg, block container so badges stay pinned to top corners) */}
+      <div
+        style={{ borderBottomColor: "#f1f5f9" }}
+        className="relative h-40 w-full shrink-0 bg-white overflow-hidden border-b border-slate-100 pb-2 mb-2"
+      >
+        <div className="w-full h-full flex items-center justify-center">
+          <ProductThumbnail
+            src={product.image_url}
+            alt={product.name_lo}
+            name={product.name_lo}
+            className="w-full h-full"
+            imgClassName="w-full h-full object-contain mix-blend-multiply scale-110 group-hover:scale-115 transition-transform duration-200"
+          />
+        </div>
 
-        {/* Floating Badges */}
-        <div className="absolute top-1.5 left-1.5 right-1.5 z-10 flex items-start justify-between pointer-events-none gap-1">
-          <div className="flex flex-col gap-1 items-start">
+        {/* Top-Left Badges (Near Expiry, Weighing, Low Stock) */}
+        {(hasNearExpiry ||
+          product.is_weighing ||
+          (totalStock !== null && totalStock <= 5 && totalStock > 0)) && (
+          <div
+            style={{ position: "absolute", top: 6, left: 6 }}
+            className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start pointer-events-none"
+          >
             {hasNearExpiry && (
               <span className="flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
                 <AlertCircle className="h-2.5 w-2.5" />
@@ -74,14 +84,20 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
               </span>
             )}
           </div>
+        )}
 
-          {product.units && product.units.length > 1 && (
+        {/* Top-Right Badge (Multi-Unit Count) */}
+        {product.units && product.units.length > 1 && (
+          <div
+            style={{ position: "absolute", top: 6, right: 6 }}
+            className="absolute top-2 right-2 z-10 pointer-events-none"
+          >
             <span className="flex items-center gap-1 rounded-md bg-zinc-900/75 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
               <Layers className="h-2.5 w-2.5" />
               <span>{product.units.length} ໜ່ວຍ</span>
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 2. Text & Actions Section */}
@@ -93,7 +109,10 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
 
         {/* 3. Bottom Row: High-Contrast Charcoal Price + Neutral Unit + Refined Emerald Plus Button */}
         {/* Soft light grey divider (border-slate-100) to gently separate title from price */}
-        <div className="mt-auto pt-1.5 flex items-center justify-between border-t border-slate-100">
+        <div
+          style={{ borderTopColor: "#f1f5f9" }}
+          className="mt-auto pt-1.5 flex items-center justify-between border-t border-slate-100"
+        >
           <div className="flex items-baseline gap-1 min-w-0 truncate">
             <span className="text-[16px] font-extrabold text-slate-900 tracking-tight tabular-nums truncate">
               {formatLak(displayPrice)}

@@ -6,13 +6,20 @@
 import { registerPlugin } from "@capacitor/core";
 import { ThermalPrinterAdapter, ReceiptData } from "@/utils/printer.adapter";
 import { triggerHapticFeedback } from "@/utils/haptics";
+import { WebPrinterService } from "./webPrinter.service";
 
 export interface PrinterSettings {
-  connectionType: "lan" | "bluetooth" | "usb" | "browser";
+  connectionType: "lan" | "bluetooth" | "usb" | "serial" | "browser";
   lanIp: string;
   lanPort: number;
   bluetoothMac?: string;
   bluetoothName?: string;
+  windowsPrinterName?: string;
+  webUsbVendorId?: number;
+  webUsbProductId?: number;
+  webUsbName?: string;
+  serialBaudRate?: number;
+  serialLabel?: string;
   paperWidth: "58mm" | "80mm";
   autoOpenDrawer: boolean;
   autoPrintReceipt: boolean;
@@ -85,6 +92,47 @@ export class HardwareService {
     } catch {}
   }
 
+  private static isTauriRuntime(): boolean {
+    if (typeof window === "undefined") return false;
+    const w = window as any;
+    return Boolean(w.__TAURI__ || w.__TAURI_INTERNALS__ || w.__TAURI_METADATA__);
+  }
+
+  private static async invokeTauri<T = unknown>(
+    cmd: string,
+    args?: Record<string, unknown>
+  ): Promise<T> {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      return await invoke<T>(cmd, args);
+    } catch (importErr) {
+      const w = window as any;
+      const globalInvoke = w.__TAURI__?.core?.invoke || w.__TAURI__?.invoke;
+      if (typeof globalInvoke === "function") {
+        return await globalInvoke(cmd, args);
+      }
+      throw importErr;
+    }
+  }
+
+  /**
+   * Lists installed Windows printers (only on Windows Tauri desktop)
+   */
+  public static async getWindowsPrinters(): Promise<
+    Array<{ name: string; isDefault: boolean }>
+  > {
+    if (!this.isTauriRuntime()) return [];
+    try {
+      const printers = await this.invokeTauri<
+        Array<{ name: string; isDefault: boolean }>
+      >("list_windows_printers");
+      return Array.isArray(printers) ? printers : [];
+    } catch (err) {
+      console.warn("[HardwareService] Error listing Windows printers:", err);
+      return [];
+    }
+  }
+
   /**
    * Triggers hardware cash drawer pulse (0x1B, 0x70) via printer RJ11 port
    */
@@ -113,33 +161,96 @@ export class HardwareService {
       }
     }
 
-    // 2. Windows Tauri Desktop Driver
-    if (typeof window !== "undefined" && Boolean((window as any).__TAURI__)) {
+    // 2. Windows Tauri Desktop Driver (LAN Socket 9100 or Windows USB Spooler)
+    if (this.isTauriRuntime()) {
       try {
-        const { invoke } = (window as any).__TAURI__.core || (window as any).__TAURI__;
         const kickBytes = [0x1b, 0x70, effectivePin === 5 ? 0x01 : 0x00, 0x19, 0xfa];
-        await invoke("print_raw_escpos", { data: kickBytes });
+        await this.invokeTauri("print_raw_escpos", {
+          data: kickBytes,
+          connectionType: settings.connectionType,
+          ip: settings.lanIp,
+          port: settings.lanPort,
+          printerName: settings.windowsPrinterName || "",
+        });
         return { success: true, message: "ໄຂລິ້ນຊັກເງິນສຳເລັດ (Windows)" };
       } catch (err: any) {
         console.warn("[HardwareService] Tauri open drawer error:", err);
-        return { success: false, message: "Lỗi mở két tiền trên Windows" };
+        const detail = typeof err === "string" ? err : err?.message || "Unknown error";
+        return { success: false, message: `ເປີດລິ້ນຊັກບໍ່ສຳເລັດ: ${detail}` };
       }
     }
 
-    // 3. Web simulation / fallback
-    console.info("[HardwareService] Cash Drawer pulse executed (Web mode)");
-    return { success: true, message: "ສົ່ງສັນຍານໄຂລິ້ນຊັກເງິນແລ້ວ" };
+    // 3. Web Browser (WebUSB / Web Serial / Driver Print)
+    const kickBytes = new Uint8Array([
+      0x1b,
+      0x70,
+      effectivePin === 5 ? 0x01 : 0x00,
+      0x19,
+      0xfa,
+    ]);
+
+    if (settings.connectionType === "usb") {
+      try {
+        await WebPrinterService.sendViaWebUsb(
+          kickBytes,
+          settings.webUsbVendorId,
+          settings.webUsbProductId
+        );
+        return { success: true, message: "ໄຂລິ້ນຊັກເງິນສຳເລັດ (WebUSB)" };
+      } catch (err: any) {
+        return {
+          success: false,
+          message: err?.message || "ບໍ່ສາມາດໄຂລິ້ນຊັກຜ່ານ WebUSB ໄດ້",
+        };
+      }
+    }
+
+    if (settings.connectionType === "serial") {
+      try {
+        await WebPrinterService.sendViaWebSerial(
+          kickBytes,
+          settings.serialBaudRate || 9600
+        );
+        return { success: true, message: "ໄຂລິ້ນຊັກເງິນສຳເລັດ (Serial/COM)" };
+      } catch (err: any) {
+        return {
+          success: false,
+          message: err?.message || "ບໍ່ສາມາດໄຂລິ້ນຊັກຜ່ານ Serial/COM ໄດ້",
+        };
+      }
+    }
+
+    if (settings.connectionType === "browser") {
+      return {
+        success: true,
+        message:
+          "ໂໝດ Browser Print: ກະລຸນາເປີດ 'Open Cash Drawer on Print' ໃນ Windows Printer Driver (ລິ້ນຊັກຈະໄຂອັດຕະໂນມັດເມື່ອພິມບິນ)",
+      };
+    }
+
+    return {
+      success: false,
+      message:
+        "ບຣາວເຊີເວັບບໍ່ສາມາດສົ່ງຄຳສັ່ງ LAN 9100 ໂດຍກົງໄດ້ — ກະລຸນາເລືອກ USB (WebUSB), Serial/COM, ຫຼື Browser Print",
+    };
   }
 
   /**
    * Prints receipt using ESC/POS Raster Monochrome Bitmap (100% Crisp Lao / Vietnamese Fonts)
    */
-  public static async printReceipt(data: ReceiptData): Promise<{ success: boolean; message: string }> {
+  public static async printReceipt(
+    data: ReceiptData,
+    options?: { skipDrawerKick?: boolean }
+  ): Promise<{ success: boolean; message: string }> {
     const settings = this.getSettings();
 
-    // Automatically trigger cash drawer kick if enabled
-    if (settings.autoOpenDrawer && data.paymentMethod === "cash") {
-      this.openCashDrawer(2).catch(() => {});
+    // Automatically trigger cash drawer kick if enabled (unless caller already triggered it)
+    if (
+      !options?.skipDrawerKick &&
+      settings.autoOpenDrawer &&
+      (data.paymentMethod === "cash" || data.paymentMethod === "mixed")
+    ) {
+      this.openCashDrawer(settings.drawerPin || 2).catch(() => {});
     }
 
     // 1. Render receipt to HTML5 Canvas
@@ -168,19 +279,62 @@ export class HardwareService {
       }
     }
 
-    // 3. Windows Tauri Desktop Driver
-    if (typeof window !== "undefined" && Boolean((window as any).__TAURI__)) {
+    // 3. Windows Tauri Desktop Driver (LAN Socket 9100 or Windows USB Spooler)
+    if (this.isTauriRuntime()) {
       try {
-        const { invoke } = (window as any).__TAURI__.core || (window as any).__TAURI__;
-        await invoke("print_raw_escpos", { data: Array.from(rasterBytes) });
+        await this.invokeTauri("print_raw_escpos", {
+          data: Array.from(rasterBytes),
+          connectionType: settings.connectionType,
+          ip: settings.lanIp,
+          port: settings.lanPort,
+          printerName: settings.windowsPrinterName || "",
+        });
         return { success: true, message: "ພິມບິນສຳເລັດ (Windows)" };
       } catch (err: any) {
         console.warn("[HardwareService] Tauri printer error:", err);
+        const detail = typeof err === "string" ? err : err?.message || "Unknown error";
+        return { success: false, message: `ພິມບິນບໍ່ສຳເລັດ: ${detail}` };
       }
     }
 
-    // 4. Browser Print Fallback
-    const fallbackSuccess = await ThermalPrinterAdapter.printReceipt(data);
+    // 4. Web Browser: WebUSB / Web Serial / Hidden-Iframe Browser Print
+    if (settings.connectionType === "usb" && WebPrinterService.isWebUsbSupported()) {
+      try {
+        await WebPrinterService.sendViaWebUsb(
+          rasterBytes,
+          settings.webUsbVendorId,
+          settings.webUsbProductId
+        );
+        return { success: true, message: "ພິມບິນສຳເລັດ (WebUSB)" };
+      } catch (err: any) {
+        console.warn("[HardwareService] WebUSB print failed:", err);
+        return {
+          success: false,
+          message: err?.message || "ພິມບິນຜ່ານ WebUSB ບໍ່ສຳເລັດ",
+        };
+      }
+    }
+
+    if (settings.connectionType === "serial" && WebPrinterService.isWebSerialSupported()) {
+      try {
+        await WebPrinterService.sendViaWebSerial(
+          rasterBytes,
+          settings.serialBaudRate || 9600
+        );
+        return { success: true, message: "ພິມບິນສຳເລັດ (Serial/COM)" };
+      } catch (err: any) {
+        console.warn("[HardwareService] Web Serial print failed:", err);
+        return {
+          success: false,
+          message: err?.message || "ພິມບິນຜ່ານ Serial/COM ບໍ່ສຳເລັດ",
+        };
+      }
+    }
+
+    const fallbackSuccess = await ThermalPrinterAdapter.printReceipt(
+      data,
+      settings.paperWidth
+    );
     return {
       success: fallbackSuccess,
       message: fallbackSuccess ? "ເປີດໜ້າຈໍພິມບິນແລ້ວ" : "ບໍ່ສາມາດເປີດໜ້າຈໍພິມບິນໄດ້",

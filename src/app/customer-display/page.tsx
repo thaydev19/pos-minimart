@@ -37,9 +37,14 @@ import {
 import { formatLak } from "@/utils/formatLakCurrency";
 
 export default function CustomerDisplayPage() {
-  const [payload, setPayload] = useState<CustomerDisplayPayload>(() => {
-    return getLatestCustomerDisplayPayload();
-  });
+  const [payload, setPayload] = useState<CustomerDisplayPayload>(
+    DEFAULT_CUSTOMER_DISPLAY_PAYLOAD
+  );
+
+  // Sync latest localStorage state after hydration to avoid SSR mismatch
+  useEffect(() => {
+    setPayload(getLatestCustomerDisplayPayload());
+  }, []);
 
   const [isConnected, setIsConnected] = useState(true);
   const [currentTime, setCurrentTime] = useState("");

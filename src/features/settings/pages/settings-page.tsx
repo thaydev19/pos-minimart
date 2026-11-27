@@ -22,6 +22,7 @@ import {
   DEFAULT_PRINTER_SETTINGS,
 } from "@/features/pos/services/hardware.service";
 import { PrinterSettingsModal } from "@/features/pos/components/PrinterSettingsModal";
+import { SystemUpdateCard } from "@/components/TauriAutoUpdater";
 import { triggerHapticFeedback } from "@/utils/haptics";
 import { toast } from "sonner";
 
@@ -286,6 +287,9 @@ export function SettingsPage() {
         onClose={() => setIsPrinterModalOpen(false)}
         onSaved={(updated) => setPrinterSettings(updated)}
       />
+
+      {/* Manual System Update Card */}
+      <SystemUpdateCard />
     </div>
   );
 }

@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -39,6 +40,14 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ3NzZDODREMkMyQTY1QzAKUldUQVpTb3NUY2gyUjNsNytmeVpXd3MzdjVacnI2RnQ1MUMxUGZtWHUzMWE5TzM2YXl3WUJ3TVIK",
+      "endpoints": [
+        "https://github.com/thaydev19/pos-minimart/releases/latest/download/latest.json"
+      ]
     }
   }
 }

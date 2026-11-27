@@ -17,8 +17,25 @@ function resolveGhBin() {
 
 const GH_BIN = resolveGhBin();
 const tauriConfPath = path.join(rootDir, "src-tauri", "tauri.conf.json");
-const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, "utf8"));
-const version = tauriConf.version;
+const packageJsonPath = path.join(rootDir, "package.json");
+const tauriConfRaw = fs.readFileSync(tauriConfPath, "utf8");
+const packageJsonRaw = fs.readFileSync(packageJsonPath, "utf8");
+const tauriConf = JSON.parse(tauriConfRaw);
+const packageJson = JSON.parse(packageJsonRaw);
+const prevVersion = tauriConf.version;
+
+function bumpPatchVersion(ver) {
+  const parts = String(ver).trim().split(".");
+  if (parts.length !== 3 || parts.some((p) => !/^\d+$/.test(p))) {
+    throw new Error(`Invalid semver version in tauri.conf.json: "${ver}"`);
+  }
+  const major = Number(parts[0]);
+  const minor = Number(parts[1]);
+  const patch = Number(parts[2]) + 1;
+  return `${major}.${minor}.${patch}`;
+}
+
+const version = bumpPatchVersion(prevVersion);
 const tag = `v${version}`;
 
 // 1. Auto-load signing private key from ~/.tauri/pos-minimart.key if not set
@@ -60,9 +77,23 @@ if (ghSwitch.status !== 0) {
   process.exit(1);
 }
 
-// 3. Build .exe + signature + latest.json
+// 3. Bump patch version in tauri.conf.json & package.json, then build
+tauriConf.version = version;
+packageJson.version = version;
+fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + "\n", "utf8");
+fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n", "utf8");
+console.log(`[release] Auto-bumped version: ${prevVersion} -> ${version}`);
+
 console.log(`[release] Building Lao Minimart POS ${tag}...`);
-execSync("npm run build:exe", { stdio: "inherit", env: process.env });
+try {
+  execSync("npm run build:exe", { stdio: "inherit", env: process.env });
+} catch (err) {
+  // Roll back version files if build fails so failed builds do not skip versions
+  fs.writeFileSync(tauriConfPath, tauriConfRaw, "utf8");
+  fs.writeFileSync(packageJsonPath, packageJsonRaw, "utf8");
+  console.error(`[release] Build failed. Reverted version back to ${prevVersion}.`);
+  throw err;
+}
 
 const nsisDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "nsis");
 const installerPath = path.join(nsisDir, `lao-minimart-pos_${version}_x64-setup.exe`);

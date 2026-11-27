@@ -3,6 +3,8 @@
 // Manages Customer Display Window (/customer-display) on Windows Multi-Monitor
 // ============================================================================
 
+import { notifyCustomerDisplayClosed } from "./customerDisplaySync";
+
 let customerDisplayPopupRef: Window | null = null;
 
 /**
@@ -23,6 +25,28 @@ export function isTauriEnvironment(): boolean {
 export function isCustomerDisplayWindowOpen(): boolean {
   if (typeof window === "undefined") return false;
   return Boolean(customerDisplayPopupRef && !customerDisplayPopupRef.closed);
+}
+
+/**
+ * Checks whether the customer display window is currently open in either Tauri or Browser
+ */
+export async function isCustomerDisplayWindowOpenAsync(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  if (isTauriEnvironment()) {
+    try {
+      const tauri = (window as any).__TAURI__;
+      const webviewModule = tauri?.webviewWindow || tauri?.window;
+      if (webviewModule?.WebviewWindow?.getByLabel) {
+        const win = await webviewModule.WebviewWindow.getByLabel("customer-display");
+        return Boolean(win);
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  return isCustomerDisplayWindowOpen();
 }
 
 /**
@@ -90,6 +114,12 @@ export async function openCustomerDisplayWindow(): Promise<boolean> {
           newWin.once("tauri://error", (err: any) => {
             console.warn("[TauriWindow] Secondary screen webview error:", err);
           });
+          newWin.once("tauri://close-requested", () => {
+            notifyCustomerDisplayClosed();
+          });
+          newWin.once("tauri://destroyed", () => {
+            notifyCustomerDisplayClosed();
+          });
 
           return true;
         } else {
@@ -104,6 +134,13 @@ export async function openCustomerDisplayWindow(): Promise<boolean> {
             resizable: true,
             center: true,
             alwaysOnTop: false,
+          });
+
+          newWin.once("tauri://close-requested", () => {
+            notifyCustomerDisplayClosed();
+          });
+          newWin.once("tauri://destroyed", () => {
+            notifyCustomerDisplayClosed();
           });
 
           return true;

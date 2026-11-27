@@ -36,7 +36,7 @@ import {
   CloseShiftBlindDialog,
   formatShiftDuration,
 } from "@/features/shifts";
-import { isCustomerDisplayWindowOpen } from "../utils/tauriWindow";
+import { isCustomerDisplayWindowOpenAsync } from "../utils/tauriWindow";
 import {
   initCustomerDisplay,
   closeCustomerDisplay,
@@ -96,26 +96,51 @@ export function PosHeader() {
 
   // Monitor Customer Display state
   useEffect(() => {
+    let lastHeartbeat = 0;
+
     const unsubscribe = subscribeCustomerDisplay((msg) => {
       if (
         msg.type === "CUSTOMER_DISPLAY_READY" ||
-        msg.type === "CUSTOMER_DISPLAY_PING"
+        msg.type === "CUSTOMER_DISPLAY_PING" ||
+        msg.type === "REQUEST_CUSTOMER_DISPLAY_SYNC"
       ) {
+        lastHeartbeat = Date.now();
         setIsCustomerDisplayActive(true);
+      } else if (msg.type === "CUSTOMER_DISPLAY_CLOSED") {
+        lastHeartbeat = 0;
+        setIsCustomerDisplayActive(false);
       }
     });
 
-    const checkInterval = setInterval(() => {
-      if (isCustomerDisplayWindowOpen()) {
+    const syncWindowState = async () => {
+      const winOpen = await isCustomerDisplayWindowOpenAsync();
+      if (winOpen) {
         setIsCustomerDisplayActive(true);
+        return;
       }
-    }, 3000);
+      const floatingOpen = usePosStore.getState().isCustomerDisplayFloatingOpen;
+      if (!floatingOpen && Date.now() - lastHeartbeat > 6500) {
+        setIsCustomerDisplayActive(false);
+      }
+    };
+
+    syncWindowState();
+    const checkInterval = setInterval(syncWindowState, 1500);
 
     return () => {
       unsubscribe();
       clearInterval(checkInterval);
     };
   }, []);
+
+  // Sync when Floating Customer Display is closed via its own X button
+  const prevFloatingOpenRef = useRef(isCustomerDisplayFloatingOpen);
+  useEffect(() => {
+    if (prevFloatingOpenRef.current && !isCustomerDisplayFloatingOpen) {
+      setIsCustomerDisplayActive(false);
+    }
+    prevFloatingOpenRef.current = isCustomerDisplayFloatingOpen;
+  }, [isCustomerDisplayFloatingOpen]);
 
   // Close hardware dropdown on click outside
   useEffect(() => {

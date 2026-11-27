@@ -68,7 +68,8 @@ export type CustomerDisplayMessageType =
   | "REQUEST_CUSTOMER_DISPLAY_SYNC"
   | "CUSTOMER_DISPLAY_READY"
   | "CUSTOMER_DISPLAY_PING"
-  | "CUSTOMER_DISPLAY_PONG";
+  | "CUSTOMER_DISPLAY_PONG"
+  | "CUSTOMER_DISPLAY_CLOSED";
 
 export interface CustomerDisplayMessage extends Partial<CustomerDisplayPayload> {
   type: CustomerDisplayMessageType;
@@ -512,6 +513,36 @@ export function requestCustomerDisplaySync() {
 }
 
 /**
+ * Notifies POS main window that the Customer Display window/tab was closed
+ */
+export function notifyCustomerDisplayClosed() {
+  const closedMsg: CustomerDisplayMessage = {
+    type: "CUSTOMER_DISPLAY_CLOSED",
+    timestamp: Date.now(),
+  };
+
+  try {
+    const ch = getBroadcastChannel();
+    if (ch) ch.postMessage(closedMsg);
+  } catch {}
+
+  rawMessageListeners.forEach((l) => {
+    try {
+      l(closedMsg);
+    } catch {}
+  });
+
+  if (typeof window !== "undefined") {
+    try {
+      const tauri = (window as any).__TAURI__;
+      if (tauri?.event?.emit) {
+        tauri.event.emit("customer-display-closed", {});
+      }
+    } catch {}
+  }
+}
+
+/**
  * Subscribes a listener to the Customer Display updates
  */
 export function subscribeCustomerDisplay(
@@ -564,6 +595,7 @@ export function subscribeCustomerDisplay(
 
   // 3. Tauri Event listener
   let unlistenTauri: (() => void) | null = null;
+  let unlistenTauriClosed: (() => void) | null = null;
   if (typeof window !== "undefined") {
     try {
       const tauri = (window as any).__TAURI__;
@@ -577,6 +609,14 @@ export function subscribeCustomerDisplay(
           })
           .then((unlisten: any) => {
             unlistenTauri = unlisten;
+          });
+
+        tauri.event
+          .listen("customer-display-closed", () => {
+            callback({ type: "CUSTOMER_DISPLAY_CLOSED", timestamp: Date.now() });
+          })
+          .then((unlisten: any) => {
+            unlistenTauriClosed = unlisten;
           });
       }
     } catch {}
@@ -593,6 +633,9 @@ export function subscribeCustomerDisplay(
     }
     if (unlistenTauri) {
       unlistenTauri();
+    }
+    if (unlistenTauriClosed) {
+      unlistenTauriClosed();
     }
   };
 }

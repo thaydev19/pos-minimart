@@ -30,6 +30,7 @@ import {
 import {
   subscribeCustomerDisplay,
   requestCustomerDisplaySync,
+  notifyCustomerDisplayClosed,
   getLatestCustomerDisplayPayload,
   CustomerDisplayPayload,
   DEFAULT_CUSTOMER_DISPLAY_PAYLOAD,
@@ -130,8 +131,16 @@ export default function CustomerDisplayPage() {
       requestCustomerDisplaySync();
     }, 5000);
 
+    const handleBeforeUnload = () => {
+      notifyCustomerDisplayClosed();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
+
     return () => {
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
       clearInterval(pingInterval);
       unsubscribe();
     };
@@ -478,11 +487,12 @@ export default function CustomerDisplayPage() {
 
             {/* Table Rows with Framer Motion AnimatePresence */}
             <div className="flex-1 overflow-y-auto px-6 py-2 divide-y divide-zinc-800/50">
-              <AnimatePresence initial={false}>
+              <AnimatePresence initial={false} mode="popLayout">
                 {items.map((item, index) => (
                   <motion.div
-                    key={`${item.id}-${index}`}
-                    initial={{ opacity: 0, y: 10 }}
+                    key={item.id}
+                    layout="position"
+                    initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.15 }}

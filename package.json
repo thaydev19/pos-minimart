@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "tauri": "tauri",
-    "build:exe": "npm run build && tauri build && node -e \"require('fs').copyFileSync('src-tauri/target/release/app.exe','lao-minimart-pos.exe')\"",
+    "build:exe": "npm run build && tauri build && node -e \"require('fs').copyFileSync('src-tauri/target/release/app.exe','lao-minimart-pos.exe')\" && node scripts/generate-latest-json.mjs",
+    "release": "node scripts/release-github.mjs",
     "build:apk": "npm run build && npx cap sync android && cd android && gradlew.bat assembleDebug",
     "build:web": "next build --webpack",
     "android:sync": "npx cap sync android",

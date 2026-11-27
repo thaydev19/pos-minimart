@@ -5,7 +5,7 @@
 // Only runs when explicitly triggered by the user on Tauri Desktop (.exe).
 // ============================================================================
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Download, RefreshCw, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +24,7 @@ function isTauriDesktop(): boolean {
 }
 
 export function SystemUpdateCard() {
+  const [appVersion, setAppVersion] = useState<string>("0.1.0");
   const [isChecking, setIsChecking] = useState(false);
   const [availableUpdate, setAvailableUpdate] = useState<NonNullable<UpdateHandle> | null>(
     null
@@ -32,6 +33,16 @@ export function SystemUpdateCard() {
   const [progressPercent, setProgressPercent] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isUpToDate, setIsUpToDate] = useState(false);
+
+  useEffect(() => {
+    if (!isTauriDesktop()) return;
+    import("@tauri-apps/api/app")
+      .then(({ getVersion }) => getVersion())
+      .then((ver) => {
+        if (ver) setAppVersion(ver);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCheckUpdate = async () => {
     if (!isTauriDesktop()) {
@@ -113,9 +124,14 @@ export function SystemUpdateCard() {
             <Download className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              ອັບເດດລະບົບ (System Update)
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900">
+                ອັບເດດລະບົບ (System Update)
+              </h3>
+              <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-700">
+                v{appVersion}
+              </span>
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">
               ກົດກວດສອບ ແລະ ອັບເດດດ້ວຍຕົນເອງເມື່ອຕ້ອງການ
             </p>

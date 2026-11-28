@@ -45,110 +45,126 @@ export class ThermalPrinterAdapter {
     return !this.isTauri() && !this.isCapacitor();
   }
 
-  public static async renderReceiptToCanvas(data: ReceiptData): Promise<HTMLCanvasElement> {
+  public static async renderReceiptToCanvas(
+    data: ReceiptData,
+    paperWidth: "58mm" | "80mm" = "80mm"
+  ): Promise<HTMLCanvasElement> {
     const canvas = document.createElement("canvas");
-    const width = 576; // 80mm thermal width at 203 DPI = 576 dots
+    const is58 = paperWidth === "58mm";
+    // 80mm = 576 dots, 58mm = 384 dots at 203 DPI (8 dots/mm)
+    const width = is58 ? 384 : 576;
     canvas.width = width;
-
-    const baseHeight = 520;
-    const itemHeight = 44;
-    const calculatedHeight = baseHeight + data.items.length * itemHeight;
-    canvas.height = calculatedHeight;
+    canvas.height = 900 + data.items.length * 72;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) throw new Error("Could not initialize 2D canvas context");
 
     ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, width, calculatedHeight);
+    ctx.fillRect(0, 0, width, canvas.height);
 
     ctx.fillStyle = "#000000";
     ctx.textBaseline = "top";
+    if ("letterSpacing" in ctx) {
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0.4px";
+    }
 
-    let y = 24;
+    // Sized in 203-DPI dots (8 dots = 1mm) with clean weights & breathing room for Lao script
+    const fHeader = is58 ? 34 : 38;
+    const fSub = is58 ? 20 : 23;
+    const fMeta = is58 ? 20 : 22;
+    const fItem = is58 ? 22 : 24;
+    const fUnit = is58 ? 19 : 21;
+    const fTotal = is58 ? 26 : 30;
+    const fFooter = is58 ? 20 : 23;
+
+    const lineGap = is58 ? 30 : 34;
+    let y = is58 ? 12 : 18;
+    const padX = is58 ? 4 : 14;
+    const qtyX = is58 ? 246 : 365;
 
     // 1. Store Header
-    ctx.font = "bold 28px 'Noto Sans Lao', sans-serif";
+    ctx.font = `bold ${fHeader}px 'Noto Sans Lao', sans-serif`;
     ctx.textAlign = "center";
-    ctx.fillText(data.storeName || lo.receipt.storeName, width / 2, y);
-    y += 36;
+    ctx.fillText(data.storeName || lo.receipt.storeName, width / 2, y, width - padX * 2);
+    y += is58 ? 42 : 48;
 
-    ctx.font = "600 20px 'Noto Sans Lao', sans-serif";
-    ctx.fillText(data.storeBranch || lo.receipt.storeBranch, width / 2, y);
-    y += 28;
+    ctx.font = `400 ${fSub}px 'Noto Sans Lao', sans-serif`;
+    ctx.fillText(data.storeBranch || lo.receipt.storeBranch, width / 2, y, width - padX * 2);
+    y += is58 ? 28 : 32;
 
-    ctx.font = "600 18px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif";
-    ctx.fillText(data.storeTel || lo.receipt.storeTel, width / 2, y);
-    y += 26;
+    ctx.font = `400 ${fUnit}px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif`;
+    ctx.fillText(data.storeTel || lo.receipt.storeTel, width / 2, y, width - padX * 2);
+    y += is58 ? 26 : 30;
 
-    ctx.fillText(data.storeTaxCode || lo.receipt.storeTax, width / 2, y);
-    y += 32;
+    ctx.fillText(data.storeTaxCode || lo.receipt.storeTax, width / 2, y, width - padX * 2);
+    y += is58 ? 28 : 34;
 
-    ctx.font = "bold 22px 'Noto Sans Lao', sans-serif";
-    ctx.fillText(lo.receipt.receiptTitle, width / 2, y);
-    y += 34;
+    ctx.font = `bold ${is58 ? 22 : 26}px 'Noto Sans Lao', sans-serif`;
+    ctx.fillText(lo.receipt.receiptTitle, width / 2, y, width - padX * 2);
+    y += is58 ? 32 : 38;
 
-    this.drawDottedLine(ctx, 20, y, width - 20);
-    y += 18;
+    this.drawDottedLine(ctx, padX, y, width - padX);
+    y += is58 ? 14 : 18;
 
     // 2. Metadata
     ctx.textAlign = "left";
-    ctx.font = "600 19px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
-    ctx.fillText(`${lo.receipt.billNo}: ${data.orderNumber}`, 24, y);
-    y += 26;
+    ctx.font = `400 ${fMeta}px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif`;
+    ctx.fillText(`${lo.receipt.billNo}: ${data.orderNumber}`, padX, y, width - padX * 2);
+    y += lineGap;
 
-    ctx.fillText(`${lo.receipt.dateTime}: ${data.dateTime}`, 24, y);
-    y += 26;
+    ctx.fillText(`${lo.receipt.dateTime}: ${data.dateTime}`, padX, y, width - padX * 2);
+    y += lineGap;
 
-    ctx.fillText(`${lo.receipt.cashier}: ${data.cashierName}`, 24, y);
-    y += 32;
+    ctx.fillText(`${lo.receipt.cashier}: ${data.cashierName}`, padX, y, width - padX * 2);
+    y += lineGap + 4;
 
-    this.drawDottedLine(ctx, 20, y, width - 20);
-    y += 12;
+    this.drawDottedLine(ctx, padX, y, width - padX);
+    y += is58 ? 14 : 16;
 
-    ctx.font = "bold 19px 'Noto Sans Lao', sans-serif";
-    ctx.fillText(lo.receipt.itemName, 24, y);
+    ctx.font = `bold ${fMeta}px 'Noto Sans Lao', sans-serif`;
+    ctx.fillText(lo.receipt.itemName, padX, y);
     ctx.textAlign = "right";
-    ctx.fillText(lo.receipt.itemQty, 360, y);
-    ctx.fillText(lo.receipt.itemAmount, width - 24, y);
-    y += 28;
+    ctx.fillText(lo.receipt.itemQty, qtyX, y);
+    ctx.fillText(lo.receipt.itemAmount, width - padX, y);
+    y += is58 ? 30 : 34;
 
-    this.drawDottedLine(ctx, 20, y, width - 20);
-    y += 16;
+    this.drawDottedLine(ctx, padX, y, width - padX);
+    y += is58 ? 14 : 18;
 
     // 3. Items List
-    ctx.font = "600 20px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
+    ctx.font = `500 ${fItem}px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif`;
     for (const item of data.items) {
       ctx.textAlign = "left";
       const itemTitle = `${item.name} (${item.unitName})`;
-      ctx.fillText(itemTitle, 24, y);
+      ctx.fillText(itemTitle, padX, y, qtyX - padX - (is58 ? 28 : 38));
 
       ctx.textAlign = "right";
-      ctx.fillText(`${item.qty}`, 360, y);
-      ctx.fillText(formatLak(item.totalPrice, false), width - 24, y);
-      y += 26;
+      ctx.fillText(`${item.qty}`, qtyX, y);
+      ctx.fillText(formatLak(item.totalPrice, false), width - padX, y);
+      y += is58 ? 31 : 35;
 
-      ctx.font = "600 17px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif";
+      ctx.font = `400 ${fUnit}px 'Plus Jakarta Sans', 'Noto Sans Lao', sans-serif`;
       ctx.fillStyle = "#000000";
       ctx.textAlign = "left";
-      ctx.fillText(`@ ${formatLak(item.unitPrice, false)} ₭`, 32, y);
-      ctx.font = "600 20px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
-      y += 24;
+      ctx.fillText(`@ ${formatLak(item.unitPrice, false)} ₭`, padX + 4, y);
+      ctx.font = `500 ${fItem}px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif`;
+      y += is58 ? 30 : 32;
     }
 
-    y += 8;
-    this.drawDottedLine(ctx, 20, y, width - 20);
-    y += 18;
+    y += 6;
+    this.drawDottedLine(ctx, padX, y, width - padX);
+    y += is58 ? 14 : 18;
 
     // 4. Totals Summary
     const printRow = (label: string, value: string, isBold: boolean = false) => {
       ctx.font = isBold
-        ? "bold 23px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif"
-        : "600 20px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif";
+        ? `bold ${fTotal}px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif`
+        : `400 ${fMeta}px 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif`;
       ctx.textAlign = "left";
-      ctx.fillText(label, 24, y);
+      ctx.fillText(label, padX, y);
       ctx.textAlign = "right";
-      ctx.fillText(value, width - 24, y);
-      y += isBold ? 34 : 26;
+      ctx.fillText(value, width - padX, y);
+      y += isBold ? (is58 ? 36 : 40) : lineGap;
     };
 
     printRow(lo.receipt.subtotal, formatLak(data.subtotal));
@@ -156,13 +172,13 @@ export class ThermalPrinterAdapter {
       printRow(lo.receipt.discount, `-${formatLak(data.discountAmount)}`);
     }
 
-    this.drawSolidLine(ctx, 20, y, width - 20);
-    y += 14;
+    this.drawSolidLine(ctx, padX, y, width - padX);
+    y += is58 ? 12 : 14;
 
     printRow(lo.receipt.grandTotal, formatLak(data.finalTotal), true);
 
-    this.drawSolidLine(ctx, 20, y, width - 20);
-    y += 14;
+    this.drawSolidLine(ctx, padX, y, width - padX);
+    y += is58 ? 12 : 14;
 
     if (data.paymentMethod === "cash") {
       printRow(lo.receipt.cashPaid, formatLak(data.cashTendered || data.finalTotal));
@@ -171,19 +187,29 @@ export class ThermalPrinterAdapter {
       printRow(lo.receipt.qrPaid, formatLak(data.finalTotal));
     }
 
-    y += 16;
-    this.drawDottedLine(ctx, 20, y, width - 20);
-    y += 26;
+    y += is58 ? 12 : 16;
+    this.drawDottedLine(ctx, padX, y, width - padX);
+    y += is58 ? 18 : 24;
 
     // 5. Footer
     ctx.textAlign = "center";
-    ctx.font = "bold 20px 'Noto Sans Lao', sans-serif";
-    ctx.fillText(lo.receipt.thankYou, width / 2, y);
-    y += 28;
+    ctx.font = `500 ${fFooter}px 'Noto Sans Lao', sans-serif`;
+    ctx.fillText(lo.receipt.thankYou, width / 2, y, width - padX * 2);
+    y += is58 ? 28 : 34;
 
-    ctx.font = "600 17px 'Noto Sans Lao', sans-serif";
-    ctx.fillText(lo.receipt.returnNotice, width / 2, y);
-    y += 40;
+    ctx.font = `400 ${fUnit}px 'Noto Sans Lao', sans-serif`;
+    ctx.fillText(lo.receipt.returnNotice, width / 2, y, width - padX * 2);
+    y += 32;
+
+    // Crop canvas to exact content height so nothing clips and no blank space is wasted
+    const trimmed = document.createElement("canvas");
+    trimmed.width = width;
+    trimmed.height = y;
+    const tCtx = trimmed.getContext("2d");
+    if (tCtx) {
+      tCtx.drawImage(canvas, 0, 0, width, y, 0, 0, width, y);
+      return trimmed;
+    }
 
     return canvas;
   }
@@ -209,8 +235,8 @@ export class ThermalPrinterAdapter {
         const b = pixels[offset + 2];
         const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
 
-        // Higher threshold (175) keeps anti-aliased font edges solid black on thermal paper
-        if (luminance < 175) {
+        // Balanced threshold (138) keeps strokes crisp without thickening anti-aliased edges
+        if (luminance < 138) {
           const byteIndex = y * widthBytes + Math.floor(x / 8);
           const bitIndex = 7 - (x % 8);
           rasterData[byteIndex] |= 1 << bitIndex;
@@ -230,7 +256,8 @@ export class ThermalPrinterAdapter {
     ]);
 
     const cutCommand = new Uint8Array([
-      0x1d, 0x56, 0x41, 0x00,
+      0x1b, 0x64, 0x07,
+      0x1d, 0x56, 0x00,
     ]);
 
     const finalBuffer = new Uint8Array(header.length + rasterData.length + cutCommand.length);
@@ -245,7 +272,7 @@ export class ThermalPrinterAdapter {
     data: ReceiptData,
     paperWidth: "58mm" | "80mm" = "80mm"
   ): Promise<boolean> {
-    const canvas = await this.renderReceiptToCanvas(data);
+    const canvas = await this.renderReceiptToCanvas(data, paperWidth);
 
     if (this.isTauri()) {
       const escPosData = this.convertCanvasToEscPosRaster(canvas);

@@ -66,10 +66,7 @@ export function TouchNumpad({
     triggerHapticFeedback(20);
     const currentStr = value === 0 ? "" : value.toString();
 
-    if (digit === "000") {
-      if (!currentStr || currentStr === "0") return;
-      const nextVal = parseInt(currentStr + "000", 10);
-      onChange(isNaN(nextVal) ? 0 : nextVal);
+    if (/^0+$/.test(digit) && (!currentStr || currentStr === "0")) {
       return;
     }
 
@@ -99,9 +96,11 @@ export function TouchNumpad({
   };
 
   const fastDenominations = getFastDenominations(exactAmount);
+  const digitKeyClass =
+    "h-9 sm:h-11 lg:h-14 flex items-center justify-center rounded-xl bg-white border border-slate-300 text-base sm:text-lg lg:text-xl font-bold text-slate-900 shadow-xs hover:bg-slate-50 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono";
 
   return (
-    <div className="flex flex-col gap-2.5 select-none touch-manipulation">
+    <div className="flex flex-col gap-1.5 sm:gap-2 select-none touch-manipulation">
       {/* 1. Single-Row Quick Banknote Suggestions */}
       {showDenominations && fastDenominations.length > 0 && (
         <div className="grid grid-cols-4 gap-1.5">
@@ -110,10 +109,10 @@ export function TouchNumpad({
               key={denom}
               type="button"
               onClick={() => handleSetAmount(denom)}
-              className={`h-10 flex items-center justify-center rounded-xl px-2 font-bold text-xs whitespace-nowrap transition-all active:scale-95 cursor-pointer border ${
+              className={`h-8 sm:h-9 lg:h-10 flex items-center justify-center rounded-xl px-1.5 sm:px-2 font-bold text-[11px] sm:text-xs whitespace-nowrap transition-all active:scale-95 cursor-pointer border ${
                 value === denom
                   ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                  : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800"
+                  : "bg-slate-50 text-slate-800 border-slate-300 hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-800"
               }`}
             >
               {formatLak(denom)}
@@ -123,14 +122,14 @@ export function TouchNumpad({
       )}
 
       {/* 2. Ergonomic 4-Column POS Keypad */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-1.5 lg:gap-2">
         {/* Row 1 */}
         {["1", "2", "3"].map((digit) => (
           <button
             key={digit}
             type="button"
             onClick={() => handleDigit(digit)}
-            className="h-14 flex items-center justify-center rounded-xl bg-white border border-slate-200/90 text-xl font-bold text-slate-900 shadow-2xs hover:bg-slate-50 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono"
+            className={digitKeyClass}
           >
             {digit}
           </button>
@@ -138,10 +137,10 @@ export function TouchNumpad({
         <button
           type="button"
           onClick={handleBackspace}
-          className="h-14 flex items-center justify-center gap-1 rounded-xl bg-slate-100 border border-slate-200/90 text-slate-700 font-bold text-xs active:scale-95 hover:bg-slate-200 transition-all cursor-pointer"
+          className="h-9 sm:h-11 lg:h-14 flex items-center justify-center gap-1 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 font-bold text-xs active:scale-95 hover:bg-slate-200 transition-all cursor-pointer"
           title="ລຶບ 1 ໂຕເລກ (Backspace)"
         >
-          <Delete className="h-5 w-5 text-slate-600" />
+          <Delete className="h-4 sm:h-5 w-4 sm:w-5 text-slate-700" />
         </button>
 
         {/* Row 2 */}
@@ -150,7 +149,7 @@ export function TouchNumpad({
             key={digit}
             type="button"
             onClick={() => handleDigit(digit)}
-            className="h-14 flex items-center justify-center rounded-xl bg-white border border-slate-200/90 text-xl font-bold text-slate-900 shadow-2xs hover:bg-slate-50 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono"
+            className={digitKeyClass}
           >
             {digit}
           </button>
@@ -158,10 +157,10 @@ export function TouchNumpad({
         <button
           type="button"
           onClick={handleClear}
-          className="h-14 flex flex-col items-center justify-center gap-0.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 font-bold text-[11px] active:scale-95 hover:bg-rose-100 transition-all cursor-pointer"
+          className="h-9 sm:h-11 lg:h-14 flex flex-col items-center justify-center gap-0.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 font-bold text-[10px] sm:text-[11px] active:scale-95 hover:bg-rose-100 transition-all cursor-pointer"
           title="ລ້າງທັງໝົດ (Clear)"
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
           <span>ລ້າງ</span>
         </button>
 
@@ -171,7 +170,7 @@ export function TouchNumpad({
             key={digit}
             type="button"
             onClick={() => handleDigit(digit)}
-            className="h-14 flex items-center justify-center rounded-xl bg-white border border-slate-200/90 text-xl font-bold text-slate-900 shadow-2xs hover:bg-slate-50 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono"
+            className={digitKeyClass}
           >
             {digit}
           </button>
@@ -185,7 +184,7 @@ export function TouchNumpad({
             className={`row-span-2 flex flex-col items-center justify-center gap-1 rounded-xl border font-bold text-xs transition-all active:scale-95 cursor-pointer px-1 text-center ${
               value === exactAmount
                 ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                : "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                : "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
             }`}
           >
             <Check className="h-5 w-5 shrink-0" />
@@ -209,17 +208,20 @@ export function TouchNumpad({
         <button
           type="button"
           onClick={() => handleDigit("0")}
-          className="col-span-2 h-14 flex items-center justify-center rounded-xl bg-white border border-slate-200/90 text-xl font-bold text-slate-900 shadow-2xs hover:bg-slate-50 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono"
+          className={digitKeyClass}
         >
           0
         </button>
-        <button
-          type="button"
-          onClick={() => handleDigit("000")}
-          className="h-14 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200/90 text-base font-extrabold text-slate-700 shadow-2xs hover:bg-slate-100 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono"
-        >
-          000
-        </button>
+        {["00", "000"].map((zeros) => (
+          <button
+            key={zeros}
+            type="button"
+            onClick={() => handleDigit(zeros)}
+            className="h-9 sm:h-11 lg:h-14 flex items-center justify-center rounded-xl bg-slate-100 border border-slate-300 text-sm sm:text-base font-extrabold text-slate-800 shadow-xs hover:bg-slate-200 active:scale-95 active:bg-emerald-50 active:border-emerald-500 transition-all cursor-pointer font-mono"
+          >
+            {zeros}
+          </button>
+        ))}
       </div>
     </div>
   );

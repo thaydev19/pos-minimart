@@ -17,8 +17,8 @@ export function useCategoriesQuery() {
   const query = useQuery<CategoryItem[]>({
     queryKey: CATEGORIES_QUERY_KEY,
     queryFn: () => categoriesApi.fetchCategories(),
-    staleTime: 1000 * 30, // 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 
   return {

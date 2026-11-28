@@ -60,7 +60,7 @@ export function OrdersTable({ orders, isLoading }: OrdersTableProps) {
 
   return (
     <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-2xs overflow-hidden select-none touch-manipulation">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-zinc-200/80 bg-slate-50/80 text-[11px] text-slate-500 font-bold uppercase tracking-wider">

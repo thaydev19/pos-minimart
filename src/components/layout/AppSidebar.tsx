@@ -6,7 +6,7 @@
 // Strict Single Active Item Selection
 // ============================================================================
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -113,6 +113,24 @@ export function AppSidebar({
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Clear optimistic highlight once navigation completes
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  // Pre-warm route chunks during idle time so tab switching feels instant on low-power CPUs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      BACKOFFICE_NAV_ITEMS.forEach((item) => {
+        if (item.href !== pathname) {
+          router.prefetch(item.href);
+        }
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [router, pathname]);
 
   const handleLogout = () => {
     setIsConfirmOpen(true);
@@ -143,11 +161,12 @@ export function AppSidebar({
   // Helper for Nav Items with Strict Single Active Highlight
   const renderNavList = (collapsedState: boolean) => (
     <nav className="flex-1 space-y-1 px-2 py-2.5 overflow-y-auto no-scrollbar">
-      {BACKOFFICE_NAV_ITEMS.map((item, index) => {
+      {BACKOFFICE_NAV_ITEMS.map((item) => {
         const Icon = item.icon;
-        const isActive =
+        const currentMatched =
           pathname === item.href ||
           (item.href !== "/pos" && (pathname.startsWith(item.href + "/") || pathname === item.href));
+        const isActive = pendingHref ? pendingHref === item.href : currentMatched;
 
         // 1. Special POS Button (Quick Action to Cashier Terminal)
         // When user is in Backoffice, this is a neutral quick action button (NOT active, NO green background)
@@ -158,16 +177,19 @@ export function AppSidebar({
               <div className="px-0.5 pb-1">
                 <Link
                   href={item.href}
-                  onClick={onClose}
+                  onClick={() => {
+                    setPendingHref(item.href);
+                    onClose?.();
+                  }}
                   title={collapsedState ? item.name : undefined}
-                  className={`group flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all cursor-pointer select-none ${
+                  className={`group flex items-center gap-2.5 rounded-xl px-2.5 py-2 cursor-pointer select-none ${
                     isActive
                       ? "bg-emerald-600 text-white font-bold shadow-xs"
                       : "border border-zinc-200 bg-zinc-50/80 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 hover:border-zinc-300 font-semibold"
                   } ${collapsedState ? "justify-center px-1.5" : ""}`}
                 >
                   <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                       isActive
                         ? "bg-white/20 text-white"
                         : "bg-white border border-zinc-200 text-zinc-600 group-hover:text-zinc-900 shadow-2xs"
@@ -213,16 +235,19 @@ export function AppSidebar({
           <Link
             key={item.href}
             href={item.href}
-            onClick={onClose}
+            onClick={() => {
+              setPendingHref(item.href);
+              onClose?.();
+            }}
             title={collapsedState ? item.name : undefined}
-            className={`group flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all cursor-pointer select-none ${
+            className={`group flex items-center gap-2.5 rounded-xl px-2.5 py-2 cursor-pointer select-none ${
               isActive
                 ? "bg-emerald-50 text-emerald-900 font-bold border-l-4 border-emerald-600 shadow-2xs"
                 : "text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900 font-medium border-l-4 border-transparent"
             } ${collapsedState ? "justify-center px-1.5 border-l-0" : ""}`}
           >
             <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                 isActive
                   ? "bg-emerald-600 text-white shadow-2xs"
                   : "text-zinc-400 group-hover:text-zinc-700 group-hover:bg-zinc-100"
@@ -375,10 +400,10 @@ export function AppSidebar({
     if (!isOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-50 flex">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 bg-black/55"
           onClick={onClose}
         />
 

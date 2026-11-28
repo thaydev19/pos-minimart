@@ -177,10 +177,10 @@ export function InventoryPage() {
       {/* 4. Stock Overview Table */}
       <StockOverviewTable items={items} isLoading={isLoading} />
 
-      {/* 5. Modals & Drawers */}
-      <StockInSheet />
-      <BatchDetailDrawer />
-      <StockAdjustmentDialog />
+      {/* 5. Modals & Drawers (Mounted only when open for instant page mount) */}
+      {isStockInOpen && <StockInSheet />}
+      {hasBatchViewOpen && <BatchDetailDrawer />}
+      {hasAdjustmentOpen && <StockAdjustmentDialog />}
     </div>
   );
 }

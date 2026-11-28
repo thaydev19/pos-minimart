@@ -30,8 +30,8 @@ export function useProductsQuery(filters?: ProductFilters) {
   const query = useQuery<ProductListItem[]>({
     queryKey,
     queryFn: () => productsApi.fetchProducts(),
-    staleTime: 1000 * 30, // 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 
   return {
@@ -55,7 +55,7 @@ export function useProductDetailQuery(productId?: string) {
       return all.find((p) => p.id === productId);
     },
     enabled: Boolean(productId),
-    staleTime: 1000 * 30,
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 }

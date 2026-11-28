@@ -5,14 +5,14 @@
 // Breakpoints: Mobile (2 cols), sm (3 cols), lg (4 cols), xl (5 cols), 2xl (6 cols)
 // ============================================================================
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useMemo } from "react";
 import { Plus, RefreshCw, PackageX, AlertCircle, Scale } from "lucide-react";
 import { usePosStore } from "../stores/pos.store";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { triggerHapticFeedback } from "@/utils/haptics";
 import { ProductThumbnail } from "./ProductThumbnail";
 import { ProductCard } from "./ProductCard";
+import { useProgressiveRows } from "@/hooks/useProgressiveRows";
 
 interface ProductCatalogGridProps {
   searchFilter?: string;
@@ -28,24 +28,32 @@ export function ProductCatalogGrid({
   const isLoadingCatalog = usePosStore((s) => s.isLoadingCatalog);
   const viewMode = usePosStore((s) => s.viewMode);
   const syncWithDatabase = usePosStore((s) => s.syncWithDatabase);
-  const addToCart = usePosStore((s) => s.addToCart);
 
-  const filteredProducts = products.filter((prod) => {
-    const matchesCategory =
-      activeCategory === "cat-all" || prod.category_id === activeCategory;
+  const filteredProducts = useMemo(() => {
+    const query = searchFilter.trim().toLowerCase();
+    return products.filter((prod) => {
+      if (activeCategory !== "cat-all" && prod.category_id !== activeCategory) {
+        return false;
+      }
+      if (!query) return true;
+      return (
+        prod.name_lo.toLowerCase().includes(query) ||
+        (prod.name_en && prod.name_en.toLowerCase().includes(query)) ||
+        prod.barcode.toLowerCase().includes(query) ||
+        (prod.sku && prod.sku.toLowerCase().includes(query))
+      );
+    });
+  }, [products, activeCategory, searchFilter]);
 
-    if (!matchesCategory) return false;
-
-    if (!searchFilter.trim()) return true;
-
-    const query = searchFilter.toLowerCase();
-    return (
-      prod.name_lo.toLowerCase().includes(query) ||
-      (prod.name_en && prod.name_en.toLowerCase().includes(query)) ||
-      prod.barcode.toLowerCase().includes(query) ||
-      (prod.sku && prod.sku.toLowerCase().includes(query))
-    );
-  });
+  const { visibleCount, hasMore, sentinelRef, showMore } = useProgressiveRows(
+    filteredProducts.length,
+    40,
+    "450px"
+  );
+  const visibleProducts = useMemo(
+    () => filteredProducts.slice(0, visibleCount),
+    [filteredProducts, visibleCount]
+  );
 
   // 1. Skeleton Loading State (Matches exact ProductCard geometry on Web & Desktop .exe)
   if (isLoadingCatalog && products.length === 0) {
@@ -146,8 +154,8 @@ export function ProductCatalogGrid({
   // 4. Compact / List Mode Layout: Horizontal Strip Cards
   if (viewMode === "compact") {
     return (
-      <div className="absolute inset-0 overflow-y-auto overscroll-contain content-start grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 pr-1 pb-6">
-        {filteredProducts.map((prod) => {
+      <div className="absolute inset-0 overflow-y-auto overscroll-contain touch-pan-y will-change-scroll content-start grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-2.5 pr-1 pb-6">
+        {visibleProducts.map((prod) => {
           const clearanceBatch = prod.batches?.find(
             (b) => b.is_clearance && b.quantity_on_hand > 0
           );
@@ -161,26 +169,29 @@ export function ProductCatalogGrid({
 
           const handleItemClick = () => {
             triggerHapticFeedback(25);
-            addToCart(prod);
+            usePosStore.getState().addToCart(prod);
           };
 
           return (
-            <motion.div
+            <div
               key={prod.id}
-              whileTap={{ scale: 0.98 }}
               onClick={handleItemClick}
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:border-emerald-500/60 hover:shadow-xs active:bg-emerald-50/20 transition-all cursor-pointer select-none touch-manipulation min-w-0"
+              style={{
+                contentVisibility: "auto",
+                containIntrinsicSize: "auto 76px",
+                contain: "layout style paint",
+              }}
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-2.5 hover:border-emerald-500/70 active:bg-emerald-50/35 transition-colors duration-75 cursor-pointer select-none touch-pan-y min-w-0"
             >
               {/* Left Cluster: Fixed Thumbnail + Product Meta */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                {/* Fixed Thumbnail Container (Pure white background + mix-blend-multiply) */}
                 <div className="relative h-13 w-13 shrink-0 rounded-xl bg-white p-0.5 overflow-hidden border border-slate-200/70 flex items-center justify-center">
                   <ProductThumbnail
                     src={prod.image_url}
                     alt={prod.name_lo}
                     name={prod.name_lo}
                     className="w-full h-full"
-                    imgClassName="object-contain object-center mix-blend-multiply scale-105 group-hover:scale-110 transition-transform duration-200"
+                    imgClassName="object-contain object-center"
                   />
                 </div>
 
@@ -229,22 +240,50 @@ export function ProductCatalogGrid({
               </div>
 
               {/* Right Action: Plus Button */}
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white active:scale-95 transition-all shadow-2xs">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-75">
                 <Plus className="h-4 w-4" />
               </div>
-            </motion.div>
+            </div>
           );
         })}
+        {hasMore && (
+          <div
+            ref={sentinelRef}
+            className="col-span-full flex items-center justify-center py-3"
+          >
+            <button
+              type="button"
+              onClick={showMore}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              ສະແດງເພີ່ມ ({visibleProducts.length} / {filteredProducts.length})
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
-  // 5. Standard Grid Mode: Touch-Optimized Layout (Compact gap between cards)
+  // 5. Standard Grid Mode: Touch-Optimized GPU-Composited Layout
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 pr-1 pb-6">
-      {filteredProducts.map((prod) => (
+    <div className="absolute inset-0 overflow-y-auto overscroll-contain touch-pan-y will-change-scroll content-start grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5 pr-1 pb-6">
+      {visibleProducts.map((prod) => (
         <ProductCard key={prod.id} product={prod} />
       ))}
+      {hasMore && (
+        <div
+          ref={sentinelRef}
+          className="col-span-full flex items-center justify-center py-3"
+        >
+          <button
+            type="button"
+            onClick={showMore}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+          >
+            ສະແດງເພີ່ມ ({visibleProducts.length} / {filteredProducts.length})
+          </button>
+        </div>
+      )}
     </div>
   );
 }

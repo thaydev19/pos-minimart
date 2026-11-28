@@ -22,7 +22,7 @@ export {
 } from "./useProductMutations";
 
 export function useProducts() {
-  const { products, isLoading, isFetching, refetch } = useProductsQuery();
+  const { products, isLoading, refetch } = useProductsQuery();
   const searchTerm = useProductStore((s) => s.searchTerm);
   const selectedCategory = useProductStore((s) => s.selectedCategory);
   const filterType = useProductStore((s) => s.filterType);
@@ -57,7 +57,8 @@ export function useProducts() {
     products: filteredProducts,
     allProducts: products,
     totalCount: products.length,
-    isLoading: isLoading || isFetching,
+    // Keep cached products rendered immediately instead of blanking out on background refetch
+    isLoading: isLoading && products.length === 0,
     refresh: refetch,
   };
 }

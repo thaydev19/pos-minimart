@@ -266,15 +266,15 @@ export function PosTerminalPage() {
           </div>
         )}
 
-        {/* Right Area: Cart & Payment Sidebar (Desktop & Tablet) */}
-        <aside className="hidden md:flex w-[440px] xl:w-[480px] shrink-0 flex-col overflow-hidden">
+        {/* Right Area: Cart & Payment Sidebar (Desktop & POS Small Screen >= 520px) */}
+        <aside className="hidden min-[520px]:flex w-[260px] sm:w-[310px] md:w-[380px] lg:w-[440px] xl:w-[480px] shrink-0 flex-col overflow-hidden">
           <CartPanel />
         </aside>
       </main>
 
-      {/* Floating Bottom Cart Bar (Mobile Only: < 768px when cart has items) */}
+      {/* Floating Bottom Cart Bar (Mobile Only: < 520px when cart has items) */}
       {totals.totalItemCount > 0 && !isMobileCartOpen && (
-        <div className="fixed bottom-3 left-3 right-3 z-40 md:hidden">
+        <div className="fixed bottom-3 left-3 right-3 z-40 min-[520px]:hidden">
           <button
             type="button"
             onClick={() => setIsMobileCartOpen(true)}
@@ -305,9 +305,9 @@ export function PosTerminalPage() {
         </div>
       )}
 
-      {/* Mobile Cart Drawer Sheet (< 768px) */}
+      {/* Mobile Cart Drawer Sheet (< 520px) */}
       {isMobileCartOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 min-[520px]:hidden flex flex-col bg-black/65">
           <div
             className="absolute inset-0"
             onClick={() => setIsMobileCartOpen(false)}

@@ -6,7 +6,6 @@
 // ============================================================================
 
 import React, { memo } from "react";
-import { motion } from "framer-motion";
 import { Plus, AlertCircle, Scale, Layers } from "lucide-react";
 import { ProductWithDetails } from "../types/pos.types";
 import { formatLak } from "@/utils/formatLakCurrency";
@@ -19,8 +18,6 @@ interface ProductCardProps {
 }
 
 export const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
-  const addToCart = usePosStore((s) => s.addToCart);
-
   const clearanceBatch = product.batches?.find(
     (b) => b.is_clearance && b.quantity_on_hand > 0
   );
@@ -34,16 +31,20 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
 
   const handleCardClick = () => {
     triggerHapticFeedback(25);
-    addToCart(product);
+    usePosStore.getState().addToCart(product);
   };
 
   return (
-    <motion.div
-      whileTap={{ scale: 0.96 }}
+    <div
       onClick={handleCardClick}
-      className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white p-2 pb-2.5 shadow-xs hover:border-emerald-500/60 hover:shadow-md active:bg-emerald-50/20 transition-all cursor-pointer select-none touch-manipulation"
+      style={{
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 250px",
+        contain: "layout style paint",
+      }}
+      className="group relative flex flex-col h-full rounded-2xl border border-slate-200/90 bg-white p-2 pb-2.5 hover:border-emerald-500/70 active:bg-emerald-50/35 transition-colors duration-75 cursor-pointer select-none touch-pan-y"
     >
-      {/* 1. Seamless Edge-to-Edge Image Header (Pure white bg, block container so badges stay pinned to top corners) */}
+      {/* 1. Seamless Image Header (Pure white bg without GPU blend readback) */}
       <div
         style={{ borderBottomColor: "#f1f5f9" }}
         className="relative h-40 w-full shrink-0 bg-white overflow-hidden border-b border-slate-100 pb-2 mb-2"
@@ -54,7 +55,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             alt={product.name_lo}
             name={product.name_lo}
             className="w-full h-full"
-            imgClassName="w-full h-full object-contain mix-blend-multiply scale-110 group-hover:scale-115 transition-transform duration-200"
+            imgClassName="w-full h-full object-contain object-center"
           />
         </div>
 
@@ -67,19 +68,19 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start pointer-events-none"
           >
             {hasNearExpiry && (
-              <span className="flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+              <span className="flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                 <AlertCircle className="h-2.5 w-2.5" />
                 <span>ໃກ້ໝົດ</span>
               </span>
             )}
             {product.is_weighing && (
-              <span className="flex items-center gap-1 rounded-md bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+              <span className="flex items-center gap-1 rounded-md bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
                 <Scale className="h-2.5 w-2.5" />
                 <span>ຊັ່ງກິໂລ</span>
               </span>
             )}
             {totalStock !== null && totalStock <= 5 && totalStock > 0 && (
-              <span className="flex items-center gap-1 rounded-md bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+              <span className="flex items-center gap-1 rounded-md bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                 <span>ເຫຼືອ {totalStock}</span>
               </span>
             )}
@@ -92,7 +93,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             style={{ position: "absolute", top: 6, right: 6 }}
             className="absolute top-2 right-2 z-10 pointer-events-none"
           >
-            <span className="flex items-center gap-1 rounded-md bg-zinc-900/75 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+            <span className="flex items-center gap-1 rounded-md bg-zinc-900/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
               <Layers className="h-2.5 w-2.5" />
               <span>{product.units.length} ໜ່ວຍ</span>
             </span>
@@ -122,12 +123,12 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             </span>
           </div>
 
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white active:scale-95 transition-all shadow-xs">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-75">
             <Plus className="h-4 w-4" />
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });
 

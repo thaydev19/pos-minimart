@@ -4,7 +4,7 @@ use tauri::Manager;
 
 #[tauri::command]
 fn show_main_window(window: tauri::WebviewWindow) {
-  let _ = window.maximize();
+  let _ = window.set_fullscreen(true);
   let _ = window.show();
   let _ = window.set_focus();
 }
@@ -56,7 +56,7 @@ pub fn run() {
         std::thread::spawn(move || {
           // Safety fallback: reveal window after 1200ms if not revealed by frontend
           std::thread::sleep(std::time::Duration::from_millis(1200));
-          let _ = win.maximize();
+          let _ = win.set_fullscreen(true);
           let _ = win.show();
           let _ = win.set_focus();
         });

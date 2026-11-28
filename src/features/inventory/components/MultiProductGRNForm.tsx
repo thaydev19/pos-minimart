@@ -717,16 +717,16 @@ export function MultiProductGRNForm() {
               ) : (
                 <>
                   {/* 1. Desktop Table (6 Clean Columns with Sticky Header) */}
-                  <div className="hidden md:block overflow-x-auto w-full">
-                    <table className="w-full text-left text-xs border-collapse">
+                  <div className="hidden md:block overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain w-full">
+                    <table className="w-full lg:table-fixed text-left text-xs border-collapse">
                       <thead className="sticky top-0 z-10 bg-slate-50 shadow-2xs">
                         <tr className="border-b border-slate-200 text-[11px] text-slate-600 font-bold uppercase tracking-wider">
-                          <th className="py-3 px-4 min-w-[220px]">ຮູບ & ຊື່ສິນຄ້າ</th>
-                          <th className="py-3 px-3 text-center w-[150px]">ຕົວໜ່ວຍນຳເຂົ້າ</th>
-                          <th className="py-3 px-3 text-center w-[120px]">ຈຳນວນ</th>
-                          <th className="py-3 px-3 text-right w-[140px]">ຕົ້ນທຶນ ₭</th>
-                          <th className="py-3 px-4 text-right w-[150px]">ລວມເງິນ ₭</th>
-                          <th className="py-3 px-3 text-center w-[90px]">ຈັດການ</th>
+                          <th className="py-2.5 px-3 lg:w-[27%]">ຮູບ & ຊື່ສິນຄ້າ</th>
+                          <th className="py-2.5 px-2 text-center lg:w-[19%] whitespace-nowrap">ຕົວໜ່ວຍນຳເຂົ້າ</th>
+                          <th className="py-2.5 px-2 text-center lg:w-[14%] whitespace-nowrap">ຈຳນວນ</th>
+                          <th className="py-2.5 px-2 text-right lg:w-[15%] whitespace-nowrap">ຕົ້ນທຶນ ₭</th>
+                          <th className="py-2.5 px-3 text-right lg:w-[15%] whitespace-nowrap">ລວມເງິນ ₭</th>
+                          <th className="py-2.5 px-2 text-center lg:w-[10%] whitespace-nowrap">ຈັດການ</th>
                         </tr>
                       </thead>
                     <tbody className="divide-y divide-slate-100">

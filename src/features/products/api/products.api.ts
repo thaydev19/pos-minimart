@@ -166,13 +166,16 @@ export const productsApi = {
    */
   async createProduct(form: ProductFormData): Promise<ProductListItem> {
     const productId = crypto.randomUUID();
+    const resolvedBarcode =
+      form.barcode?.trim() ||
+      `${form.is_weighing ? "20" : "885"}${Date.now().toString().slice(-9)}`;
 
     // 1. Insert product record
     const productPayload = {
       id: productId,
       store_id: DEFAULT_STORE.id,
       category_id: form.category_id || null,
-      barcode: form.barcode.trim(),
+      barcode: resolvedBarcode,
       sku: form.sku?.trim() || null,
       name_lo: form.name_lo.trim(),
       name_en: form.name_en?.trim() || null,
@@ -212,7 +215,7 @@ export const productsApi = {
       unit_name: u.unit_name.trim(),
       conversion_rate: Number(u.conversion_rate) || 1,
       selling_price: Number(u.selling_price) || 0,
-      barcode: u.barcode?.trim() || form.barcode.trim(),
+      barcode: u.barcode?.trim() || resolvedBarcode,
       is_base_unit: Boolean(u.is_base_unit),
       created_at: new Date().toISOString(),
     }));
@@ -317,10 +320,14 @@ export const productsApi = {
    * Updates an existing product and its units in Supabase and Dexie.
    */
   async updateProduct(id: string, form: ProductFormData): Promise<void> {
+    const resolvedBarcode =
+      form.barcode?.trim() ||
+      `${form.is_weighing ? "20" : "885"}${Date.now().toString().slice(-9)}`;
+
     // 1. Update product record
     const updatePayload = {
       category_id: form.category_id || null,
-      barcode: form.barcode.trim(),
+      barcode: resolvedBarcode,
       sku: form.sku?.trim() || null,
       name_lo: form.name_lo.trim(),
       name_en: form.name_en?.trim() || null,
@@ -354,7 +361,7 @@ export const productsApi = {
       unit_name: u.unit_name.trim(),
       conversion_rate: Number(u.conversion_rate) || 1,
       selling_price: Number(u.selling_price) || 0,
-      barcode: u.barcode?.trim() || form.barcode.trim(),
+      barcode: u.barcode?.trim() || resolvedBarcode,
       is_base_unit: Boolean(u.is_base_unit),
       created_at: new Date().toISOString(),
     }));

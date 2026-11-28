@@ -13,6 +13,7 @@ import { inventoryApi } from "../api/inventory.api";
 interface InventoryState {
   items: InventoryProductItem[];
   isLoading: boolean;
+  lastLoadedAt: number;
   searchTerm: string;
   filterStatus: InventoryFilterStatus;
   selectedCategory: string;
@@ -27,7 +28,7 @@ interface InventoryState {
   } | null;
 
   // Actions
-  loadInventory: () => Promise<void>;
+  loadInventory: (options?: { ifStale?: boolean }) => Promise<void>;
   setSearchTerm: (term: string) => void;
   setFilterStatus: (status: InventoryFilterStatus) => void;
   setSelectedCategory: (catId: string) => void;
@@ -46,6 +47,7 @@ interface InventoryState {
 export const useInventoryStore = create<InventoryState>((set, get) => ({
   items: [],
   isLoading: false,
+  lastLoadedAt: 0,
   searchTerm: "",
   filterStatus: "all",
   selectedCategory: "all",
@@ -55,16 +57,24 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   selectedProductForBatchView: null,
   selectedBatchForAdjustment: null,
 
-  loadInventory: async () => {
-    set({ isLoading: true });
+  loadInventory: async (options) => {
+    const { items, lastLoadedAt } = get();
+    const isFresh = items.length > 0 && Date.now() - lastLoadedAt < 1000 * 60 * 5;
+    if (options?.ifStale && isFresh) {
+      return;
+    }
+
+    if (items.length === 0) {
+      set({ isLoading: true });
+    }
     try {
-      const items = await inventoryApi.fetchInventoryOverview();
-      set({ items, isLoading: false });
+      const fetchedItems = await inventoryApi.fetchInventoryOverview();
+      set({ items: fetchedItems, isLoading: false, lastLoadedAt: Date.now() });
 
       // If batch view is currently open, refresh its product reference
       const currentBatchView = get().selectedProductForBatchView;
       if (currentBatchView) {
-        const updated = items.find((p) => p.id === currentBatchView.id);
+        const updated = fetchedItems.find((p) => p.id === currentBatchView.id);
         if (updated) {
           set({ selectedProductForBatchView: updated });
         }

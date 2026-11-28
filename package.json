@@ -1,6 +1,6 @@
 {
   "name": "pos-minimart",
-  "version": "0.1.2",
+  "version": "0.1.15",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -11,7 +11,7 @@
     "build:web": "next build --webpack",
     "android:sync": "npx cap sync android",
     "android:open": "npx cap open android",
-    "build": "next build --webpack",
+    "build": "node -e \"const fs=require('fs');fs.rmSync('.next/cache',{recursive:true,force:true});fs.rmSync('out',{recursive:true,force:true});\" && next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },

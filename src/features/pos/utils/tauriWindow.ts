@@ -6,6 +6,19 @@
 import { notifyCustomerDisplayClosed } from "./customerDisplaySync";
 
 let customerDisplayPopupRef: Window | null = null;
+let customerDisplayTauriWinRef: any = null;
+
+async function resolveTauriWebviewWindow(): Promise<any> {
+  const tauri = (window as any).__TAURI__;
+  const fromGlobal = (tauri?.webviewWindow || tauri?.window)?.WebviewWindow;
+  if (fromGlobal) return fromGlobal;
+  try {
+    const mod = await import("@tauri-apps/api/webviewWindow");
+    return mod.WebviewWindow;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Checks if running inside Tauri desktop environment
@@ -35,18 +48,57 @@ export async function isCustomerDisplayWindowOpenAsync(): Promise<boolean> {
 
   if (isTauriEnvironment()) {
     try {
-      const tauri = (window as any).__TAURI__;
-      const webviewModule = tauri?.webviewWindow || tauri?.window;
-      if (webviewModule?.WebviewWindow?.getByLabel) {
-        const win = await webviewModule.WebviewWindow.getByLabel("customer-display");
+      const WebviewWindow = await resolveTauriWebviewWindow();
+      if (WebviewWindow?.getByLabel) {
+        const win = await WebviewWindow.getByLabel("customer-display");
         return Boolean(win);
       }
+      return Boolean(customerDisplayTauriWinRef);
     } catch {
       return false;
     }
   }
 
   return isCustomerDisplayWindowOpen();
+}
+
+/**
+ * Closes the Customer Display window in Tauri or Browser popup mode
+ */
+export async function closeCustomerDisplayWindow(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  if (isTauriEnvironment()) {
+    try {
+      const WebviewWindow = await resolveTauriWebviewWindow();
+      const win =
+        (WebviewWindow?.getByLabel
+          ? await WebviewWindow.getByLabel("customer-display")
+          : null) || customerDisplayTauriWinRef;
+
+      if (win) {
+        if (typeof win.destroy === "function") {
+          await win.destroy().catch(async () => {
+            if (typeof win.close === "function") await win.close();
+          });
+        } else if (typeof win.close === "function") {
+          await win.close();
+        }
+      }
+    } catch (err) {
+      console.warn("[TauriWindow] Error closing customer display window:", err);
+    }
+    customerDisplayTauriWinRef = null;
+    notifyCustomerDisplayClosed();
+    return true;
+  }
+
+  if (customerDisplayPopupRef && !customerDisplayPopupRef.closed) {
+    customerDisplayPopupRef.close();
+    customerDisplayPopupRef = null;
+  }
+  notifyCustomerDisplayClosed();
+  return true;
 }
 
 /**
@@ -63,12 +115,10 @@ export async function openCustomerDisplayWindow(): Promise<boolean> {
   if (isTauriEnvironment()) {
     try {
       const tauri = (window as any).__TAURI__;
-      // Handle both Tauri v2 (@tauri-apps/api/webviewWindow) and Tauri v1 (@tauri-apps/api/window)
       const webviewModule = tauri?.webviewWindow || tauri?.window;
+      const WebviewWindow = await resolveTauriWebviewWindow();
 
-      if (webviewModule && webviewModule.WebviewWindow) {
-        const WebviewWindow = webviewModule.WebviewWindow;
-
+      if (WebviewWindow) {
         // Check if window already exists
         let existingWin = null;
         if (typeof WebviewWindow.getByLabel === "function") {
@@ -76,7 +126,11 @@ export async function openCustomerDisplayWindow(): Promise<boolean> {
         }
 
         if (existingWin) {
+          customerDisplayTauriWinRef = existingWin;
           if (typeof existingWin.show === "function") await existingWin.show();
+          if (typeof existingWin.setFullscreen === "function") {
+            await existingWin.setFullscreen(true).catch(() => {});
+          }
           if (typeof existingWin.setFocus === "function") await existingWin.setFocus();
           return true;
         }
@@ -102,44 +156,64 @@ export async function openCustomerDisplayWindow(): Promise<boolean> {
             title: "Lao Minimart - Customer Display (ຈໍລູກຄ້າ)",
             x: posX,
             y: posY,
-            width: Math.min(width, 1280),
-            height: Math.min(height, 800),
-            fullscreen: false,
-            decorations: true,
+            width,
+            height,
+            fullscreen: true,
+            decorations: false,
             resizable: true,
             alwaysOnTop: false,
             skipTaskbar: false,
           });
 
+          customerDisplayTauriWinRef = newWin;
+          newWin.once("tauri://created", async () => {
+            try {
+              if (typeof newWin.setFullscreen === "function") {
+                await newWin.setFullscreen(true);
+              }
+            } catch {}
+          });
           newWin.once("tauri://error", (err: any) => {
             console.warn("[TauriWindow] Secondary screen webview error:", err);
           });
           newWin.once("tauri://close-requested", () => {
+            customerDisplayTauriWinRef = null;
             notifyCustomerDisplayClosed();
           });
           newWin.once("tauri://destroyed", () => {
+            customerDisplayTauriWinRef = null;
             notifyCustomerDisplayClosed();
           });
 
           return true;
         } else {
-          // Single monitor in Tauri (Windowed mode with OS titlebar for dragging)
+          // Single monitor in Tauri: open directly in fullscreen
           const newWin = new WebviewWindow("customer-display", {
             url: targetUrl,
             title: "Lao Minimart - Customer Display (ຈໍລູກຄ້າ)",
-            width: 1200,
+            width: 1280,
             height: 800,
-            fullscreen: false,
-            decorations: true,
+            fullscreen: true,
+            decorations: false,
             resizable: true,
             center: true,
             alwaysOnTop: false,
           });
 
+          customerDisplayTauriWinRef = newWin;
+          newWin.once("tauri://created", async () => {
+            try {
+              if (typeof newWin.setFullscreen === "function") {
+                await newWin.setFullscreen(true);
+              }
+            } catch {}
+          });
           newWin.once("tauri://close-requested", () => {
+            customerDisplayTauriWinRef = null;
             notifyCustomerDisplayClosed();
           });
           newWin.once("tauri://destroyed", () => {
+            customerDisplayTauriWinRef = null;
             notifyCustomerDisplayClosed();
           });
 
@@ -158,14 +232,10 @@ export async function openCustomerDisplayWindow(): Promise<boolean> {
       return true;
     }
 
-    const popupWidth = 1024;
-    const popupHeight = 768;
-    // Calculate position: right side of the screen if available
-    const left =
-      window.screen && window.screen.availWidth > 1200
-        ? Math.max(0, window.screen.availWidth - popupWidth - 40)
-        : 100;
-    const top = 60;
+    const popupWidth = window.screen?.availWidth || 1280;
+    const popupHeight = window.screen?.availHeight || 800;
+    const left = (window.screen as any)?.availLeft ?? 0;
+    const top = (window.screen as any)?.availTop ?? 0;
 
     customerDisplayPopupRef = window.open(
       targetUrl,

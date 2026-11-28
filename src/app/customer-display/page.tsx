@@ -53,13 +53,74 @@ export default function CustomerDisplayPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const listBottomRef = useRef<HTMLDivElement>(null);
 
+  const resolveTauriWindow = async () => {
+    if (typeof window === "undefined") return null;
+    const tauri = (window as any).__TAURI__;
+    const fromGlobal =
+      tauri?.window?.getCurrentWindow?.() ||
+      tauri?.webviewWindow?.getCurrentWebviewWindow?.();
+    if (fromGlobal) return fromGlobal;
+
+    const isTauri = Boolean(
+      tauri ||
+        (window as any).__TAURI_INTERNALS__ ||
+        (window as any).__TAURI_METADATA__
+    );
+    if (!isTauri) return null;
+
+    try {
+      const mod = await import("@tauri-apps/api/window");
+      return mod.getCurrentWindow();
+    } catch {
+      return null;
+    }
+  };
+
+  // Auto-enter fullscreen on open and keep fullscreen badge synced
+  useEffect(() => {
+    let active = true;
+    const syncAndEnterFullscreen = async () => {
+      try {
+        const win = await resolveTauriWindow();
+        if (win && typeof win.setFullscreen === "function") {
+          const already =
+            typeof win.isFullscreen === "function"
+              ? await win.isFullscreen()
+              : false;
+          if (!already) {
+            await win.setFullscreen(true);
+          }
+          if (active) setIsFullscreen(true);
+          return;
+        }
+
+        if (document.fullscreenElement) {
+          if (active) setIsFullscreen(true);
+        } else if (document.documentElement?.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+          if (active) setIsFullscreen(true);
+        }
+      } catch {
+        if (active) setIsFullscreen(Boolean(document.fullscreenElement));
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      if (active) setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    syncAndEnterFullscreen();
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      active = false;
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   // Toggle Fullscreen in Tauri Desktop Window or Web Browser
   const toggleFullscreen = async () => {
     try {
-      const tauri = typeof window !== "undefined" ? (window as any).__TAURI__ : null;
-      const win =
-        tauri?.window?.getCurrentWindow?.() ||
-        tauri?.webviewWindow?.getCurrentWebviewWindow?.();
+      const win = await resolveTauriWindow();
 
       if (win && typeof win.isFullscreen === "function") {
         const current = await win.isFullscreen();

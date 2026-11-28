@@ -4,7 +4,7 @@
 // ExpiryBadge: High-Contrast Countdown & Warning Pill for FEFO Batches
 // ============================================================================
 
-import React from "react";
+import React, { memo } from "react";
 import { AlertCircle, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
 import { BatchExpiryStatus } from "../types/inventory.types";
 
@@ -15,7 +15,7 @@ interface ExpiryBadgeProps {
   size?: "sm" | "md";
 }
 
-export function ExpiryBadge({
+export const ExpiryBadge = memo(function ExpiryBadge({
   expiryDate,
   daysUntilExpiry,
   status,
@@ -42,7 +42,7 @@ export function ExpiryBadge({
     return (
       <span
         title={expiryDate ? `ວັນໝົດອາຍຸ: ${expiryDate} (ຕ້ອງເລັ່ງຂາຍ)` : undefined}
-        className={`inline-flex items-center gap-1 rounded-full bg-rose-50 text-rose-700 border border-rose-300 font-extrabold animate-pulse ${
+        className={`inline-flex items-center gap-1 rounded-full bg-rose-50 text-rose-700 border border-rose-300 font-extrabold ${
           isSm ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"
         }`}
       >
@@ -78,5 +78,5 @@ export function ExpiryBadge({
       <span>ປົກກະຕິ ({daysUntilExpiry} ວັນ)</span>
     </span>
   );
-}
+});
 

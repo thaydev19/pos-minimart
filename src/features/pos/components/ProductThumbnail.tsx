@@ -5,7 +5,7 @@
 // 100% Compatible with Next.js Static Export & Mobile Webview
 // ============================================================================
 
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { Package } from "lucide-react";
 
 // Legacy paper bag Unsplash image that was previously used as default fallback
@@ -19,13 +19,14 @@ interface ProductThumbnailProps {
   imgClassName?: string;
 }
 
-export function ProductThumbnail({
+export const ProductThumbnail = memo(function ProductThumbnail({
   src,
   alt,
   className = "",
   imgClassName = "",
 }: ProductThumbnailProps) {
-  const [hasError, setHasError] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const hasError = Boolean(src && failedSrc === src);
 
   // Check if src is an emoji string rather than a web URL
   const isEmoji =
@@ -43,7 +44,7 @@ export function ProductThumbnail({
         className={`flex items-center justify-center select-none overflow-hidden ${className}`}
         aria-label={alt}
       >
-        <span className="text-4xl leading-none scale-105 group-hover:scale-110 transition-transform duration-200">
+        <span className="text-4xl leading-none">
           {src}
         </span>
       </div>
@@ -66,10 +67,10 @@ export function ProductThumbnail({
     if (isLarge) {
       return (
         <div
-          className={`flex items-center justify-center bg-linear-to-b from-slate-50/80 via-zinc-50/60 to-slate-100/70 select-none overflow-hidden ${className}`}
+          className={`flex items-center justify-center bg-slate-50 select-none overflow-hidden ${className}`}
           aria-label={alt}
         >
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white border border-slate-200/70 shadow-2xs text-slate-400 group-hover:text-emerald-600 group-hover:border-emerald-200 group-hover:scale-105 transition-all duration-200">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white border border-slate-200/80 text-slate-400">
             <Package className="h-8 w-8 stroke-[1.5]" />
           </div>
         </div>
@@ -78,7 +79,7 @@ export function ProductThumbnail({
 
     return (
       <div
-        className={`flex items-center justify-center bg-slate-100/90 border border-slate-200/60 text-slate-400 group-hover:text-emerald-600 select-none overflow-hidden transition-colors ${className}`}
+        className={`flex items-center justify-center bg-slate-100/90 border border-slate-200/60 text-slate-400 select-none overflow-hidden ${className}`}
         aria-label={alt}
       >
         <Package className="h-5 w-5 stroke-[1.65]" />
@@ -86,7 +87,7 @@ export function ProductThumbnail({
     );
   }
 
-  // 3. Image Container with proper containment (Prevents flex overflow in list view)
+  // 3. Image Container with proper containment (Prevents flex overflow & drag stutter on touchscreens)
   return (
     <div
       className={`relative flex items-center justify-center shrink-0 overflow-hidden ${className}`}
@@ -96,9 +97,10 @@ export function ProductThumbnail({
         alt={alt}
         loading="lazy"
         decoding="async"
-        onError={() => setHasError(true)}
-        className={`w-full h-full block ${imgClassName || "object-contain object-center transition-transform duration-200 group-hover:scale-105"}`}
+        draggable={false}
+        onError={() => setFailedSrc(src ?? null)}
+        className={`w-full h-full block ${imgClassName || "object-contain object-center"}`}
       />
     </div>
   );
-}
+});

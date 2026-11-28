@@ -17,8 +17,8 @@ export function useStaffList() {
   return useQuery({
     queryKey: STAFF_QUERY_KEY,
     queryFn: () => staffApi.getStaffList(),
-    staleTime: 1000 * 30, // 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 }
 

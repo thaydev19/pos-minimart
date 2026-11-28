@@ -28,6 +28,11 @@ import { Receipt80mmTemplate } from "../components/Receipt80mmTemplate";
 import { ShiftsPage } from "@/features/shifts";
 import { triggerHapticFeedback } from "@/utils/haptics";
 import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
+import { HardwareService } from "@/features/pos/services/hardware.service";
+import { DEFAULT_STORE } from "@/features/pos/constants/pos.constants";
+import { ReceiptData } from "@/utils/printer.adapter";
+import { formatReceiptDateTime } from "../utils/order.util";
+import { toast } from "sonner";
 
 export function OrdersPage() {
   const [activeTab, setActiveTab] = useState<"orders" | "shifts">("orders");
@@ -44,9 +49,50 @@ export function OrdersPage() {
   const openVoidDialog = useOrderStore((s) => s.openVoidDialog);
   const orderForReprint = useOrderStore((s) => s.orderForReprint);
   const setReprintOrder = useOrderStore((s) => s.setReprintOrder);
+  const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
 
-  const handlePrintReceipt = () => {
-    window.print();
+  const handlePrintReceipt = async () => {
+    if (!orderForReprint || isPrintingReceipt) return;
+    setIsPrintingReceipt(true);
+    triggerHapticFeedback(30);
+
+    try {
+      const receiptData: ReceiptData = {
+        orderNumber: orderForReprint.order_number,
+        dateTime: formatReceiptDateTime(orderForReprint.offline_created_at),
+        cashierName: orderForReprint.cashier_name || "ພະນັກງານຂາຍ",
+        items: (orderForReprint.items || []).map((item) => ({
+          name: item.product_name || "ສິນຄ້າ",
+          unitName: item.unit_name || "ອັນ",
+          qty: item.quantity,
+          unitPrice: item.unit_price,
+          totalPrice: item.total_price,
+          discountAmount: item.discount_amount,
+        })),
+        subtotal: orderForReprint.subtotal,
+        discountAmount: orderForReprint.discount_amount,
+        vatAmount: orderForReprint.vat_amount,
+        finalTotal: orderForReprint.final_total,
+        paymentMethod: orderForReprint.payment_method,
+        cashTendered: orderForReprint.cash_tendered,
+        changeAmount: orderForReprint.change_amount,
+        storeName: DEFAULT_STORE.name_lo,
+        storeBranch: DEFAULT_STORE.branch,
+        storeTel: DEFAULT_STORE.phone,
+        storeTaxCode: DEFAULT_STORE.taxCode,
+      };
+
+      const res = await HardwareService.printReceipt(receiptData, {
+        skipDrawerKick: true,
+      });
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
+    } finally {
+      setIsPrintingReceipt(false);
+    }
   };
 
   return (
@@ -202,10 +248,13 @@ export function OrdersPage() {
           />
           <VoidOrderDialog />
 
-          {/* 80mm Reprint Preview Modal (Compact Modal for 1366x768 POS screens) */}
+          {/* 80mm Reprint Preview Modal (Compact Modal for POS screens) */}
           {orderForReprint && (
-            <div className="receipt-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 select-none">
-              <div className="receipt-modal-card relative w-full max-w-[380px] max-h-[94vh] flex flex-col rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-150 overflow-hidden">
+            <div className="receipt-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 select-none">
+              <div
+                style={{ maxWidth: "380px", width: "100%" }}
+                className="receipt-modal-card relative w-full max-w-[380px] max-h-[90vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-150 overflow-hidden"
+              >
                 <div className="flex items-center justify-between border-b border-slate-100 py-2.5 px-4 shrink-0 bg-white no-print">
                   <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
                     <Printer className="h-4 w-4 text-emerald-600" />
@@ -237,10 +286,11 @@ export function OrdersPage() {
                   <button
                     type="button"
                     onClick={handlePrintReceipt}
-                    className="h-9 px-4 flex items-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
+                    disabled={isPrintingReceipt}
+                    className="h-9 px-4 flex items-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 disabled:opacity-60 transition-all cursor-pointer"
                   >
                     <Printer className="h-3.5 w-3.5" />
-                    <span>ກົດພິມດຽວນີ້</span>
+                    <span>{isPrintingReceipt ? "ກຳລັງພິມ..." : "ກົດພິມດຽວນີ້"}</span>
                   </button>
                 </div>
               </div>

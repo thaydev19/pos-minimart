@@ -46,6 +46,7 @@ import {
 import {
   validateUnitBarcodes,
   calculateUnitSavings,
+  generateInternalBarcode,
 } from "../utils/product.util";
 import { useCategories } from "@/features/categories";
 import { CategoryItem } from "@/features/categories/types/category.types";
@@ -297,14 +298,14 @@ export function ProductFormContent({
       setFormError("ກະລຸນາປ້ອນຊື່ສິນຄ້າ (ພາສາລາວ)");
       return;
     }
-    if (!formData.barcode.trim()) {
-      setFormError("ກະລຸນາປ້ອນ ຫຼື ຍິງບາໂຄດສິນຄ້າ");
-      return;
-    }
     if (formData.selling_price < 0) {
       setFormError("ລາຄາຂາຍບໍ່ສາມາດຕິດລົບໄດ້");
       return;
     }
+
+    // Barcode is optional; auto-generate a unique internal barcode if left blank
+    const resolvedBarcode =
+      formData.barcode.trim() || generateInternalBarcode(formData.is_weighing);
 
     // 2. Prepare units list
     const baseUnitObj: ProductUnitFormData = {
@@ -312,7 +313,7 @@ export function ProductFormContent({
       unit_name: formData.base_unit.trim() || "ອັນ",
       conversion_rate: 1,
       selling_price: formData.selling_price,
-      barcode: formData.barcode.trim(),
+      barcode: resolvedBarcode,
       is_base_unit: true,
     };
 
@@ -323,13 +324,13 @@ export function ProductFormContent({
         unit_name: packUnitName.trim() || "ແພັກ",
         conversion_rate: packMultiplier,
         selling_price: Math.max(0, packSellingPrice),
-        barcode: packBarcode.trim() || (formData.barcode ? `${formData.barcode}-P${packMultiplier}` : ""),
+        barcode: packBarcode.trim() || `${resolvedBarcode}-P${packMultiplier}`,
         is_base_unit: false,
       });
     }
 
     // 3. Validate unit barcodes
-    const unitValidation = validateUnitBarcodes(finalizedUnits, formData.barcode);
+    const unitValidation = validateUnitBarcodes(finalizedUnits, resolvedBarcode);
     if (!unitValidation.isValid) {
       setFormError(unitValidation.error || "ຂໍ້ມູນຫົວໜ່ວຍບໍ່ຖືກຕ້ອງ");
       return;
@@ -357,7 +358,7 @@ export function ProductFormContent({
       name_en: formData.name_en?.trim() || undefined,
       category_id: formData.category_id || undefined,
       base_unit: formData.base_unit.trim() || "ອັນ",
-      barcode: formData.barcode.trim(),
+      barcode: resolvedBarcode,
       sku: formData.sku?.trim() || undefined,
       image_url: finalImageUrl?.trim() || undefined,
       units: finalizedUnits,
@@ -790,13 +791,15 @@ export function ProductFormContent({
                   </div>
                 </div>
 
-                {/* Hàng 3: Barcode lẻ (NẰM DƯỚI CỘT GIÁ MUA GIÁ BÁN, KHÔNG TỰ ĐIỀN, KHÔNG CÓ NÚT TỰ TẠO) */}
+                {/* Hàng 3: Barcode lẻ (Không bắt buộc - tự tạo nếu để trống) */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                       <ScanBarcode className="h-3.5 w-3.5 text-emerald-600" />
                       <span>ບາໂຄດຂາຍຍ່ອຍ (Retail Barcode)</span>
-                      <span className="text-rose-500">*</span>
+                      <span className="text-[10px] font-medium text-slate-400">
+                        (ບໍ່ບັງຄັບ)
+                      </span>
                     </label>
                     <button
                       type="button"
@@ -811,7 +814,6 @@ export function ProductFormContent({
                   <input
                     ref={barcodeInputRef}
                     type="text"
-                    required
                     value={formData.barcode}
                     onChange={(e) => handleBarcodeChange(e.target.value)}
                     onFocus={(e) => e.target.select()}
@@ -840,7 +842,7 @@ export function ProductFormContent({
                         }
                       }
                     }}
-                    placeholder="ຍິງ ຫຼື ພິມບາໂຄດຂາຍຍ່ອຍ..."
+                    placeholder="ຍິງ ຫຼື ພິມບາໂຄດ (ປ່ອຍວ່າງໄດ້)..."
                     className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-mono font-semibold text-slate-800 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 placeholder:text-slate-400"
                   />
                 </div>

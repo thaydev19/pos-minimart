@@ -5,7 +5,12 @@
 // ============================================================================
 
 import { registerPlugin } from "@capacitor/core";
-import { openCustomerDisplayWindow, isTauriEnvironment } from "./tauriWindow";
+import {
+  openCustomerDisplayWindow,
+  closeCustomerDisplayWindow,
+  isTauriEnvironment,
+} from "./tauriWindow";
+import { notifyCustomerDisplayClosed } from "./customerDisplaySync";
 
 export type PosRuntimePlatform = "tauri" | "capacitor" | "web";
 
@@ -99,13 +104,10 @@ export async function initCustomerDisplay(
       return true;
     }
 
-    const popupWidth = 1024;
-    const popupHeight = 768;
-    const left =
-      window.screen && window.screen.availWidth > 1200
-        ? Math.max(0, window.screen.availWidth - popupWidth - 40)
-        : 100;
-    const top = 60;
+    const popupWidth = window.screen?.availWidth || 1280;
+    const popupHeight = window.screen?.availHeight || 800;
+    const left = (window.screen as any)?.availLeft ?? 0;
+    const top = (window.screen as any)?.availTop ?? 0;
 
     webPopupRef = window.open(
       path,
@@ -140,11 +142,16 @@ export async function closeCustomerDisplay(): Promise<boolean> {
     }
   }
 
+  if (platform === "tauri") {
+    return await closeCustomerDisplayWindow();
+  }
+
   if (webPopupRef && !webPopupRef.closed) {
     webPopupRef.close();
     webPopupRef = null;
+    notifyCustomerDisplayClosed();
     return true;
   }
 
-  return true;
+  return await closeCustomerDisplayWindow();
 }

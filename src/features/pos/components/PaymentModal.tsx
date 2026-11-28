@@ -6,6 +6,7 @@
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Banknote,
   QrCode,
@@ -404,15 +405,17 @@ export function PaymentModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/65 p-2 sm:p-4">
       <div
-        className={`w-full rounded-3xl bg-white shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 max-h-[94vh] flex flex-col overflow-hidden ${
+        className={`w-full rounded-2xl sm:rounded-3xl bg-white shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 max-h-[96vh] flex flex-col overflow-hidden ${
           isCompleted ? "max-w-lg" : "max-w-4xl"
         }`}
       >
         {/* Fixed Modal Header */}
-        <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-white">
+        <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-3.5 sm:px-5 py-2 sm:py-3.5 bg-white">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900">
               {lo.payment.modalTitle}
@@ -562,17 +565,17 @@ export function PaymentModal({
         ) : (
           <>
             {/* Light Minimalist 2-Column Checkout Body (Cohesive White + QuickOne Emerald) */}
-            <div className="flex-1 min-h-0 overflow-y-auto bg-white p-5">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+            <div className="flex-1 min-h-0 overflow-y-auto bg-white p-2.5 sm:p-4 lg:p-5">
+              <div className="grid grid-cols-1 min-[520px]:grid-cols-12 gap-2.5 sm:gap-4 lg:gap-5 items-stretch">
                 {/* LEFT COLUMN: Single Unified Summary Card */}
-                <div className="md:col-span-5 rounded-2xl border border-slate-200/90 bg-slate-50/70 p-4 flex flex-col justify-between gap-3">
-                  <div className="space-y-3">
+                <div className="min-[520px]:col-span-5 rounded-2xl border border-slate-200/90 bg-slate-50/70 p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {/* 1. Hero Total Due */}
-                    <div className="pb-3 border-b border-slate-200/80">
+                    <div className="pb-2 sm:pb-3 border-b border-slate-200/80">
                       <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                         <span>{lo.payment.totalDue}</span>
                       </div>
-                      <div className="text-3xl sm:text-4xl font-black text-emerald-700 tabular-nums tracking-tight mt-1">
+                      <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-700 tabular-nums tracking-tight mt-0.5 sm:mt-1">
                         {formatLak(roundedPayableTotal)}
                       </div>
                     </div>
@@ -711,16 +714,16 @@ export function PaymentModal({
                 </div>
 
                 {/* RIGHT COLUMN: Light Minimalist Interactive Tender Workspace */}
-                <div className="md:col-span-7 flex flex-col justify-center">
+                <div className="min-[520px]:col-span-7 flex flex-col justify-center">
                   {/* TAB 1: CASH ONLY */}
                   {activeTab === "cash" && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {/* Light Crisp Digital Readout (Supports both Cash Tendered & Cash Discount) */}
                       <div
                         onClick={() => {
                           if (numpadTarget === "discount") setNumpadTarget("cash");
                         }}
-                        className={`rounded-2xl border-2 px-4 py-2.5 transition-all ${
+                        className={`rounded-2xl border-2 px-3 sm:px-4 py-1.5 sm:py-2.5 transition-all ${
                           numpadTarget === "discount"
                             ? "border-amber-400 bg-amber-50/40 cursor-pointer"
                             : "border-emerald-500/70 bg-emerald-50/25"
@@ -892,7 +895,7 @@ export function PaymentModal({
             </div>
 
             {/* Sticky / Always-Visible Footer: Checkout Buttons */}
-            <div className="shrink-0 border-t border-slate-100 bg-slate-50/60 px-5 py-3.5 flex gap-2.5">
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50/60 px-3.5 sm:px-5 py-2 sm:py-3.5 flex gap-2 sm:gap-2.5">
               <button
                 type="button"
                 disabled={
@@ -902,7 +905,7 @@ export function PaymentModal({
                 }
                 onClick={() => handleFinalizeTransaction(true)}
                 style={{ backgroundColor: "#059669", color: "#ffffff" }}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-98 disabled:opacity-40 transition-all cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-98 disabled:opacity-40 transition-all cursor-pointer"
               >
                 <Printer className="h-4 w-4" />
                 <span>ພິມໃບບິນຮັບເງິນ (80mm)</span>
@@ -919,7 +922,7 @@ export function PaymentModal({
                   (activeTab === "mixed" && !isSplitValid)
                 }
                 onClick={() => handleFinalizeTransaction(false)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-all cursor-pointer"
               >
                 <span>ສຳເລັດ (ບໍ່ພິມໃບບິນ)</span>
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-600">
@@ -931,6 +934,7 @@ export function PaymentModal({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

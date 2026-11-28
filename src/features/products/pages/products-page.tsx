@@ -5,7 +5,7 @@
 // 100% Real Supabase + Dexie Offline DB, Strict Lao Localization
 // ============================================================================
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Package,
   Plus,
@@ -46,8 +46,15 @@ export function ProductsPage() {
   const { categories } = useCategories();
 
   // Metrics
-  const weighingCount = products.filter((p) => p.is_weighing).length;
-  const lowStockCount = products.filter((p) => p.total_stock <= 10).length;
+  const { weighingCount, lowStockCount } = useMemo(() => {
+    let weighing = 0;
+    let low = 0;
+    for (const p of products) {
+      if (p.is_weighing) weighing++;
+      if (p.total_stock <= 10) low++;
+    }
+    return { weighingCount: weighing, lowStockCount: low };
+  }, [products]);
 
   return (
     <div className="space-y-4">
@@ -204,16 +211,16 @@ export function ProductsPage() {
       {/* 4. Products Table */}
       <ProductTable products={products} isLoading={isLoading} />
 
-      {/* 5. Product Form Modal (Create / Edit) with Key-based Clean Mount */}
-      <ProductFormModal
-        key={`${editingProduct?.id ?? "create-new"}-${isFormSheetOpen}`}
-      />
+      {/* 5. Product Form Modal (Mounted only when open for instant page mount) */}
+      {isFormSheetOpen && (
+        <ProductFormModal key={editingProduct?.id ?? "create-new"} />
+      )}
 
       {/* 6. Quick Stock-In Drawer */}
-      <StockInSheet />
+      {isStockInOpen && <StockInSheet />}
 
       {/* 7. Quick Stock Adjustment Dialog */}
-      <StockAdjustmentDialog />
+      {hasAdjustmentOpen && <StockAdjustmentDialog />}
     </div>
   );
 }

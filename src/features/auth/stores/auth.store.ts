@@ -38,10 +38,13 @@ export const useAuthStore = create<AuthState>()(
       onPinSuccessCallback: null,
 
       initAuth: async () => {
-        // Fast path: if already have user in persisted state, we're ready
+        // Fast path: if already have user in persisted state, unblock UI immediately
         const currentUser = get().user;
+        if (currentUser) {
+          set({ isInitialized: true, isLoading: false });
+        }
 
-        // Try to verify with live Supabase session if online
+        // Verify with live Supabase session in background when online
         if (typeof window !== "undefined" && navigator.onLine) {
           try {
             const liveUser = await authApi.getCurrentSessionUser();

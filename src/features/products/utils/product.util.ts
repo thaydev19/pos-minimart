@@ -38,11 +38,9 @@ export function validateUnitBarcodes(
 ): { isValid: boolean; error?: string } {
   const seenBarcodes = new Set<string>();
 
-  // Check main barcode
-  if (!mainBarcode.trim()) {
-    return { isValid: false, error: "ກະລຸນາປ້ອນບາໂຄດສິນຄ້າ" };
+  if (mainBarcode.trim()) {
+    seenBarcodes.add(mainBarcode.trim());
   }
-  seenBarcodes.add(mainBarcode.trim());
 
   for (const unit of units) {
     if (!unit.unit_name.trim()) {

@@ -1,27 +1,22 @@
 "use client";
 
 // ============================================================================
-// POS Terminal Header: Streamlined Touch Bar (Góc phải chỉ còn đúng 4 cụm)
-// 1. Clock & Network Sync Status
-// 2. Hardware & Peripherals Dropdown (Settings2: Drawer F10, Customer Display, Printer)
-// 3. Smart Shift Control Button (Single Alert/Active Button)
-// 4. Quick Logout Button (LogOut)
+// POS Terminal Header: Streamlined Touch Bar
+// Direct Icon Buttons on Header: Cash Drawer (F10) & Customer Display
 // Zero Emojis - Lucide Icons Exclusively
 // ============================================================================
 
 import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import {
-  Store,
   Clock,
   Menu,
   Monitor,
-  Printer,
-  Settings2,
+  Maximize2,
+  Minimize2,
   LockOpen,
   AlertCircle,
   ShieldCheck,
-  ChevronDown,
   Loader2,
 } from "lucide-react";
 import { NetworkSyncBadge } from "@/components/NetworkSyncBadge";
@@ -46,7 +41,6 @@ import {
   broadcastCurrentCustomerDisplayState,
 } from "../utils/customerDisplaySync";
 import { HardwareService } from "../services/hardware.service";
-import { PrinterSettingsModal } from "./PrinterSettingsModal";
 import { ConfirmPinDialog } from "@/components/ConfirmPinDialog";
 import { usePosStore } from "../stores/pos.store";
 import { triggerHapticFeedback } from "@/utils/haptics";
@@ -56,11 +50,10 @@ export function PosHeader() {
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isPrinterSettingsOpen, setIsPrinterSettingsOpen] = useState(false);
   const [isCustomerDisplayActive, setIsCustomerDisplayActive] = useState(false);
   const [isDrawerKicking, setIsDrawerKicking] = useState(false);
-  const [isHardwareMenuOpen, setIsHardwareMenuOpen] = useState(false);
   const [isPinDialogOpenForDrawer, setIsPinDialogOpenForDrawer] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Floating Customer Display State
   const isCustomerDisplayFloatingOpen = usePosStore(
@@ -69,8 +62,7 @@ export function PosHeader() {
   const setCustomerDisplayFloatingOpen = usePosStore(
     (s) => s.setCustomerDisplayFloatingOpen
   );
-
-  const hardwareMenuRef = useRef<HTMLDivElement>(null);
+  const closingDisplayUntilRef = useRef(0);
 
   // Shift Store
   const activeShift = useShiftStore((s) => s.activeShift);
@@ -94,11 +86,92 @@ export function PosHeader() {
     return () => clearInterval(interval);
   }, []);
 
+  const resolveCurrentTauriWindow = async () => {
+    if (typeof window === "undefined") return null;
+    const tauri = (window as any).__TAURI__;
+    const fromGlobal =
+      tauri?.window?.getCurrentWindow?.() ||
+      tauri?.webviewWindow?.getCurrentWebviewWindow?.();
+    if (fromGlobal) return fromGlobal;
+
+    const isTauriEnv = Boolean(
+      tauri ||
+        (window as any).__TAURI_INTERNALS__ ||
+        (window as any).__TAURI_METADATA__
+    );
+    if (!isTauriEnv) return null;
+
+    try {
+      const mod = await import("@tauri-apps/api/window");
+      return mod.getCurrentWindow();
+    } catch {
+      return null;
+    }
+  };
+
+  // Sync POS window fullscreen state on mount & resize
+  useEffect(() => {
+    let active = true;
+
+    const syncFullscreenState = async () => {
+      try {
+        const win = await resolveCurrentTauriWindow();
+        if (win && typeof win.isFullscreen === "function") {
+          const fs = await win.isFullscreen();
+          if (active) setIsFullscreen(Boolean(fs));
+          return;
+        }
+        if (active) setIsFullscreen(Boolean(document.fullscreenElement));
+      } catch {
+        if (active) setIsFullscreen(Boolean(document.fullscreenElement));
+      }
+    };
+
+    syncFullscreenState();
+    window.addEventListener("resize", syncFullscreenState);
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+
+    return () => {
+      active = false;
+      window.removeEventListener("resize", syncFullscreenState);
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+    };
+  }, []);
+
+  const handleToggleFullscreen = async () => {
+    triggerHapticFeedback(25);
+    try {
+      const win = await resolveCurrentTauriWindow();
+      if (win && typeof win.isFullscreen === "function" && typeof win.setFullscreen === "function") {
+        const current = await win.isFullscreen();
+        const next = !current;
+        await win.setFullscreen(next);
+        if (!next && typeof win.maximize === "function") {
+          await win.maximize().catch(() => {});
+        }
+        setIsFullscreen(next);
+        return;
+      }
+
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("[PosHeader] Fullscreen toggle error:", err);
+      toast.error("ບໍ່ສາມາດສະຫຼັບໂໝດເຕັມຈໍໄດ້");
+    }
+  };
+
   // Monitor Customer Display state
   useEffect(() => {
     let lastHeartbeat = 0;
 
     const unsubscribe = subscribeCustomerDisplay((msg) => {
+      if (Date.now() < closingDisplayUntilRef.current) return;
       if (
         msg.type === "CUSTOMER_DISPLAY_READY" ||
         msg.type === "CUSTOMER_DISPLAY_PING" ||
@@ -113,6 +186,7 @@ export function PosHeader() {
     });
 
     const syncWindowState = async () => {
+      if (Date.now() < closingDisplayUntilRef.current) return;
       const winOpen = await isCustomerDisplayWindowOpenAsync();
       if (winOpen) {
         setIsCustomerDisplayActive(true);
@@ -142,25 +216,6 @@ export function PosHeader() {
     prevFloatingOpenRef.current = isCustomerDisplayFloatingOpen;
   }, [isCustomerDisplayFloatingOpen]);
 
-  // Close hardware dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        hardwareMenuRef.current &&
-        !hardwareMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsHardwareMenuOpen(false);
-      }
-    };
-
-    if (isHardwareMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isHardwareMenuOpen]);
-
   // Execute actual opening of Cash Drawer via ESC/POS
   const executeOpenDrawer = async () => {
     setIsDrawerKicking(true);
@@ -182,7 +237,6 @@ export function PosHeader() {
   // Trigger cash drawer with role/PIN verification
   const handleTriggerDrawer = () => {
     triggerHapticFeedback(30);
-    setIsHardwareMenuOpen(false);
 
     // If user is cashier, require Manager PIN override
     if (user?.role === "cashier") {
@@ -209,16 +263,17 @@ export function PosHeader() {
   // Toggle Customer Display
   const handleToggleCustomerDisplay = async () => {
     triggerHapticFeedback(30);
-    setIsHardwareMenuOpen(false);
 
     if (isCustomerDisplayActive || isCustomerDisplayFloatingOpen) {
-      await closeCustomerDisplay();
+      closingDisplayUntilRef.current = Date.now() + 2000;
       setIsCustomerDisplayActive(false);
       setCustomerDisplayFloatingOpen(false);
+      await closeCustomerDisplay();
       toast.info("ໄດ້ປິດຈໍລູກຄ້າແລ້ວ (Customer Display Closed)");
       return;
     }
 
+    closingDisplayUntilRef.current = 0;
     const opened = await initCustomerDisplay();
     if (opened) {
       setIsCustomerDisplayActive(true);
@@ -325,24 +380,40 @@ export function PosHeader() {
             </button>
           )}
 
-          {/* ELEMENT 2: Hardware & Peripherals Dropdown (Settings2 - Icon Only) */}
-          <div className="relative shrink-0" ref={hardwareMenuRef}>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHapticFeedback(20);
-                setIsHardwareMenuOpen((prev) => !prev);
-              }}
-              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 ${
-                isHardwareMenuOpen
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-xs"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-700"
-              }`}
-              title="ອຸປະກອນ & ລິ້ນຊັກເງິນ (Hardware Peripherals)"
-              aria-label="ອຸປະກອນ & ລິ້ນຊັກເງິນ"
-            >
-              <Settings2 className="h-4 w-4 shrink-0" />
-              {/* Online Hardware Status Dot Indicator */}
+          {/* ELEMENT 2: Direct Cash Drawer Button (Icon Only, F10) */}
+          <button
+            type="button"
+            disabled={isDrawerKicking}
+            onClick={handleTriggerDrawer}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 disabled:opacity-60"
+            title="ໄຂລີ້ນຊັກເກັບເງິນ (F10)"
+            aria-label="ໄຂລີ້ນຊັກເກັບເງິນ"
+          >
+            {isDrawerKicking ? (
+              <Loader2 className="h-4 w-4 animate-spin text-amber-700" />
+            ) : (
+              <LockOpen className="h-4 w-4 shrink-0" />
+            )}
+          </button>
+
+          {/* ELEMENT 3: Direct Customer Display Toggle Button (Icon Only) */}
+          <button
+            type="button"
+            onClick={handleToggleCustomerDisplay}
+            className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0 ${
+              isCustomerDisplayActive || isCustomerDisplayFloatingOpen
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+            }`}
+            title={
+              isCustomerDisplayActive || isCustomerDisplayFloatingOpen
+                ? "ຈໍລູກຄ້າ (ກຳລັງເປີດ • ກົດເພື່ອປິດ)"
+                : "ຈໍລູກຄ້າ (ກົດເພື່ອເປີດ)"
+            }
+            aria-label="ຈໍລູກຄ້າ"
+          >
+            <Monitor className="h-4 w-4 shrink-0" />
+            {(isCustomerDisplayActive || isCustomerDisplayFloatingOpen) && (
               <span
                 style={{ position: "absolute", top: 5, right: 5 }}
                 className="flex h-2 w-2 pointer-events-none"
@@ -350,124 +421,37 @@ export function PosHeader() {
                 <span className="animate-ping absolute inset-0 inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-            </button>
-
-            {/* Popover Dropdown Menu */}
-            {isHardwareMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
-                <div className="px-2.5 py-1.5 border-b border-slate-100">
-                  <p className="text-[11px] font-black text-slate-900 uppercase tracking-wider">
-                    ອຸປະກອນເຊື່ອມຕໍ່ (Peripherals)
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    ຈັດການລິ້ນຊັກ, ຈໍລູກຄ້າ ແລະ ເຄື່ອງພິມ
-                  </p>
-                </div>
-
-                {/* 1. Cash Drawer Kick */}
-                <button
-                  type="button"
-                  disabled={isDrawerKicking}
-                  onClick={handleTriggerDrawer}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl text-left hover:bg-amber-50/80 transition-all active:scale-98 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 group-hover:bg-amber-200 transition-colors shrink-0">
-                      {isDrawerKicking ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-amber-800" />
-                      ) : (
-                        <LockOpen className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 group-hover:text-amber-950">
-                        ໄຂລີ້ນຊັກເກັບເງິນ
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        ເປີດລິ້ນຊັກເງິນສົດ RJ11
-                      </p>
-                    </div>
-                  </div>
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono font-bold text-slate-600">
-                    F10
-                  </kbd>
-                </button>
-
-                {/* 2. Customer Display Toggle */}
-                <button
-                  type="button"
-                  onClick={handleToggleCustomerDisplay}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl text-left hover:bg-emerald-50/80 transition-all active:scale-98 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 group-hover:bg-emerald-200 transition-colors shrink-0">
-                      <Monitor className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-950">
-                        ຈໍລູກຄ້າ (Customer Display)
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        {isCustomerDisplayActive || isCustomerDisplayFloatingOpen
-                          ? "ກົດເພື່ອປິດໜ້າຈໍສະແດງຜົນ"
-                          : "ກົດເພື່ອເປີດໜ້າຈໍສະແດງຜົນ"}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isCustomerDisplayActive || isCustomerDisplayFloatingOpen
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isCustomerDisplayActive || isCustomerDisplayFloatingOpen
-                          ? "bg-emerald-600 animate-pulse"
-                          : "bg-slate-400"
-                      }`}
-                    />
-                    <span>
-                      {isCustomerDisplayActive || isCustomerDisplayFloatingOpen
-                        ? isCustomerDisplayFloatingOpen
-                          ? "ຈຳລອງ"
-                          : "ເປີດຢູ່"
-                        : "ປິດຢູ່"}
-                    </span>
-                  </span>
-                </button>
-
-                {/* 3. Printer Settings & Test Print */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHapticFeedback(20);
-                    setIsHardwareMenuOpen(false);
-                    setIsPrinterSettingsOpen(true);
-                  }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl text-left hover:bg-blue-50/80 transition-all active:scale-98 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700 group-hover:bg-blue-200 transition-colors shrink-0">
-                      <Printer className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 group-hover:text-blue-950">
-                        ຕັ້ງຄ່າເຄື່ອງພິມ (Printer)
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        Thermal 80mm / 58mm & ທົດສອບພິມ
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600">
-                    ESC/POS
-                  </span>
-                </button>
-              </div>
             )}
-          </div>
+          </button>
+
+          {/* ELEMENT 3B: POS Fullscreen Toggle Button (Icon Only, Emerald Highlight when Active) */}
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0 ${
+              isFullscreen
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/25"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+            }`}
+            title={
+              isFullscreen
+                ? "ອອກຈາກໂໝດເຕັມຈໍ (Exit Fullscreen)"
+                : "ເປີດໂໝດເຕັມຈໍ (Fullscreen)"
+            }
+            aria-label={isFullscreen ? "ອອກຈາກໂໝດເຕັມຈໍ" : "ເປີດໂໝດເຕັມຈໍ"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4 shrink-0" />
+            ) : (
+              <Maximize2 className="h-4 w-4 shrink-0" />
+            )}
+            {isFullscreen && (
+              <span
+                style={{ position: "absolute", top: 5, right: 5 }}
+                className="inline-flex h-2 w-2 rounded-full bg-emerald-500 pointer-events-none"
+              />
+            )}
+          </button>
 
           {/* Refresh & Clear Cache Button (Right After Hardware, Before Logout) */}
           <HeaderRefreshButton />
@@ -488,12 +472,6 @@ export function PosHeader() {
         mode="drawer"
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-      />
-
-      {/* Printer & Cash Drawer Settings Modal */}
-      <PrinterSettingsModal
-        isOpen={isPrinterSettingsOpen}
-        onClose={() => setIsPrinterSettingsOpen(false)}
       />
 
       {/* Manager PIN Override Dialog for Cashier opening Cash Drawer */}

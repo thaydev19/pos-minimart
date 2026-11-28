@@ -30,7 +30,7 @@ export interface PrinterSettings {
 const STORAGE_KEY = "pos_hardware_printer_config";
 
 export const DEFAULT_PRINTER_SETTINGS: PrinterSettings = {
-  connectionType: "lan",
+  connectionType: "usb",
   lanIp: "192.168.1.200",
   lanPort: 9100,
   paperWidth: "80mm",
@@ -134,6 +134,82 @@ export class HardwareService {
   }
 
   /**
+   * Picks the best Windows thermal printer from installed spooler list (e.g. Deli 581PW)
+   */
+  public static findPreferredWindowsPrinter(
+    printers: Array<{ name: string; isDefault: boolean }>
+  ): { name: string; isDefault: boolean } | null {
+    if (!printers.length) return null;
+
+    const priorityPatterns = [
+      /581\s*pw/i,
+      /deli/i,
+      /pos[\s-_]*58/i,
+      /xp[\s-_]*58/i,
+      /58\s*mm/i,
+      /pos[\s-_]*80/i,
+      /xp[\s-_]*80/i,
+      /xprinter/i,
+      /thermal/i,
+      /receipt/i,
+      /rongta/i,
+      /epson.*tm/i,
+    ];
+
+    for (const pattern of priorityPatterns) {
+      const match = printers.find((p) => pattern.test(p.name));
+      if (match) return match;
+    }
+
+    return printers.find((p) => p.isDefault) || printers[0];
+  }
+
+  /**
+   * Infers 58mm or 80mm paper width from printer model name when unambiguous
+   */
+  public static inferPaperWidthFromPrinterName(
+    printerName?: string
+  ): "58mm" | "80mm" | null {
+    if (!printerName) return null;
+    if (/581\s*pw|pos[\s-_]*58|xp[\s-_]*58|58\s*mm|\b58\b/i.test(printerName)) {
+      return "58mm";
+    }
+    if (/pos[\s-_]*80|xp[\s-_]*80|80\s*mm|\b80\b/i.test(printerName)) {
+      return "80mm";
+    }
+    return null;
+  }
+
+  /**
+   * Ensures Tauri runtime resolves a preferred USB Windows printer (such as 581PW)
+   * even before opening the Settings page.
+   */
+  private static async resolveTauriPrinterSettings(
+    settings: PrinterSettings
+  ): Promise<PrinterSettings> {
+    if (
+      !this.isTauriRuntime() ||
+      settings.connectionType !== "usb" ||
+      settings.windowsPrinterName
+    ) {
+      return settings;
+    }
+
+    const printers = await this.getWindowsPrinters();
+    const preferred = this.findPreferredWindowsPrinter(printers);
+    if (!preferred) return settings;
+
+    const inferredWidth = this.inferPaperWidthFromPrinterName(preferred.name);
+    const updated: PrinterSettings = {
+      ...settings,
+      windowsPrinterName: preferred.name,
+      ...(inferredWidth ? { paperWidth: inferredWidth } : {}),
+    };
+    this.saveSettings(updated);
+    return updated;
+  }
+
+  /**
    * Triggers hardware cash drawer pulse (0x1B, 0x70) via printer RJ11 port
    */
   public static async openCashDrawer(pin?: 2 | 5): Promise<{ success: boolean; message: string }> {
@@ -164,13 +240,14 @@ export class HardwareService {
     // 2. Windows Tauri Desktop Driver (LAN Socket 9100 or Windows USB Spooler)
     if (this.isTauriRuntime()) {
       try {
+        const resolved = await this.resolveTauriPrinterSettings(settings);
         const kickBytes = [0x1b, 0x70, effectivePin === 5 ? 0x01 : 0x00, 0x19, 0xfa];
         await this.invokeTauri("print_raw_escpos", {
           data: kickBytes,
-          connectionType: settings.connectionType,
-          ip: settings.lanIp,
-          port: settings.lanPort,
-          printerName: settings.windowsPrinterName || "",
+          connectionType: resolved.connectionType,
+          ip: resolved.lanIp,
+          port: resolved.lanPort,
+          printerName: resolved.windowsPrinterName || "",
         });
         return { success: true, message: "ໄຂລິ້ນຊັກເງິນສຳເລັດ (Windows)" };
       } catch (err: any) {
@@ -253,8 +330,11 @@ export class HardwareService {
       this.openCashDrawer(settings.drawerPin || 2).catch(() => {});
     }
 
-    // 1. Render receipt to HTML5 Canvas
-    const canvas = await ThermalPrinterAdapter.renderReceiptToCanvas(data);
+    // 1. Render receipt to HTML5 Canvas (matching configured 58mm / 80mm paper width)
+    const canvas = await ThermalPrinterAdapter.renderReceiptToCanvas(
+      data,
+      settings.paperWidth
+    );
     const rasterBytes = ThermalPrinterAdapter.convertCanvasToEscPosRaster(canvas);
 
     // 2. Android Capacitor Native Transmission (LAN / BT / USB)
@@ -282,12 +362,13 @@ export class HardwareService {
     // 3. Windows Tauri Desktop Driver (LAN Socket 9100 or Windows USB Spooler)
     if (this.isTauriRuntime()) {
       try {
+        const resolved = await this.resolveTauriPrinterSettings(settings);
         await this.invokeTauri("print_raw_escpos", {
           data: Array.from(rasterBytes),
-          connectionType: settings.connectionType,
-          ip: settings.lanIp,
-          port: settings.lanPort,
-          printerName: settings.windowsPrinterName || "",
+          connectionType: resolved.connectionType,
+          ip: resolved.lanIp,
+          port: resolved.lanPort,
+          printerName: resolved.windowsPrinterName || "",
         });
         return { success: true, message: "ພິມບິນສຳເລັດ (Windows)" };
       } catch (err: any) {

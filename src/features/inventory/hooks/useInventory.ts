@@ -17,7 +17,7 @@ export function useInventory() {
   const loadInventory = useInventoryStore((s) => s.loadInventory);
 
   useEffect(() => {
-    loadInventory();
+    loadInventory({ ifStale: true });
   }, [loadInventory]);
 
   // Calculate KPIs across all items
@@ -92,8 +92,8 @@ export function useInventory() {
     items: filteredItems,
     totalCount: items.length,
     kpis,
-    isLoading,
-    refresh: loadInventory,
+    isLoading: isLoading && items.length === 0,
+    refresh: () => loadInventory(),
   };
 }
 

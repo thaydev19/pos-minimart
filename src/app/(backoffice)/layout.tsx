@@ -85,8 +85,10 @@ export default function BackofficeLayout({
             </div>
           </header>
 
-          {/* Dynamic Route Content */}
-          <main className="flex-1 overflow-y-auto p-3.5 sm:p-5">{children}</main>
+          {/* Dynamic Route Content (Locked strictly to vertical touch scroll on page level) */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none will-change-scroll p-3.5 sm:p-5">
+            {children}
+          </main>
         </div>
       </div>
     </AuthGuard>

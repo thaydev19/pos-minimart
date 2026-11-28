@@ -28,7 +28,7 @@ export async function showTauriMainWindow(): Promise<void> {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       const win = getCurrentWindow();
       if (win) {
-        if (typeof win.maximize === "function") await win.maximize();
+        if (typeof win.setFullscreen === "function") await win.setFullscreen(true);
         if (typeof win.show === "function") await win.show();
         if (typeof win.setFocus === "function") await win.setFocus();
       }

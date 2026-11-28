@@ -15,8 +15,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 1000 * 30, // 30 seconds staleTime: fast tab switching without serving 5-minute stale data
-            refetchOnWindowFocus: true, // Automatically pull fresh data when user focuses window
+            staleTime: 1000 * 60 * 5, // 5 minutes: instant tab switching with cached data
+            gcTime: 1000 * 60 * 30, // Keep cache in memory for 30 minutes
+            refetchOnWindowFocus: false, // Avoid jarring refetches every time POS regains focus
             retry: 1,
           },
         },

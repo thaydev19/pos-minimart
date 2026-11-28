@@ -9,6 +9,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Trash2,
@@ -39,6 +40,7 @@ import { ProductThumbnail } from "@/features/pos/components/ProductThumbnail";
 import { CameraBarcodeScannerModal } from "@/features/pos/components/CameraBarcodeScannerModal";
 import { useCategories } from "@/features/categories";
 import { toast } from "sonner";
+import { isTauri } from "@/utils/tauri";
 
 const generateDefaultBillNumber = () => {
   const now = new Date();
@@ -51,10 +53,25 @@ const generateDefaultBillNumber = () => {
 
 export function MultiProductGRNForm() {
   const isStockInOpen = useInventoryStore((s) => s.isStockInOpen);
+  if (!isStockInOpen || typeof document === "undefined") return null;
+  return <MultiProductGRNFormContent />;
+}
+
+function MultiProductGRNFormContent() {
+  const isStockInOpen = useInventoryStore((s) => s.isStockInOpen);
   const closeStockIn = useInventoryStore((s) => s.closeStockIn);
   const itemsCatalog = useInventoryStore((s) => s.items);
   const loadInventory = useInventoryStore((s) => s.loadInventory);
   const initialProductId = useInventoryStore((s) => s.initialProductIdForStockIn);
+  const isDesktopExe = isTauri();
+
+  const productByIdMap = useMemo(() => {
+    const map = new Map<string, InventoryProductItem>();
+    for (const p of itemsCatalog) {
+      map.set(p.id, p);
+    }
+    return map;
+  }, [itemsCatalog]);
 
   const { allCategories, categories } = useCategories();
   const displayCategories = allCategories && allCategories.length > 0 ? allCategories : categories;
@@ -205,8 +222,9 @@ export function MultiProductGRNForm() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isStockInOpen, isCameraScannerOpen, editingItemIndex]);
 
-  // Filtered products for autocomplete search (expanded to 40 items)
+  // Filtered products for autocomplete search (computed only when dropdown is open)
   const filteredProducts = useMemo(() => {
+    if (!isSearchOpen) return [];
     if (!searchQuery.trim() && selectedCategory === "all") {
       return itemsCatalog.slice(0, 30);
     }
@@ -232,7 +250,7 @@ export function MultiProductGRNForm() {
         return matchesBarcode || matchesName || matchesPackBarcode;
       })
       .slice(0, 40);
-  }, [itemsCatalog, searchQuery, selectedCategory]);
+  }, [isSearchOpen, itemsCatalog, searchQuery, selectedCategory]);
 
   // Search keyboard navigation (Arrow keys + Enter + Esc)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -440,16 +458,14 @@ export function MultiProductGRNForm() {
   );
   const totalBaseUnits = grnItems.reduce((sum, item) => sum + item.total_base_quantity, 0);
 
-  if (!isStockInOpen) return null;
-
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150 select-none p-2 sm:p-4 lg:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 select-none p-2 sm:p-4 lg:p-6"
     >
       {/* FOCUSED MODAL CONTAINER: Fixed Height (h-[88vh] min-h-[560px] max-h-[88vh]) - 100% Stable */}
-      <div className="relative w-full max-w-5xl h-[88vh] min-h-[560px] max-h-[88vh] rounded-2xl bg-slate-50 flex flex-col overflow-hidden border border-slate-200 shadow-2xl">
+      <div className="relative w-full max-w-5xl h-[88vh] min-h-[560px] max-h-[88vh] rounded-2xl bg-slate-50 flex flex-col overflow-hidden border border-slate-200 shadow-xl">
         {/* ================================================================= */}
         {/* HEADER BAR: Crisp Modern Retail Topbar                            */}
         {/* ================================================================= */}
@@ -594,9 +610,9 @@ export function MultiProductGRNForm() {
                 {isSearchOpen && (
                   <>
                     {filteredProducts.length > 0 ? (
-                      <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 animate-in fade-in duration-100">
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5">
                         {/* Header bar inside dropdown */}
-                        <div className="sticky top-0 z-10 flex items-center justify-between px-3.5 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-500 bg-slate-50/95 backdrop-blur-xs">
+                        <div className="sticky top-0 z-10 flex items-center justify-between px-3.5 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-500 bg-slate-50">
                           <span>ພົບ {filteredProducts.length} ລາຍການ</span>
                           <span className="text-slate-400 font-normal">ກົດ Enter ຫຼື ຄລິກເພື່ອເລືອກ</span>
                         </div>
@@ -622,7 +638,7 @@ export function MultiProductGRNForm() {
                                   alt={p.name_lo}
                                   name={p.name_lo}
                                   className="h-9 w-9 rounded-xl bg-white shrink-0 border border-slate-200/80 overflow-hidden"
-                                  imgClassName="w-full h-full object-contain p-0.5 mix-blend-multiply"
+                                  imgClassName="w-full h-full object-contain p-0.5"
                                 />
 
                                 {/* Info */}
@@ -687,15 +703,17 @@ export function MultiProductGRNForm() {
                   ))}
                 </select>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCameraScannerOpen(true)}
-                  className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
-                  title="ສະແກນຜ່ານກ້ອງຖ່າຍຮູບ"
-                >
-                  <Camera className="h-4 w-4 text-emerald-600" />
-                  <span>ສະແກນກ້ອງ</span>
-                </button>
+                {!isDesktopExe && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraScannerOpen(true)}
+                    className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-colors cursor-pointer shadow-2xs"
+                    title="ສະແກນຜ່ານກ້ອງຖ່າຍຮູບ"
+                  >
+                    <Camera className="h-4 w-4 text-emerald-600" />
+                    <span>ສະແກນກ້ອງ</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -731,7 +749,7 @@ export function MultiProductGRNForm() {
                       </thead>
                     <tbody className="divide-y divide-slate-100">
                       {grnItems.map((item, index) => {
-                        const product = itemsCatalog.find((p) => p.id === item.product_id);
+                        const product = productByIdMap.get(item.product_id);
                         const packUnit = product?.units?.find(
                           (u) => !u.is_base_unit && u.conversion_rate > 1
                         );
@@ -1105,13 +1123,16 @@ export function MultiProductGRNForm() {
         />
       )}
 
-      {/* Optical Camera Barcode Scanner Modal (Shared with POS) */}
-      <CameraBarcodeScannerModal
-        isOpen={isCameraScannerOpen}
-        onClose={() => setIsCameraScannerOpen(false)}
-        onBarcodeDetected={handleCameraBarcodeDetected}
-      />
-    </div>
+      {/* Optical Camera Barcode Scanner Modal (Only on Web / Mobile) */}
+      {!isDesktopExe && isCameraScannerOpen && (
+        <CameraBarcodeScannerModal
+          isOpen={true}
+          onClose={() => setIsCameraScannerOpen(false)}
+          onBarcodeDetected={handleCameraBarcodeDetected}
+        />
+      )}
+    </div>,
+    document.body
   );
 }
 
@@ -1135,8 +1156,8 @@ function ItemBatchEditModal({ item, onSave, onClose }: ItemBatchEditModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/55">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-slate-200 space-y-4">
         <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-2xs">

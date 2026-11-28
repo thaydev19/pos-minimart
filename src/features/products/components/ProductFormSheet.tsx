@@ -6,7 +6,8 @@
 // Zero Infinite Loops - Pure Event Handlers - TanStack Query Mutations
 // ============================================================================
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import {
   X,
@@ -54,6 +55,7 @@ import { ProductImageUploader } from "./ProductImageUploader";
 import { KipCurrencyInput } from "@/components/ui/kip-currency-input";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { productsApi } from "../api/products.api";
+import { isTauri } from "@/utils/tauri";
 
 export interface ProductFormSheetProps {
   product?: ProductListItem | null;
@@ -160,6 +162,7 @@ export function ProductFormContent({
   const [packSellingPrice, setPackSellingPrice] = useState<number>(existingPackUnit?.selling_price || 0);
   const [packBarcode, setPackBarcode] = useState<string>(existingPackUnit?.barcode || "");
   const [cameraScanTarget, setCameraScanTarget] = useState<"base" | "pack" | null>(null);
+  const isDesktopExe = isTauri();
 
   // Pure initial stock state (Only used in create mode)
   const [initialQuantity, setInitialQuantity] = useState<number>(0);
@@ -436,13 +439,13 @@ export function ProductFormContent({
           </button>
         </div>
 
-        {/* 2. Scrollable Body: Balanced 2-Column Desktop Grid */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* 2. Scrollable Body: Strictly vertical touch scroll locked */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none px-6 py-5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0">
             {/* ========================================================= */}
             {/* LEFT COLUMN: General Info, Image & Settings (5 cols)      */}
             {/* ========================================================= */}
-            <div className="lg:col-span-5 space-y-4">
+            <div className="lg:col-span-5 min-w-0 space-y-4">
               {/* Product Names Card */}
               <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/40 p-4 space-y-3">
                 <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5 pb-1 border-b border-zinc-200/60">
@@ -590,7 +593,7 @@ export function ProductFormContent({
 
                 {/* Expiry Tracking Settings */}
                 {formData.is_perishable && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-zinc-200/60 animate-in fade-in duration-150">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-zinc-200/60">
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-700 block">
                         ແຈ້ງເຕືອນລ່ວງໜ້າ (ວັນ)
@@ -674,7 +677,7 @@ export function ProductFormContent({
             {/* 2. Pack Settings (Middle)                                 */}
             {/* 3. Initial Stock (Create Mode Only)                       */}
             {/* ========================================================= */}
-            <div className="lg:col-span-7 space-y-3">
+            <div className="lg:col-span-7 min-w-0 space-y-3">
               {/* 1. KHỐI 1: ĐƠN VỊ BÁN LẺ, GIÁ VỐN & BÁN, VÀ BARCODE (Barcode nằm dưới giá) */}
               <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/40 p-3.5 space-y-3">
                 <h3 className="text-xs font-bold text-slate-800 flex items-center justify-between pb-1.5 border-b border-zinc-200/60">
@@ -801,15 +804,17 @@ export function ProductFormContent({
                         (ບໍ່ບັງຄັບ)
                       </span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setCameraScanTarget("base")}
-                      className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
-                      title="ສະແກນບາໂຄດດ້ວຍກ້ອງ (Camera Scanner)"
-                    >
-                      <Camera className="h-3 w-3" />
-                      <span>ສະແກນກ້ອງ</span>
-                    </button>
+                    {!isDesktopExe && (
+                      <button
+                        type="button"
+                        onClick={() => setCameraScanTarget("base")}
+                        className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                        title="ສະແກນບາໂຄດດ້ວຍກ້ອງ (Camera Scanner)"
+                      >
+                        <Camera className="h-3 w-3" />
+                        <span>ສະແກນກ້ອງ</span>
+                      </button>
+                    )}
                   </div>
                   <input
                     ref={barcodeInputRef}
@@ -902,7 +907,7 @@ export function ProductFormContent({
 
                   {/* Khi Switch Bật: Cho tự do nhập số lượng pack, tùy chỉnh tên đơn vị pack */}
                   {hasPackUnit && (
-                    <div className="space-y-2.5 pt-1 animate-in fade-in duration-150">
+                    <div className="space-y-2.5 pt-1">
                       {/* Quy cách 1 [tên đơn vị pack] = [X] [baseUnit] */}
                       <div className="flex items-center gap-2">
                         <div className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 p-1 border border-slate-200">
@@ -969,7 +974,7 @@ export function ProductFormContent({
                       </div>
 
                       {/* Hàng nhập mã vạch Pack */}
-                      <div className="flex items-center gap-2 rounded-xl bg-white p-1.5 border border-slate-200">
+                      <div className="flex items-center gap-2 rounded-xl bg-white p-1.5 border border-slate-200 min-w-0">
                         <div className="flex items-center gap-1 text-slate-400 pl-1 shrink-0">
                           <ScanBarcode className="h-3.5 w-3.5" />
                           <span className="text-[10.5px] font-semibold text-slate-600">
@@ -1008,17 +1013,19 @@ export function ProductFormContent({
                             }
                           }}
                           placeholder={`ຍິງ ຫຼື ພິມບາໂຄດເທິງ${packUnitName || "ແພັກ"}...`}
-                          className="h-7 flex-1 rounded-lg border border-slate-200 px-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-emerald-600 placeholder:text-slate-400"
+                          className="h-7 flex-1 min-w-0 rounded-lg border border-slate-200 px-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-emerald-600 placeholder:text-slate-400"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setCameraScanTarget("pack")}
-                          className="flex h-6 items-center gap-1 rounded-md bg-emerald-50 px-2 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition-colors cursor-pointer shrink-0"
-                          title="ສະແກນບາໂຄດແພັກດ້ວຍກ້ອງ"
-                        >
-                          <Camera className="h-2.5 w-2.5" />
-                          <span>ກ້ອງ</span>
-                        </button>
+                        {!isDesktopExe && (
+                          <button
+                            type="button"
+                            onClick={() => setCameraScanTarget("pack")}
+                            className="flex h-6 items-center gap-1 rounded-md bg-emerald-50 px-2 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition-colors cursor-pointer shrink-0"
+                            title="ສະແກນບາໂຄດແພັກດ້ວຍກ້ອງ"
+                          >
+                            <Camera className="h-2.5 w-2.5" />
+                            <span>ກ້ອງ</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1076,7 +1083,7 @@ export function ProductFormContent({
 
                   {/* Dòng kết quả quy đổi màu xanh nổi bật */}
                   {initialQuantity > 0 && (
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in duration-150">
+                    <div className="rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-xs font-bold text-emerald-800 flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                       <span>
                         {selectedInitialUnit.conversion_rate > 1 ? (
@@ -1152,19 +1159,21 @@ export function ProductFormContent({
         </div>
       </form>
 
-      {/* Optical Camera Barcode Scanner Modal (Shared with POS) */}
-      <CameraBarcodeScannerModal
-        isOpen={cameraScanTarget !== null}
-        onClose={() => setCameraScanTarget(null)}
-        onBarcodeDetected={(scannedBarcode) => {
-          if (cameraScanTarget === "base") {
-            handleBarcodeChange(scannedBarcode);
-          } else if (cameraScanTarget === "pack") {
-            setPackBarcode(scannedBarcode);
-          }
-          setCameraScanTarget(null);
-        }}
-      />
+      {/* Optical Camera Barcode Scanner Modal (Only on Web / Mobile) */}
+      {!isDesktopExe && cameraScanTarget !== null && (
+        <CameraBarcodeScannerModal
+          isOpen={true}
+          onClose={() => setCameraScanTarget(null)}
+          onBarcodeDetected={(scannedBarcode) => {
+            if (cameraScanTarget === "base") {
+              handleBarcodeChange(scannedBarcode);
+            } else if (cameraScanTarget === "pack") {
+              setPackBarcode(scannedBarcode);
+            }
+            setCameraScanTarget(null);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -1182,16 +1191,16 @@ export function ProductFormSheet(props?: ProductFormSheetProps) {
   const product = props?.product !== undefined ? props.product : storeProduct;
   const onClose = props?.onClose || storeClose;
 
-  if (!isOpen) {
+  if (!isOpen || typeof document === "undefined") {
     return null;
   }
 
   const sheetInstanceKey = product ? `edit-${product.id}` : "create-new-product";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/55 touch-pan-y overscroll-x-none">
       <div
-        className="relative flex flex-col w-full max-w-5xl xl:max-w-6xl h-[88vh] max-h-[88vh] min-h-[560px] bg-white rounded-2xl border border-zinc-200/90 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+        className="relative flex flex-col w-full max-w-5xl xl:max-w-6xl h-[88vh] max-h-[88vh] min-h-[560px] bg-white rounded-2xl border border-zinc-200/90 shadow-xl overflow-hidden overscroll-x-none"
         role="dialog"
         aria-modal="true"
       >
@@ -1203,6 +1212,7 @@ export function ProductFormSheet(props?: ProductFormSheetProps) {
           onSuccess={props?.onSuccess}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

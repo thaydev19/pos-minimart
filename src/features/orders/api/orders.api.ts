@@ -26,13 +26,13 @@ export const ordersApi = {
    */
   async fetchOrders(): Promise<OrderRecord[]> {
     try {
-      const [ordersRes, productsRes] = await Promise.all([
+      const [ordersRes, localProds] = await Promise.all([
         supabase
           .from("orders")
           .select("*, order_items(*)")
           .order("offline_created_at", { ascending: false })
           .limit(200),
-        supabase.from("products").select("id, name_lo, image_url"),
+        offlineDb.products.toArray().catch(() => []),
       ]);
 
       if (ordersRes.error) {
@@ -41,10 +41,8 @@ export const ordersApi = {
       }
 
       const prodMap = new Map<string, { name_lo: string; image_url?: string }>();
-      if (productsRes.data) {
-        for (const p of productsRes.data) {
-          prodMap.set(p.id, { name_lo: p.name_lo, image_url: p.image_url });
-        }
+      for (const p of localProds) {
+        prodMap.set(p.id, { name_lo: p.name_lo, image_url: p.image_url });
       }
 
       const allOrdersForDexie: LocalOrder[] = [];
@@ -132,19 +130,19 @@ export const ordersApi = {
         return orderRecord;
       });
 
-      // Cache to Dexie
-      if (allOrdersForDexie.length > 0) {
-        offlineDb.transaction(
-          "rw",
-          [offlineDb.orders, offlineDb.order_items],
-          async () => {
+      // Sync Dexie cleanly with latest authoritative server snapshot (clears deleted orders too)
+      offlineDb
+        .transaction("rw", [offlineDb.orders, offlineDb.order_items], async () => {
+          await offlineDb.orders.clear();
+          await offlineDb.order_items.clear();
+          if (allOrdersForDexie.length > 0) {
             await offlineDb.orders.bulkPut(allOrdersForDexie);
-            if (allItemsForDexie.length > 0) {
-              await offlineDb.order_items.bulkPut(allItemsForDexie);
-            }
           }
-        ).catch(console.error);
-      }
+          if (allItemsForDexie.length > 0) {
+            await offlineDb.order_items.bulkPut(allItemsForDexie);
+          }
+        })
+        .catch(console.error);
 
       return records;
     } catch (err) {

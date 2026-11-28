@@ -5,18 +5,27 @@
 // ============================================================================
 
 import React from "react";
-import { Plus, Search, RefreshCw, Tags } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Plus, Search, Tags } from "lucide-react";
 import { useCategories } from "../hooks/useCategories";
 import { useCategoryStore } from "../stores/category.store";
 import { CategoryTable } from "../components/CategoryTable";
-import { CategoryFormDialog } from "../components/CategoryFormDialog";
 import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 
+const CategoryFormDialog = dynamic(
+  () =>
+    import("../components/CategoryFormDialog").then(
+      (m) => m.CategoryFormDialog
+    ),
+  { ssr: false }
+);
+
 export function CategoriesPage() {
-  const { categories, totalCount, isLoading, refresh } = useCategories();
+  const { categories, totalCount } = useCategories();
   const searchTerm = useCategoryStore((s) => s.searchTerm);
   const setSearchTerm = useCategoryStore((s) => s.setSearchTerm);
   const openCreateModal = useCategoryStore((s) => s.openCreateModal);
+  const isFormOpen = useCategoryStore((s) => s.isFormOpen);
 
   return (
     <div className="space-y-4">
@@ -71,8 +80,8 @@ export function CategoriesPage() {
       {/* Main Table */}
       <CategoryTable categories={categories} />
 
-      {/* Category Create/Edit Modal */}
-      <CategoryFormDialog />
+      {/* Category Create/Edit Modal (lazy-loaded only when opened) */}
+      {isFormOpen && <CategoryFormDialog />}
     </div>
   );
 }

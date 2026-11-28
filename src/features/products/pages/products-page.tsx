@@ -6,27 +6,41 @@
 // ============================================================================
 
 import React, { useMemo } from "react";
+import dynamic from "next/dynamic";
 import {
   Package,
   Plus,
-  RefreshCw,
   Scale,
   AlertTriangle,
   Layers,
-  Filter,
 } from "lucide-react";
 import { useProducts } from "../hooks/useProducts";
 import { useProductStore } from "../stores/product.store";
-import { useCategories } from "@/features/categories";
+import { useCategories } from "@/features/categories/hooks/useCategories";
 import { ProductTable } from "../components/ProductTable";
-import { ProductFormModal } from "../components/ProductFormModal";
-import {
-  StockInSheet,
-  StockAdjustmentDialog,
-  useInventoryStore,
-} from "@/features/inventory";
+import { useInventoryStore } from "@/features/inventory/stores/inventory.store";
 import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 import { CatalogBarcodeSearchInput } from "@/components/CatalogBarcodeSearchInput";
+
+const ProductFormModal = dynamic(
+  () =>
+    import("../components/ProductFormModal").then((m) => m.ProductFormModal),
+  { ssr: false }
+);
+const StockInSheet = dynamic(
+  () =>
+    import("@/features/inventory/components/StockInSheet").then(
+      (m) => m.StockInSheet
+    ),
+  { ssr: false }
+);
+const StockAdjustmentDialog = dynamic(
+  () =>
+    import("@/features/inventory/components/StockAdjustmentDialog").then(
+      (m) => m.StockAdjustmentDialog
+    ),
+  { ssr: false }
+);
 
 export function ProductsPage() {
   const { products, totalCount, isLoading, refresh } = useProducts();

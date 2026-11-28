@@ -134,10 +134,7 @@ export function PosTerminalPage() {
       } else if (e.key === "F2") {
         e.preventDefault();
         if (cart.length > 0) {
-          const success = holdCurrentOrder();
-          if (success) toast.success("ໄດ້ພັກບິນສຳເລັດແລ້ວ");
-        } else {
-          toast.info("ບໍ່ມີສິນຄ້າໃນກະຕ່າເພື່ອພັກບິນ");
+          holdCurrentOrder();
         }
       } else if (e.key === "F4") {
         e.preventDefault();

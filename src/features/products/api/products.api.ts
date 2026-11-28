@@ -118,15 +118,17 @@ export const productsApi = {
       const dexieUnits = items.flatMap((p) => p.units);
       const dexieBatches = items.flatMap((p) => p.batches);
 
-      await offlineDb.transaction(
-        "rw",
-        [offlineDb.products, offlineDb.product_units, offlineDb.product_batches],
-        async () => {
-          await offlineDb.products.bulkPut(dexieProducts);
-          if (dexieUnits.length > 0) await offlineDb.product_units.bulkPut(dexieUnits);
-          if (dexieBatches.length > 0) await offlineDb.product_batches.bulkPut(dexieBatches);
-        }
-      );
+      void offlineDb
+        .transaction(
+          "rw",
+          [offlineDb.products, offlineDb.product_units, offlineDb.product_batches],
+          async () => {
+            await offlineDb.products.bulkPut(dexieProducts);
+            if (dexieUnits.length > 0) await offlineDb.product_units.bulkPut(dexieUnits);
+            if (dexieBatches.length > 0) await offlineDb.product_batches.bulkPut(dexieBatches);
+          }
+        )
+        .catch(() => {});
 
       return items;
     } catch (err) {

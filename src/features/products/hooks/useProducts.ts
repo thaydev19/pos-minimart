@@ -5,6 +5,7 @@
 // Zero useEffect Data Fetching, 5-minute StaleTime Cache Stability
 // ============================================================================
 
+import { useMemo } from "react";
 import { useProductStore } from "../stores/product.store";
 import { useProductsQuery } from "./useProductsQuery";
 
@@ -27,31 +28,30 @@ export function useProducts() {
   const selectedCategory = useProductStore((s) => s.selectedCategory);
   const filterType = useProductStore((s) => s.filterType);
 
-  const filteredProducts = products.filter((prod) => {
-    // 1. Category filter (matches by category_id or category_name)
-    if (selectedCategory !== "all") {
-      const matchesCategory =
-        prod.category_id === selectedCategory ||
-        (prod.category_name &&
-          prod.category_name.toLowerCase() === selectedCategory.toLowerCase());
-      if (!matchesCategory) return false;
-    }
+  const filteredProducts = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return products.filter((prod) => {
+      if (selectedCategory !== "all") {
+        const matchesCategory =
+          prod.category_id === selectedCategory ||
+          (prod.category_name &&
+            prod.category_name.toLowerCase() === selectedCategory.toLowerCase());
+        if (!matchesCategory) return false;
+      }
 
-    // 2. Type filter
-    if (filterType === "weighing" && !prod.is_weighing) return false;
-    if (filterType === "low_stock" && prod.total_stock > 10) return false;
+      if (filterType === "weighing" && !prod.is_weighing) return false;
+      if (filterType === "low_stock" && prod.total_stock > 10) return false;
 
-    // 3. Search filter
-    if (!searchTerm.trim()) return true;
-    const q = searchTerm.toLowerCase();
-    return (
-      prod.name_lo.toLowerCase().includes(q) ||
-      (prod.name_en && prod.name_en.toLowerCase().includes(q)) ||
-      prod.barcode.toLowerCase().includes(q) ||
-      (prod.sku && prod.sku.toLowerCase().includes(q)) ||
-      prod.units.some((u) => u.barcode && u.barcode.includes(q))
-    );
-  });
+      if (!q) return true;
+      return (
+        prod.name_lo.toLowerCase().includes(q) ||
+        (prod.name_en && prod.name_en.toLowerCase().includes(q)) ||
+        prod.barcode.toLowerCase().includes(q) ||
+        (prod.sku && prod.sku.toLowerCase().includes(q)) ||
+        prod.units.some((u) => u.barcode && u.barcode.toLowerCase().includes(q))
+      );
+    });
+  }, [products, selectedCategory, filterType, searchTerm]);
 
   return {
     products: filteredProducts,

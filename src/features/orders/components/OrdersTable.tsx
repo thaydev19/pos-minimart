@@ -4,14 +4,12 @@
 // OrdersTable: Responsive Order History Table with Quick Print & Void
 // ============================================================================
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import {
   Receipt,
   Eye,
   Printer,
   Ban,
-  Clock,
-  User,
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
@@ -24,16 +22,141 @@ import {
   ORDER_STATUS_CONFIG,
 } from "../constants/order.constants";
 import { triggerHapticFeedback } from "@/utils/haptics";
+import { useVirtualTableWindow } from "@/hooks/useVirtualTableWindow";
+
+const ORDER_ROW_HEIGHT = 54;
 
 interface OrdersTableProps {
   orders: OrderRecord[];
   isLoading: boolean;
 }
 
+const OrderTableRow = memo(function OrderTableRow({ o }: { o: OrderRecord }) {
+  const statusCfg =
+    ORDER_STATUS_CONFIG[o.status] || ORDER_STATUS_CONFIG.completed;
+  const paymentCfg =
+    ORDER_PAYMENT_METHODS[o.payment_method] || ORDER_PAYMENT_METHODS.cash;
+  const itemCount = (o.items || []).reduce((sum, i) => sum + i.quantity, 0);
+
+  return (
+    <tr
+      onClick={() => {
+        triggerHapticFeedback(20);
+        useOrderStore.getState().openDetail(o);
+      }}
+      className={`h-[54px] hover:bg-emerald-50/60 active:bg-emerald-100/70 cursor-pointer group ${
+        o.status === "cancelled" ? "bg-rose-50/20 opacity-75" : ""
+      }`}
+      title="ແຕະເພື່ອເບິ່ງລາຍລະອຽດບິນ & ພິມບິນຄືນ"
+    >
+      {/* Order Number */}
+      <td className="py-2 px-4 font-mono font-semibold text-slate-900 group-hover:text-emerald-700 text-[13px] whitespace-nowrap">
+        {o.order_number}
+      </td>
+
+      {/* Date & Time */}
+      <td className="py-2 px-3 whitespace-nowrap">
+        <div className="text-xs font-medium text-slate-700">
+          {formatReceiptDateTime(o.offline_created_at)}
+        </div>
+      </td>
+
+      {/* Cashier */}
+      <td className="py-2 px-3 whitespace-nowrap">
+        <span className="text-xs font-medium text-slate-700">
+          {o.cashier_name || "ພະນັກງານເກັບເງິນ"}
+        </span>
+      </td>
+
+      {/* Items Count */}
+      <td className="py-2 px-3 text-center text-xs font-semibold text-slate-700 tabular-nums whitespace-nowrap">
+        {itemCount} ລາຍການ
+      </td>
+
+      {/* Payment Method */}
+      <td className="py-2 px-3 whitespace-nowrap">
+        <span
+          className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-bold border ${paymentCfg.badgeClass}`}
+        >
+          {paymentCfg.short_lo}
+        </span>
+      </td>
+
+      {/* Total Amount */}
+      <td className="py-2 px-3 text-right font-semibold text-slate-900 text-[13px] tabular-nums whitespace-nowrap">
+        {formatLak(o.final_total)}
+      </td>
+
+      {/* Status */}
+      <td className="py-2 px-3 text-center whitespace-nowrap">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${statusCfg.bgClass}`}
+        >
+          {o.status === "completed" ? (
+            <CheckCircle2 className="h-3 w-3" />
+          ) : (
+            <AlertTriangle className="h-3 w-3" />
+          )}
+          <span>{statusCfg.label_lo}</span>
+        </span>
+      </td>
+
+      {/* Action Buttons */}
+      <td className="py-2 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerHapticFeedback(20);
+              useOrderStore.getState().openDetail(o);
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer touch-manipulation"
+            title="ເບິ່ງລາຍລະອຽດບິນ"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerHapticFeedback(30);
+              useOrderStore.getState().setReprintOrder(o);
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer touch-manipulation"
+            title="ພິມບິນຄືນ (80mm)"
+          >
+            <Printer className="h-4 w-4" />
+          </button>
+
+          {o.status === "completed" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerHapticFeedback(40);
+                useOrderStore.getState().openVoidDialog(o);
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer touch-manipulation"
+              title="ຍົກເລີກບິນ ແລະ ຄືນສະຕັອກ"
+            >
+              <Ban className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+});
+
 export function OrdersTable({ orders, isLoading }: OrdersTableProps) {
-  const openDetail = useOrderStore((s) => s.openDetail);
-  const openVoidDialog = useOrderStore((s) => s.openVoidDialog);
-  const setReprintOrder = useOrderStore((s) => s.setReprintOrder);
+  const { tbodyRef, startIndex, endIndex, topSpacerHeight, bottomSpacerHeight } =
+    useVirtualTableWindow(orders.length, ORDER_ROW_HEIGHT, 8);
+  const visibleOrders = useMemo(
+    () => orders.slice(startIndex, endIndex),
+    [orders, startIndex, endIndex]
+  );
 
   if (isLoading && orders.length === 0) {
     return (
@@ -59,7 +182,7 @@ export function OrdersTable({ orders, isLoading }: OrdersTableProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-2xs overflow-hidden select-none touch-manipulation">
+    <div className="rounded-2xl border border-zinc-200/80 bg-white overflow-hidden select-none touch-manipulation">
       <div className="overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain">
         <table className="w-full text-left text-xs">
           <thead>
@@ -75,132 +198,20 @@ export function OrdersTable({ orders, isLoading }: OrdersTableProps) {
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-zinc-100">
-            {orders.map((o) => {
-              const statusCfg =
-                ORDER_STATUS_CONFIG[o.status] || ORDER_STATUS_CONFIG.completed;
-              const paymentCfg =
-                ORDER_PAYMENT_METHODS[o.payment_method] || ORDER_PAYMENT_METHODS.cash;
-              const itemCount = (o.items || []).reduce(
-                (sum, i) => sum + i.quantity,
-                0
-              );
-
-              return (
-                <tr
-                  key={o.id}
-                  onClick={() => {
-                    triggerHapticFeedback(20);
-                    openDetail(o);
-                  }}
-                  className={`hover:bg-emerald-50/60 active:bg-emerald-100/70 active:scale-[0.99] transition-all cursor-pointer group ${
-                    o.status === "cancelled" ? "bg-rose-50/20 opacity-75" : ""
-                  }`}
-                  title="ແຕະເພື່ອເບິ່ງລາຍລະອຽດບິນ & ພິມບິນຄືນ"
-                >
-                  {/* Order Number */}
-                  <td className="py-2.5 px-4 font-mono font-semibold text-slate-900 group-hover:text-emerald-700 text-[13px]">
-                    {o.order_number}
-                  </td>
-
-                  {/* Date & Time */}
-                  <td className="py-2.5 px-3">
-                    <div className="text-xs font-medium text-slate-700">
-                      {formatReceiptDateTime(o.offline_created_at)}
-                    </div>
-                  </td>
-
-                  {/* Cashier */}
-                  <td className="py-2.5 px-3">
-                    <span className="text-xs font-medium text-slate-700">
-                      {o.cashier_name || "ພະນັກງານເກັບເງິນ"}
-                    </span>
-                  </td>
-
-                  {/* Items Count */}
-                  <td className="py-2.5 px-3 text-center text-xs font-semibold text-slate-700 tabular-nums">
-                    {itemCount} ລາຍການ
-                  </td>
-
-                  {/* Payment Method */}
-                  <td className="py-2.5 px-3">
-                    <span
-                      className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-bold border ${paymentCfg.badgeClass}`}
-                    >
-                      {paymentCfg.short_lo}
-                    </span>
-                  </td>
-
-                  {/* Total Amount */}
-                  <td className="py-2.5 px-3 text-right font-semibold text-slate-900 text-[13px] tabular-nums">
-                    {formatLak(o.final_total)}
-                  </td>
-
-                  {/* Status */}
-                  <td className="py-2.5 px-3 text-center">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${statusCfg.bgClass}`}
-                    >
-                      {o.status === "completed" ? (
-                        <CheckCircle2 className="h-3 w-3" />
-                      ) : (
-                        <AlertTriangle className="h-3 w-3" />
-                      )}
-                      <span>{statusCfg.label_lo}</span>
-                    </span>
-                  </td>
-
-                  {/* Action Buttons: w-8 h-8 rounded-lg with w-4 h-4 icon, gap-1.5 */}
-                  <td className="py-2.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-center gap-1.5">
-                      {/* View Detail */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerHapticFeedback(20);
-                          openDetail(o);
-                        }}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all cursor-pointer shadow-2xs touch-manipulation"
-                        title="ເບິ່ງລາຍລະອຽດບິນ"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-
-                      {/* Print 80mm */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerHapticFeedback(30);
-                          setReprintOrder(o);
-                        }}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 transition-all cursor-pointer shadow-2xs touch-manipulation"
-                        title="ພິມບິນຄືນ (80mm)"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </button>
-
-                      {/* Void Order */}
-                      {o.status === "completed" && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            triggerHapticFeedback(40);
-                            openVoidDialog(o);
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95 transition-all cursor-pointer shadow-2xs touch-manipulation"
-                          title="ຍົກເລີກບິນ ແລະ ຄືນສະຕັອກ"
-                        >
-                          <Ban className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+          <tbody ref={tbodyRef} className="divide-y divide-zinc-100">
+            {topSpacerHeight > 0 && (
+              <tr aria-hidden="true">
+                <td colSpan={8} style={{ height: topSpacerHeight, padding: 0, border: 0 }} />
+              </tr>
+            )}
+            {visibleOrders.map((o) => (
+              <OrderTableRow key={o.id} o={o} />
+            ))}
+            {bottomSpacerHeight > 0 && (
+              <tr aria-hidden="true">
+                <td colSpan={8} style={{ height: bottomSpacerHeight, padding: 0, border: 0 }} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

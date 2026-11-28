@@ -6,6 +6,7 @@
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -14,21 +15,27 @@ import {
   AlertTriangle,
   Boxes,
   ArrowUpRight,
-  ScanBarcode,
   RefreshCw,
-  Clock,
   CheckCircle2,
   Coins,
   Percent,
   Wallet,
   QrCode,
-  Calendar,
 } from "lucide-react";
 import { useDashboardStore } from "../stores/dashboard.store";
 import { DashboardTimeRange, DashboardRecentOrder } from "../types/dashboard.types";
 import { formatLak } from "@/utils/formatLakCurrency";
-import { OrderRecord, OrderDetailModal, ordersApi } from "@/features/orders";
+import type { OrderRecord } from "@/features/orders/types/order.types";
+import { ordersApi } from "@/features/orders/api/orders.api";
 import { DEFAULT_STORE } from "@/features/pos/constants/pos.constants";
+
+const OrderDetailModal = dynamic(
+  () =>
+    import("@/features/orders/components/OrderDetailModal").then(
+      (m) => m.OrderDetailModal
+    ),
+  { ssr: false }
+);
 
 export function DashboardPage() {
   const {
@@ -148,7 +155,7 @@ export function DashboardPage() {
           {/* Refresh Data Button (min-h-[48px]) */}
           <button
             type="button"
-            onClick={() => loadDashboardStats()}
+            onClick={() => loadDashboardStats(true)}
             disabled={isLoading}
             className="flex min-h-[48px] h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 touch-manipulation"
             title="ໂຫຼດຂໍ້ມູນໃໝ່ (Refresh)"
@@ -354,7 +361,7 @@ export function DashboardPage() {
                       <tr
                         key={ord.id}
                         onClick={() => handleRowClick(ord)}
-                        className="hover:bg-emerald-50/60 active:bg-emerald-100/70 active:scale-[0.99] transition-all cursor-pointer touch-manipulation select-none group"
+                        className="hover:bg-emerald-50/60 active:bg-emerald-100/70 cursor-pointer touch-manipulation select-none group"
                         title="ແຕະເພື່ອເບິ່ງລາຍລະອຽດບິນ & ພິມບິນຄືນ"
                       >
                         <td className="py-4 px-4 font-mono font-black text-slate-900 group-hover:text-emerald-700 text-xs sm:text-sm">
@@ -456,12 +463,14 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Order Detail Modal */}
-      <OrderDetailModal
-        order={selectedOrder}
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-      />
+      {/* Order Detail Modal (mounted only when open) */}
+      {isDetailOpen && selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          isOpen={true}
+          onClose={() => setIsDetailOpen(false)}
+        />
+      )}
     </div>
   );
 }

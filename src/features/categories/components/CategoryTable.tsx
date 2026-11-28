@@ -70,7 +70,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
                 </tr>
               ) : (
                 categories.map((cat) => (
-                  <tr key={cat.id} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={cat.id} className="hover:bg-slate-50/60">
                     {/* Sort Order */}
                     <td className="py-3 px-4 text-center font-mono font-bold text-slate-400">
                       {cat.sort_order ?? 0}
@@ -138,10 +138,10 @@ export function CategoryTable({ categories }: CategoryTableProps) {
       {guardAlert.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/55"
             onClick={() => setGuardAlert({ open: false, name: "", count: 0 })}
           />
-          <div className="relative w-full max-w-md rounded-2xl border border-amber-200 bg-white p-5 shadow-2xl z-10 animate-in zoom-in-95">
+          <div className="relative w-full max-w-md rounded-2xl border border-amber-200 bg-white p-5 shadow-xl z-10">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                 <AlertTriangle className="h-5 w-5" />

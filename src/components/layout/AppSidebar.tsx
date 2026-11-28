@@ -120,17 +120,15 @@ export function AppSidebar({
     setPendingHref(null);
   }, [pathname]);
 
-  // Pre-warm route chunks during idle time so tab switching feels instant on low-power CPUs
+  // Pre-warm route chunks once during idle time so tab switching feels instant on low-power CPUs
   useEffect(() => {
     const timer = setTimeout(() => {
       BACKOFFICE_NAV_ITEMS.forEach((item) => {
-        if (item.href !== pathname) {
-          router.prefetch(item.href);
-        }
+        router.prefetch(item.href);
       });
-    }, 600);
+    }, 800);
     return () => clearTimeout(timer);
-  }, [router, pathname]);
+  }, [router]);
 
   const handleLogout = () => {
     setIsConfirmOpen(true);

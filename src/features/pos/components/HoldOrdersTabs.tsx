@@ -10,7 +10,6 @@
 
 import React from "react";
 import { Plus, PauseCircle, X } from "lucide-react";
-import { toast } from "sonner";
 import { usePosStore } from "../stores/pos.store";
 
 export function HoldOrdersTabs() {
@@ -22,26 +21,18 @@ export function HoldOrdersTabs() {
   const deleteBill = usePosStore((s) => s.deleteBill);
 
   const handleHoldClick = () => {
-    if (cart.length === 0) {
-      toast.info("ບໍ່ມີສິນຄ້າໃນກະຕ່າເພື່ອພັກບິນ");
-      return;
-    }
-    const success = holdCurrentOrder();
-    if (success) {
-      toast.success("ໄດ້ພັກບິນ ແລະ ເປີດບິນໃໝ່ສຳເລັດແລ້ວ");
-    }
+    if (cart.length === 0) return;
+    holdCurrentOrder();
   };
 
-  const handleTabClick = (billId: string, title: string) => {
+  const handleTabClick = (billId: string) => {
     if (billId === activeBillId) return;
     switchBill(billId);
-    toast.success(`ໄດ້ສະຫຼັບມາຍັງ ${title}`);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, billId: string, title: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, billId: string) => {
     e.stopPropagation();
     deleteBill(billId);
-    toast.info(`ໄດ້ລຶບ ${title} ແລ້ວ`);
   };
 
   // Safe fallback if bills is somehow uninitialized
@@ -70,7 +61,7 @@ export function HoldOrdersTabs() {
               {displayBills.length > 1 && (
                 <button
                   type="button"
-                  onClick={(e) => handleDeleteClick(e, bill.id, bill.tabTitle)}
+                  onClick={(e) => handleDeleteClick(e, bill.id)}
                   className="flex h-4.5 w-4.5 items-center justify-center rounded-md text-emerald-200 hover:bg-emerald-700 hover:text-white transition-colors ml-0.5 cursor-pointer"
                   title="ປິດບິນນີ້"
                 >
@@ -84,7 +75,7 @@ export function HoldOrdersTabs() {
         return (
           <div
             key={bill.id}
-            onClick={() => handleTabClick(bill.id, bill.tabTitle)}
+            onClick={() => handleTabClick(bill.id)}
             className="group flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 hover:bg-zinc-200 hover:border-zinc-300 pl-2.5 pr-1.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs transition-all cursor-pointer"
             title={`ກົດເພື່ອເປີດ ${bill.tabTitle} ມາຂາຍຕໍ່`}
           >
@@ -95,7 +86,7 @@ export function HoldOrdersTabs() {
             </span>
             <button
               type="button"
-              onClick={(e) => handleDeleteClick(e, bill.id, bill.tabTitle)}
+              onClick={(e) => handleDeleteClick(e, bill.id)}
               className="flex h-5 w-5 items-center justify-center rounded-md text-zinc-400 hover:bg-red-100 hover:text-red-600 transition-colors ml-0.5 cursor-pointer"
               title="ລຶບບິນພັກ"
             >

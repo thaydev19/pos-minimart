@@ -5,7 +5,7 @@
 // Includes Camera Optical Scanner for Tablets & Mobile POS
 // ============================================================================
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScanBarcode,
   Search,
@@ -25,6 +25,7 @@ import { usePosStore } from "../stores/pos.store";
 import { lo } from "@/constants/locales/lo";
 import { CameraBarcodeScannerModal } from "./CameraBarcodeScannerModal";
 import { triggerHapticFeedback } from "@/utils/haptics";
+import { isTauri } from "@/utils/tauri";
 
 interface CatalogControlBarProps {
   searchValue: string;
@@ -53,11 +54,16 @@ export function CatalogControlBar({
   onCameraBarcodeScanned,
 }: CatalogControlBarProps) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isDesktopExe, setIsDesktopExe] = useState(false);
   const categories = usePosStore((s) => s.categories);
   const activeCategory = usePosStore((s) => s.activeCategory);
   const setActiveCategory = usePosStore((s) => s.setActiveCategory);
   const viewMode = usePosStore((s) => s.viewMode);
   const setViewMode = usePosStore((s) => s.setViewMode);
+
+  useEffect(() => {
+    setIsDesktopExe(isTauri());
+  }, []);
 
   return (
     <>
@@ -74,7 +80,9 @@ export function CatalogControlBar({
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={lo.pos.scanOrSearchPlaceholder}
-            className="h-10 w-full bg-transparent text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none pr-32"
+            className={`h-10 w-full bg-transparent text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none ${
+              isDesktopExe ? "pr-24" : "pr-32"
+            }`}
           />
 
           <div className="absolute right-2.5 flex items-center gap-1.5">
@@ -91,19 +99,21 @@ export function CatalogControlBar({
               </button>
             )}
 
-            {/* Camera Barcode Scanner Trigger Button */}
-            <button
-              type="button"
-              onClick={() => {
-                triggerHapticFeedback(25);
-                setIsCameraOpen(true);
-              }}
-              className="flex h-8 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 active:scale-95 transition-all shadow-2xs cursor-pointer"
-              title="ສະແກນດ້ວຍກ້ອງ (Camera Scanner)"
-            >
-              <Camera className="h-3.5 w-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">ກ້ອງສະແກນ</span>
-            </button>
+            {/* Camera Barcode Scanner Trigger Button (Hidden on Desktop Windows .exe) */}
+            {!isDesktopExe && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHapticFeedback(25);
+                  setIsCameraOpen(true);
+                }}
+                className="flex h-8 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                title="ສະແກນດ້ວຍກ້ອງ (Camera Scanner)"
+              >
+                <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">ກ້ອງສະແກນ</span>
+              </button>
+            )}
 
             <button
               type="submit"
@@ -183,14 +193,16 @@ export function CatalogControlBar({
         </div>
       </div>
 
-      {/* Camera Optical Scanner Modal */}
-      <CameraBarcodeScannerModal
-        isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
-        onBarcodeDetected={(code) => {
-          onCameraBarcodeScanned?.(code);
-        }}
-      />
+      {/* Camera Optical Scanner Modal (Only on Web / Mobile) */}
+      {!isDesktopExe && isCameraOpen && (
+        <CameraBarcodeScannerModal
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onBarcodeDetected={(code) => {
+            onCameraBarcodeScanned?.(code);
+          }}
+        />
+      )}
     </>
   );
 }

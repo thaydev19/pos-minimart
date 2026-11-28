@@ -106,7 +106,12 @@ export function useVirtualTableWindow(
   }, [totalCount, rowHeight, overscan]);
 
   const startIndex = Math.min(windowRange.startIndex, totalCount);
-  const endIndex = Math.min(Math.max(windowRange.endIndex, startIndex), totalCount);
+  const fallbackEnd = totalCount <= 30 ? totalCount : Math.min(totalCount, 24);
+  const rawEnd =
+    windowRange.endIndex <= startIndex && totalCount > 0
+      ? fallbackEnd
+      : windowRange.endIndex;
+  const endIndex = Math.min(Math.max(rawEnd, startIndex), totalCount);
 
   return {
     tbodyRef,

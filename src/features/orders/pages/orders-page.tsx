@@ -6,26 +6,18 @@
 // ============================================================================
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Receipt,
   Search,
-  RefreshCw,
   Printer,
-  Calendar,
   Clock,
-  Filter,
-  CheckCircle2,
   X,
 } from "lucide-react";
 import { useOrders } from "../hooks/useOrders";
 import { useOrderStore } from "../stores/order.store";
 import { OrderSummaryCards } from "../components/OrderSummaryCards";
 import { OrdersTable } from "../components/OrdersTable";
-import { OrderDetailDrawer } from "../components/OrderDetailDrawer";
-import { OrderDetailModal } from "../components/OrderDetailModal";
-import { VoidOrderDialog } from "../components/VoidOrderDialog";
-import { Receipt80mmTemplate } from "../components/Receipt80mmTemplate";
-import { ShiftsPage } from "@/features/shifts";
 import { triggerHapticFeedback } from "@/utils/haptics";
 import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 import { HardwareService } from "@/features/pos/services/hardware.service";
@@ -33,6 +25,26 @@ import { DEFAULT_STORE } from "@/features/pos/constants/pos.constants";
 import { ReceiptData } from "@/utils/printer.adapter";
 import { formatReceiptDateTime } from "../utils/order.util";
 import { toast } from "sonner";
+
+const OrderDetailModal = dynamic(
+  () => import("../components/OrderDetailModal").then((m) => m.OrderDetailModal),
+  { ssr: false }
+);
+const VoidOrderDialog = dynamic(
+  () => import("../components/VoidOrderDialog").then((m) => m.VoidOrderDialog),
+  { ssr: false }
+);
+const Receipt80mmTemplate = dynamic(
+  () =>
+    import("../components/Receipt80mmTemplate").then(
+      (m) => m.Receipt80mmTemplate
+    ),
+  { ssr: false }
+);
+const ShiftsPage = dynamic(
+  () => import("@/features/shifts/pages/shifts-page").then((m) => m.ShiftsPage),
+  { ssr: false }
+);
 
 export function OrdersPage() {
   const [activeTab, setActiveTab] = useState<"orders" | "shifts">("orders");
@@ -47,6 +59,7 @@ export function OrdersPage() {
   const selectedOrderForDetail = useOrderStore((s) => s.selectedOrderForDetail);
   const closeDetail = useOrderStore((s) => s.closeDetail);
   const openVoidDialog = useOrderStore((s) => s.openVoidDialog);
+  const hasOrderForVoid = useOrderStore((s) => Boolean(s.orderForVoid));
   const orderForReprint = useOrderStore((s) => s.orderForReprint);
   const setReprintOrder = useOrderStore((s) => s.setReprintOrder);
   const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
@@ -233,27 +246,29 @@ export function OrdersPage() {
           {/* Orders Table */}
           <OrdersTable orders={orders} isLoading={isLoading} />
 
-          {/* Touch-Friendly Order Details Modal & Void Dialog */}
-          <OrderDetailModal
-            order={selectedOrderForDetail}
-            isOpen={Boolean(selectedOrderForDetail)}
-            onClose={closeDetail}
-            onVoid={(ord) => {
-              closeDetail();
-              openVoidDialog(ord);
-            }}
-            onReprint={(ord) => {
-              setReprintOrder(ord);
-            }}
-          />
-          <VoidOrderDialog />
+          {/* Touch-Friendly Order Details Modal & Void Dialog (mounted only when active) */}
+          {selectedOrderForDetail && (
+            <OrderDetailModal
+              order={selectedOrderForDetail}
+              isOpen={true}
+              onClose={closeDetail}
+              onVoid={(ord) => {
+                closeDetail();
+                openVoidDialog(ord);
+              }}
+              onReprint={(ord) => {
+                setReprintOrder(ord);
+              }}
+            />
+          )}
+          {hasOrderForVoid && <VoidOrderDialog />}
 
           {/* 80mm Reprint Preview Modal (Compact Modal for POS screens) */}
           {orderForReprint && (
             <div className="receipt-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 select-none">
               <div
                 style={{ maxWidth: "380px", width: "100%" }}
-                className="receipt-modal-card relative w-full max-w-[380px] max-h-[90vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-150 overflow-hidden"
+                className="receipt-modal-card relative w-full max-w-[380px] max-h-[90vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-xl overflow-hidden"
               >
                 <div className="flex items-center justify-between border-b border-slate-100 py-2.5 px-4 shrink-0 bg-white no-print">
                   <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-2">

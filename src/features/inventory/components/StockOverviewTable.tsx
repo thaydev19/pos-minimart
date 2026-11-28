@@ -189,7 +189,10 @@ const StockOverviewRow = memo(function StockOverviewRow({
   );
 });
 
-export function StockOverviewTable({ items, isLoading }: StockOverviewTableProps) {
+export const StockOverviewTable = memo(function StockOverviewTable({
+  items,
+  isLoading,
+}: StockOverviewTableProps) {
   const { tbodyRef, startIndex, endIndex, topSpacerHeight, bottomSpacerHeight } =
     useVirtualTableWindow(items.length, ROW_HEIGHT, 8);
   const visibleItems = useMemo(
@@ -199,9 +202,67 @@ export function StockOverviewTable({ items, isLoading }: StockOverviewTableProps
 
   if (isLoading && items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-zinc-200/80">
-        <div className="h-8 w-8 animate-spin rounded-full border-3 border-emerald-600 border-t-transparent mb-3" />
-        <p className="text-xs font-semibold text-slate-500">ກຳລັງໂຫຼດຂໍ້ມູນສາງສິນຄ້າ...</p>
+      <div className="rounded-2xl border border-zinc-200/80 bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] lg:min-w-0 lg:table-fixed text-left text-xs">
+            <thead>
+              <tr className="border-b border-zinc-200/80 bg-slate-50/80 text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+                <th className="py-2.5 px-3 lg:w-[25%]">ສິນຄ້າ</th>
+                <th className="py-2.5 px-2 lg:w-[13%] whitespace-nowrap">ບາໂຄດ / ໝວດໝູ່</th>
+                <th className="py-2.5 px-2 lg:w-[13%] text-right whitespace-nowrap">ສະຕັອກຄົງເຫຼືອ</th>
+                <th className="py-2.5 px-2 lg:w-[19%] whitespace-nowrap">ວັນໝົດອາຍຸໃກ້ສຸດ</th>
+                <th className="py-2.5 px-2 lg:w-[13%] text-right whitespace-nowrap">ຕົ້ນທຶນ / ມູນຄ່າລວມ</th>
+                <th className="py-2.5 px-2.5 lg:w-[17%] text-center whitespace-nowrap">ຈັດການສາງ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
+                <tr key={idx} className="h-[66px]">
+                  <td className="py-1.5 px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-9 w-9 rounded-lg bg-slate-100 shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-4/5 rounded bg-slate-200/80" />
+                        <div className="h-2.5 w-1/2 rounded bg-slate-100" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-2">
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-20 rounded bg-slate-200/70" />
+                      <div className="h-2.5 w-14 rounded bg-slate-100" />
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-2">
+                    <div className="ml-auto space-y-1.5">
+                      <div className="ml-auto h-5 w-16 rounded-lg bg-slate-200/70" />
+                      <div className="ml-auto h-2.5 w-20 rounded bg-slate-100" />
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-2">
+                    <div className="space-y-1.5">
+                      <div className="h-4 w-32 rounded bg-slate-100" />
+                      <div className="h-2.5 w-24 rounded bg-slate-100" />
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-2">
+                    <div className="ml-auto space-y-1.5">
+                      <div className="ml-auto h-3.5 w-20 rounded bg-slate-200/80" />
+                      <div className="ml-auto h-2.5 w-16 rounded bg-slate-100" />
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-2">
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="h-7 w-16 rounded-lg bg-slate-100" />
+                      <div className="h-7 w-16 rounded-lg bg-slate-100" />
+                      <div className="h-7 w-7 rounded-lg bg-slate-100" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
@@ -262,5 +323,5 @@ export function StockOverviewTable({ items, isLoading }: StockOverviewTableProps
       </div>
     </div>
   );
-}
+});
 

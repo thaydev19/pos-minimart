@@ -9,6 +9,7 @@ import { ordersApi } from "../api/orders.api";
 interface OrderState {
   orders: OrderRecord[];
   isLoading: boolean;
+  lastFetchedAt: number;
   filters: OrdersFilter;
 
   selectedOrderForDetail: OrderRecord | null;
@@ -16,7 +17,7 @@ interface OrderState {
   orderForReprint: OrderRecord | null;
 
   // Actions
-  loadOrders: () => Promise<void>;
+  loadOrders: (forceRefresh?: boolean) => Promise<void>;
   setDateRange: (range: "today" | "week" | "month" | "all") => void;
   setPaymentMethod: (method: "all" | "cash" | "transfer" | "lao_qr") => void;
   setStatus: (status: "all" | "completed" | "cancelled") => void;
@@ -35,6 +36,7 @@ interface OrderState {
 export const useOrderStore = create<OrderState>((set, get) => ({
   orders: [],
   isLoading: false,
+  lastFetchedAt: 0,
   filters: {
     dateRange: "today",
     paymentMethod: "all",
@@ -47,11 +49,22 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   orderForVoid: null,
   orderForReprint: null,
 
-  loadOrders: async () => {
-    set({ isLoading: true });
+  loadOrders: async (forceRefresh = false) => {
+    const { orders, lastFetchedAt } = get();
+    const isFresh =
+      !forceRefresh &&
+      lastFetchedAt > 0 &&
+      Date.now() - lastFetchedAt < 45_000;
+    if (isFresh) return;
+
+    if (lastFetchedAt === 0 && orders.length === 0) {
+      set({ isLoading: true });
+    }
+
+    // Fetch authoritative orders (falls back to Dexie automatically only on network error)
     try {
       const records = await ordersApi.fetchOrders();
-      set({ orders: records, isLoading: false });
+      set({ orders: records, isLoading: false, lastFetchedAt: Date.now() });
 
       // Refresh detail view if open
       const currentDetail = get().selectedOrderForDetail;

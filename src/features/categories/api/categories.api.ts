@@ -16,6 +16,41 @@ import { usePosStore } from "@/features/pos/stores/pos.store";
 
 export const categoriesApi = {
   /**
+   * Reads categories and product counts quickly from local Dexie cache.
+   */
+  async fetchCategoriesFromDexie(): Promise<CategoryItem[]> {
+    try {
+      const [localCats, localProds] = await Promise.all([
+        offlineDb.categories.toArray(),
+        offlineDb.products.toArray(),
+      ]);
+      const productCountMap = new Map<string, number>();
+      for (const p of localProds) {
+        if (p.is_active && p.category_id) {
+          productCountMap.set(
+            p.category_id,
+            (productCountMap.get(p.category_id) || 0) + 1
+          );
+        }
+      }
+      return localCats
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((c) => {
+          const parsed = parseCategoryIconAndColor(c.icon);
+          return {
+            ...c,
+            icon: parsed.icon,
+            color: parsed.color || c.color || "emerald",
+            product_count: productCountMap.get(c.id) || 0,
+          };
+        });
+    } catch {
+      return [];
+    }
+  },
+
+  /**
    * Fetches categories from Supabase with real product count.
    * Caches directly to Dexie.js for offline POS support.
    */
@@ -34,11 +69,7 @@ export const categoriesApi = {
 
       if (catRes.error) {
         console.warn("[CategoriesApi] Supabase error, falling back to Dexie:", catRes.error.message);
-        const localCats = await offlineDb.categories.toArray();
-        return localCats.map((c) => ({
-          ...c,
-          product_count: 0,
-        }));
+        return this.fetchCategoriesFromDexie();
       }
 
       // Count products per category
@@ -69,7 +100,7 @@ export const categoriesApi = {
         };
       });
 
-      // Cache directly to Dexie (Offline-First)
+      // Cache to Dexie non-blocking so UI updates immediately
       const dexieEntries: LocalCategory[] = items.map((c) => ({
         id: c.id,
         store_id: c.store_id,
@@ -80,7 +111,7 @@ export const categoriesApi = {
         sort_order: c.sort_order,
         created_at: c.created_at,
       }));
-      await offlineDb.categories.bulkPut(dexieEntries);
+      void offlineDb.categories.bulkPut(dexieEntries).catch(() => {});
 
       return items;
     } catch (err: any) {

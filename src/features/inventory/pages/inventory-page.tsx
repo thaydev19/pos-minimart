@@ -6,27 +6,36 @@
 // ============================================================================
 
 import React, { Suspense, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import {
   Boxes,
   Plus,
-  RefreshCw,
-  Filter,
-  PackagePlus,
-  AlertTriangle,
-  Clock,
-  ShieldAlert,
 } from "lucide-react";
 import { useInventory } from "../hooks/useInventory";
 import { useInventoryStore } from "../stores/inventory.store";
-import { useCategories } from "@/features/categories";
+import { useCategories } from "@/features/categories/hooks/useCategories";
 import { InventorySummaryCards } from "../components/InventorySummaryCards";
 import { StockOverviewTable } from "../components/StockOverviewTable";
-import { StockInSheet } from "../components/StockInSheet";
-import { BatchDetailDrawer } from "../components/BatchDetailDrawer";
-import { StockAdjustmentDialog } from "../components/StockAdjustmentDialog";
 import { HeaderRefreshButton } from "@/components/HeaderRefreshButton";
 import { CatalogBarcodeSearchInput } from "@/components/CatalogBarcodeSearchInput";
+
+const StockInSheet = dynamic(
+  () => import("../components/StockInSheet").then((m) => m.StockInSheet),
+  { ssr: false }
+);
+const BatchDetailDrawer = dynamic(
+  () =>
+    import("../components/BatchDetailDrawer").then((m) => m.BatchDetailDrawer),
+  { ssr: false }
+);
+const StockAdjustmentDialog = dynamic(
+  () =>
+    import("../components/StockAdjustmentDialog").then(
+      (m) => m.StockAdjustmentDialog
+    ),
+  { ssr: false }
+);
 
 function QuickStockInListener() {
   const searchParams = useSearchParams();

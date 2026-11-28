@@ -11,6 +11,7 @@ import { InventoryKPIs } from "../types/inventory.types";
 export function useInventory() {
   const items = useInventoryStore((s) => s.items);
   const isLoading = useInventoryStore((s) => s.isLoading);
+  const hasNeverLoaded = useInventoryStore((s) => s.lastLoadedAt === 0);
   const searchTerm = useInventoryStore((s) => s.searchTerm);
   const filterStatus = useInventoryStore((s) => s.filterStatus);
   const selectedCategory = useInventoryStore((s) => s.selectedCategory);
@@ -92,7 +93,7 @@ export function useInventory() {
     items: filteredItems,
     totalCount: items.length,
     kpis,
-    isLoading: isLoading && items.length === 0,
+    isLoading: (isLoading || hasNeverLoaded) && items.length === 0,
     refresh: () => loadInventory(),
   };
 }

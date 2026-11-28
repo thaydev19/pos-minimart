@@ -22,7 +22,7 @@ import { useProductStore } from "../stores/product.store";
 import { useProductMutations } from "../hooks/useProducts";
 import { formatLak } from "@/utils/formatLakCurrency";
 import { ProductThumbnail } from "@/features/pos/components/ProductThumbnail";
-import { useInventoryStore } from "@/features/inventory";
+import { useInventoryStore } from "@/features/inventory/stores/inventory.store";
 import { useVirtualTableWindow } from "@/hooks/useVirtualTableWindow";
 
 const ROW_HEIGHT = 66;
@@ -319,7 +319,10 @@ const ProductTableRow = memo(function ProductTableRow({
   );
 });
 
-export function ProductTable({ products, isLoading }: ProductTableProps) {
+export const ProductTable = memo(function ProductTable({
+  products,
+  isLoading,
+}: ProductTableProps) {
   const openCreateSheet = useProductStore((s) => s.openCreateSheet);
   const { toggleProductActive, deleteProduct, isSubmitting } = useProductMutations();
   const { tbodyRef, startIndex, endIndex, topSpacerHeight, bottomSpacerHeight } =
@@ -344,9 +347,71 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
 
   if (isLoading && products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-zinc-200/80">
-        <div className="h-8 w-8 animate-spin rounded-full border-3 border-emerald-600 border-t-transparent mb-3" />
-        <p className="text-xs font-semibold text-slate-500">ກຳລັງໂຫຼດລາຍການສິນຄ້າ...</p>
+      <div className="rounded-2xl border border-zinc-200/80 bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[920px] lg:min-w-0 lg:table-fixed text-left text-xs">
+            <thead>
+              <tr className="border-b border-zinc-200/80 bg-slate-50/80 text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+                <th className="py-2.5 px-2.5 lg:w-[20%]">ສິນຄ້າ</th>
+                <th className="py-2.5 px-1.5 lg:w-[10%] whitespace-nowrap">ບາໂຄດ / SKU</th>
+                <th className="py-2.5 px-1.5 lg:w-[9%] whitespace-nowrap">ໝວດໝູ່</th>
+                <th className="py-2.5 px-1.5 lg:w-[8%] whitespace-nowrap">ຫົວໜ່ວຍຂາຍ</th>
+                <th className="py-2.5 px-1.5 lg:w-[11%] text-right whitespace-nowrap">ລາຄາຂາຍ</th>
+                <th className="py-2.5 px-1.5 lg:w-[10%] text-right whitespace-nowrap">ຕົ້ນທຶນ & ກຳໄລ</th>
+                <th className="py-2.5 px-1.5 lg:w-[11%] text-center whitespace-nowrap">ສະຕັອກຄົງເຫຼືອ</th>
+                <th className="py-2.5 px-1.5 lg:w-[7%] text-center whitespace-nowrap">ສະຖານະ</th>
+                <th className="py-2.5 px-1.5 lg:w-[14%] text-center whitespace-nowrap">ຈັດການ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
+                <tr key={idx} className="h-[66px]">
+                  <td className="py-1.5 px-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-9 w-9 rounded-xl bg-slate-100 shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-4/5 rounded bg-slate-200/80" />
+                        <div className="h-2.5 w-1/2 rounded bg-slate-100" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="h-3 w-20 rounded bg-slate-200/70" />
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="h-5 w-16 rounded-lg bg-slate-100" />
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="h-5 w-14 rounded-md bg-slate-100" />
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="ml-auto h-3.5 w-16 rounded bg-slate-200/80" />
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="ml-auto space-y-1">
+                      <div className="ml-auto h-3 w-14 rounded bg-slate-100" />
+                      <div className="ml-auto h-2.5 w-9 rounded bg-slate-100" />
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="mx-auto h-6 w-20 rounded-xl bg-slate-100" />
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <div className="mx-auto h-5 w-14 rounded-full bg-slate-100" />
+                  </td>
+                  <td className="py-1.5 px-1">
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="h-7 w-7 xl:h-8 xl:w-8 rounded-lg bg-slate-100" />
+                      <div className="h-7 w-7 xl:h-8 xl:w-8 rounded-lg bg-slate-100" />
+                      <div className="h-7 w-7 xl:h-8 xl:w-8 rounded-lg bg-slate-100" />
+                      <div className="h-7 w-7 xl:h-8 xl:w-8 rounded-lg bg-slate-100" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
@@ -417,5 +482,5 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
       </div>
     </div>
   );
-}
+});
 
